@@ -10,6 +10,8 @@ import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
 import { PlanComparison } from './plan-comparison';
+import { BenefitsDashboard } from './benefits-dashboard';
+import { CostCalculator } from './cost-calculator';
 import equal from 'fast-deep-equal';
 import { cn, sanitizeText } from '@/lib/utils';
 import { Button } from './ui/button';
@@ -309,7 +311,7 @@ const PurePreviewMessage = ({
                 }
               }
 
-              if (type === 'tool-comparePlans') {
+              if ((type as string) === 'tool-comparePlans') {
                 const toolPart = part as any;
                 const { toolCallId, state } = toolPart;
 
@@ -337,13 +339,13 @@ const PurePreviewMessage = ({
 
                   return (
                     <div key={toolCallId}>
-                      <PlanComparison data={output} />
+                      <PlanComparison plans={output.plans} />
                     </div>
                   );
                 }
               }
 
-              if (type === 'tool-calculateSavings') {
+              if ((type as string) === 'tool-calculateBenefitsCost') {
                 const toolPart = part as any;
                 const { toolCallId, state } = toolPart;
 
@@ -373,46 +375,104 @@ const PurePreviewMessage = ({
                     <div key={toolCallId}>
                       <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
                         <h3 className="text-lg font-semibold mb-3 text-green-800">
-                          💰 Savings Calculator Results
+                          💰 Benefits Cost Estimate
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="bg-white p-3 rounded-lg">
-                            <div className="text-sm text-gray-600">Annual Savings</div>
+                            <div className="text-sm text-gray-600">Estimated Annual Cost</div>
                             <div className="text-xl font-bold text-green-600">
-                              ${output.annualSavings.toLocaleString()}
+                              ${output.estimatedAnnualCost.toLocaleString()}
                             </div>
                           </div>
                           <div className="bg-white p-3 rounded-lg">
-                            <div className="text-sm text-gray-600">Total Savings ({output.timeframe})</div>
+                            <div className="text-sm text-gray-600">Total with Premiums</div>
                             <div className="text-xl font-bold text-blue-600">
-                              ${output.totalSavings.toLocaleString()}
+                              ${output.breakdown.total.toLocaleString()}
                             </div>
                           </div>
                         </div>
-                        {output.breakdown && output.breakdown.length > 0 && (
-                          <div className="mt-4">
-                            <h4 className="font-medium mb-2">Breakdown:</h4>
-                            <div className="space-y-1">
-                              {output.breakdown.map((item: any, index: number) => (
-                                <div key={index} className="flex justify-between text-sm">
-                                  <span>{item.item}</span>
-                                  <span className="font-medium">${item.amount.toLocaleString()}</span>
-                                </div>
-                              ))}
+                        <div className="mt-4">
+                          <h4 className="font-medium mb-2">Cost Breakdown:</h4>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span>Annual Premiums</span>
+                              <span className="font-medium">${output.breakdown.premiums.toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Estimated Out-of-Pocket</span>
+                              <span className="font-medium">${output.breakdown.estimatedOutOfPocket.toLocaleString()}</span>
                             </div>
                           </div>
-                        )}
-                        {output.recommendations && output.recommendations.length > 0 && (
-                          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                            <h4 className="font-medium mb-2">Recommendations:</h4>
-                            {output.recommendations.map((rec: any, index: number) => (
-                              <div key={index} className="text-sm">
-                                <span className="font-medium">{rec.action}</span>: {rec.impact}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        </div>
                       </div>
+                    </div>
+                  );
+                }
+              }
+
+              if ((type as string) === 'tool-showBenefitsDashboard') {
+                const toolPart = part as any;
+                const { toolCallId, state } = toolPart;
+
+                if (state === 'input-available') {
+                  return (
+                    <div key={toolCallId} className="skeleton">
+                      <div className="w-full h-64 bg-gray-100 animate-pulse rounded-lg" />
+                    </div>
+                  );
+                }
+
+                if (state === 'output-available') {
+                  const { output } = toolPart;
+
+                  if ('error' in output) {
+                    return (
+                      <div
+                        key={toolCallId}
+                        className="text-red-500 p-2 border rounded"
+                      >
+                        Error: {String(output.error)}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={toolCallId}>
+                      <BenefitsDashboard summary={output} />
+                    </div>
+                  );
+                }
+              }
+
+              if ((type as string) === 'tool-showCostCalculator') {
+                const toolPart = part as any;
+                const { toolCallId, state } = toolPart;
+
+                if (state === 'input-available') {
+                  return (
+                    <div key={toolCallId} className="skeleton">
+                      <div className="w-full h-64 bg-gray-100 animate-pulse rounded-lg" />
+                    </div>
+                  );
+                }
+
+                if (state === 'output-available') {
+                  const { output } = toolPart;
+
+                  if ('error' in output) {
+                    return (
+                      <div
+                        key={toolCallId}
+                        className="text-red-500 p-2 border rounded"
+                      >
+                        Error: {String(output.error)}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={toolCallId}>
+                      <CostCalculator />
                     </div>
                   );
                 }

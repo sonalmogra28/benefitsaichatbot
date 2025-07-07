@@ -22,9 +22,11 @@ import { generateTitleFromUserMessage } from '../../actions';
 import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
-import { getWeather } from '@/lib/ai/tools/get-weather';
-import { comparePlans } from '@/lib/ai/tools/compare-plans';
-import { calculateSavings } from '@/lib/ai/tools/calculate-savings';
+// import { getWeather } from '@/lib/ai/tools/get-weather'; // Removed - not needed for benefits
+import { comparePlans } from '@/lib/ai/tools/compare-benefits-plans';
+import { calculateBenefitsCost } from '@/lib/ai/tools/calculate-benefits-cost';
+import { showBenefitsDashboard } from '@/lib/ai/tools/show-benefits-dashboard';
+import { showCostCalculator } from '@/lib/ai/tools/show-cost-calculator';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -162,24 +164,26 @@ export async function POST(request: Request) {
             selectedChatModel === 'chat-model-reasoning'
               ? []
               : [
-                  'getWeather',
+                  'comparePlans',
+                  'calculateBenefitsCost',
+                  'showBenefitsDashboard',
+                  'showCostCalculator',
                   'createDocument',
                   'updateDocument',
                   'requestSuggestions',
-                  'comparePlans',
-                  'calculateSavings',
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           tools: {
-            getWeather,
+            comparePlans,
+            calculateBenefitsCost,
+            showBenefitsDashboard,
+            showCostCalculator,
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({
               session,
               dataStream,
             }),
-            comparePlans,
-            calculateSavings,
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,

@@ -45,7 +45,7 @@ export const calculateSavings = tool({
     };
 
     switch (calculationType) {
-      case 'hsa':
+      case 'hsa': {
         const currentHSAContribution = (currentSituation.monthlyContribution || 0) * 12;
         const proposedHSAContribution = (proposedSituation.monthlyContribution || 0) * 12;
         const contributionIncrease = proposedHSAContribution - currentHSAContribution;
@@ -71,12 +71,13 @@ export const calculateSavings = tool({
             { item: 'Additional HSA Contribution', amount: contributionIncrease },
             { item: 'Federal Tax Savings', amount: Math.round(taxSavings) },
             { item: 'Payroll Tax Savings', amount: Math.round(payrollTaxSavings) },
-            { item: 'Investment Growth (over ' + timeframe + ')', amount: Math.round(futureValue - contributionIncrease) },
+            { item: `Investment Growth (over ${timeframe})`, amount: Math.round(futureValue - contributionIncrease) },
           ],
         };
         break;
+      }
 
-      case 'planChange':
+      case 'planChange': {
         const currentPremium = (currentSituation.monthlyPremium || 0) * 12;
         const proposedPremium = (proposedSituation.monthlyPremium || 0) * 12;
         const premiumDifference = currentPremium - proposedPremium;
@@ -102,8 +103,9 @@ export const calculateSavings = tool({
           ],
         };
         break;
+      }
 
-      case 'retirement':
+      case 'retirement': {
         const currentRetirementContribution = (currentSituation.monthlyContribution || 0) * 12;
         const proposedRetirementContribution = (proposedSituation.monthlyContribution || 0) * 12;
         const retirementIncrease = proposedRetirementContribution - currentRetirementContribution;
@@ -131,12 +133,13 @@ export const calculateSavings = tool({
             { item: 'Additional Contribution', amount: Math.round(retirementIncrease) },
             { item: 'Tax Savings', amount: Math.round(retirementTaxSavings) },
             { item: 'Employer Match', amount: Math.round(employerMatch) },
-            { item: 'Investment Growth (over ' + timeframe + ')', amount: Math.round(retirementFutureValue - totalContributions) },
+            { item: `Investment Growth (over ${timeframe})`, amount: Math.round(retirementFutureValue - totalContributions) },
           ],
         };
         break;
+      }
 
-      case 'fsa':
+      case 'fsa': {
         const currentFSAContribution = (currentSituation.monthlyContribution || 0) * 12;
         const proposedFSAContribution = (proposedSituation.monthlyContribution || 0) * 12;
         const fsaIncrease = proposedFSAContribution - currentFSAContribution;
@@ -162,6 +165,7 @@ export const calculateSavings = tool({
           ],
         };
         break;
+      }
     }
 
     return {

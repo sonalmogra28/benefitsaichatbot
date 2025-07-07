@@ -10,6 +10,7 @@ import { fetcher, fetchWithErrorHandlers, generateUUID } from '@/lib/utils';
 import { Artifact } from './artifact';
 import { MultimodalInput } from './multimodal-input';
 import { Messages } from './messages';
+import { BenefitsQuickActions } from './benefits-quick-actions';
 import type { VisibilityType } from './visibility-selector';
 import { useArtifactSelector } from '@/hooks/use-artifact';
 import { unstable_serialize } from 'swr/infinite';
@@ -148,7 +149,26 @@ export function Chat({
           isArtifactVisible={isArtifactVisible}
         />
 
-        <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
+        {/* Show quick actions only when there are no messages or just initial greeting */}
+        {!isReadonly && messages.length <= 1 && (
+          <div className="mx-auto px-4 w-full md:max-w-3xl">
+            <BenefitsQuickActions 
+              onActionClick={(prompt) => {
+                setInput(prompt);
+                // Auto-send the message
+                setTimeout(() => {
+                  const form = document.querySelector('form[data-chat-form]') as HTMLFormElement;
+                  if (form) {
+                    form.requestSubmit();
+                  }
+                }, 100);
+              }}
+              isVisible={true}
+            />
+          </div>
+        )}
+
+        <form data-chat-form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
           {!isReadonly && (
             <MultimodalInput
               chatId={id}
