@@ -310,7 +310,8 @@ const PurePreviewMessage = ({
               }
 
               if (type === 'tool-comparePlans') {
-                const { toolCallId, state } = part;
+                const toolPart = part as any;
+                const { toolCallId, state } = toolPart;
 
                 if (state === 'input-available') {
                   return (
@@ -321,7 +322,7 @@ const PurePreviewMessage = ({
                 }
 
                 if (state === 'output-available') {
-                  const { output } = part;
+                  const { output } = toolPart;
 
                   if ('error' in output) {
                     return (
@@ -343,7 +344,8 @@ const PurePreviewMessage = ({
               }
 
               if (type === 'tool-calculateSavings') {
-                const { toolCallId, state } = part;
+                const toolPart = part as any;
+                const { toolCallId, state } = toolPart;
 
                 if (state === 'input-available') {
                   return (
@@ -354,7 +356,7 @@ const PurePreviewMessage = ({
                 }
 
                 if (state === 'output-available') {
-                  const { output } = part;
+                  const { output } = toolPart;
 
                   if ('error' in output) {
                     return (

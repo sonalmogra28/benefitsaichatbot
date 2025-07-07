@@ -3,6 +3,8 @@ import type { getWeather } from './ai/tools/get-weather';
 import type { createDocument } from './ai/tools/create-document';
 import type { updateDocument } from './ai/tools/update-document';
 import type { requestSuggestions } from './ai/tools/request-suggestions';
+import type { comparePlans } from './ai/tools/compare-plans';
+import type { calculateSavings } from './ai/tools/calculate-savings';
 import type { InferUITool, UIMessage } from 'ai';
 
 import type { ArtifactKind } from '@/components/artifact';
@@ -22,12 +24,16 @@ type updateDocumentTool = InferUITool<ReturnType<typeof updateDocument>>;
 type requestSuggestionsTool = InferUITool<
   ReturnType<typeof requestSuggestions>
 >;
+type comparePlansTool = InferUITool<typeof comparePlans>;
+type calculateSavingsTool = InferUITool<typeof calculateSavings>;
 
 export type ChatTools = {
   getWeather: weatherTool;
   createDocument: createDocumentTool;
   updateDocument: updateDocumentTool;
   requestSuggestions: requestSuggestionsTool;
+  comparePlans: comparePlansTool;
+  calculateSavings: calculateSavingsTool;
 };
 
 export type CustomUIDataTypes = {
