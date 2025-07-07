@@ -121,7 +121,7 @@ function PlanCard({ plan, index, isHighlighted, onSelect }: {
                   transition={{ delay: 0.5, type: 'spring', stiffness: 200 }}
                 >
                   <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                    <Star className="w-3 h-3 mr-1" />
+                    <Star className="size-3 mr-1" />
                     Recommended
                   </Badge>
                 </motion.div>
@@ -147,7 +147,7 @@ function PlanCard({ plan, index, isHighlighted, onSelect }: {
           {/* Monthly Premium */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-green-600" />
+              <DollarSign className="size-4 text-green-600" />
               <span className="text-sm font-medium">Monthly Premium</span>
             </div>
             <div className="text-lg font-bold text-green-600">
@@ -158,7 +158,7 @@ function PlanCard({ plan, index, isHighlighted, onSelect }: {
           {/* Annual Cost Estimate */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-blue-600" />
+              <TrendingUp className="size-4 text-blue-600" />
               <span className="text-sm font-medium">Est. Annual Cost</span>
             </div>
             <div className="text-lg font-bold text-blue-600">
@@ -228,7 +228,7 @@ function PlanCard({ plan, index, isHighlighted, onSelect }: {
           {/* Value Score */}
           <div className="flex items-center justify-between pt-2 border-t">
             <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-purple-600" />
+              <Shield className="size-4 text-purple-600" />
               <span className="text-sm font-medium">Value Score</span>
             </div>
             <div className="flex items-center gap-2">
@@ -294,7 +294,7 @@ export function PlanComparison({ data }: { data: PlanComparisonData }) {
                     <AnimatedNumber value={data.summary.lowestPremium} prefix="$" /> - <AnimatedNumber value={data.summary.highestPremium} prefix="$" />
                   </div>
                 </div>
-                <DollarSign className="w-8 h-8 text-green-600" />
+                <DollarSign className="size-8 text-green-600" />
               </div>
             </CardContent>
           </Card>
@@ -314,7 +314,7 @@ export function PlanComparison({ data }: { data: PlanComparisonData }) {
                     <AnimatedNumber value={data.summary.potentialSavings} prefix="$" />
                   </div>
                 </div>
-                <TrendingDown className="w-8 h-8 text-green-600" />
+                <TrendingDown className="size-8 text-green-600" />
               </div>
             </CardContent>
           </Card>
@@ -334,7 +334,7 @@ export function PlanComparison({ data }: { data: PlanComparisonData }) {
                     <AnimatedNumber value={data.summary.lowestDeductible} prefix="$" /> - <AnimatedNumber value={data.summary.highestDeductible} prefix="$" />
                   </div>
                 </div>
-                <Shield className="w-8 h-8 text-blue-600" />
+                <Shield className="size-8 text-blue-600" />
               </div>
             </CardContent>
           </Card>
@@ -365,7 +365,7 @@ export function PlanComparison({ data }: { data: PlanComparisonData }) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+                <CheckCircle className="size-5 text-green-600" />
                 Recommendations
               </CardTitle>
             </CardHeader>
@@ -379,7 +379,7 @@ export function PlanComparison({ data }: { data: PlanComparisonData }) {
                     transition={{ delay: 0.9 + index * 0.1 }}
                     className="flex items-start gap-3 p-3 rounded-lg bg-green-50 border border-green-200"
                   >
-                    <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-2" />
+                    <div className="shrink-0 size-2 bg-green-500 rounded-full mt-2" />
                     <div className="flex-1">
                       <div className="font-semibold text-green-800">{rec.planName}</div>
                       <div className="text-sm text-green-700">{rec.reason}</div>
