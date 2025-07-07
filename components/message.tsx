@@ -9,6 +9,7 @@ import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
 import { Weather } from './weather';
+import { PlanComparison } from './plan-comparison';
 import equal from 'fast-deep-equal';
 import { cn, sanitizeText } from '@/lib/utils';
 import { Button } from './ui/button';
@@ -303,6 +304,113 @@ const PurePreviewMessage = ({
                         result={output}
                         isReadonly={isReadonly}
                       />
+                    </div>
+                  );
+                }
+              }
+
+              if (type === 'tool-comparePlans') {
+                const { toolCallId, state } = part;
+
+                if (state === 'input-available') {
+                  return (
+                    <div key={toolCallId} className="skeleton">
+                      <div className="w-full h-96 bg-gray-100 animate-pulse rounded-lg" />
+                    </div>
+                  );
+                }
+
+                if (state === 'output-available') {
+                  const { output } = part;
+
+                  if ('error' in output) {
+                    return (
+                      <div
+                        key={toolCallId}
+                        className="text-red-500 p-2 border rounded"
+                      >
+                        Error: {String(output.error)}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={toolCallId}>
+                      <PlanComparison data={output} />
+                    </div>
+                  );
+                }
+              }
+
+              if (type === 'tool-calculateSavings') {
+                const { toolCallId, state } = part;
+
+                if (state === 'input-available') {
+                  return (
+                    <div key={toolCallId} className="skeleton">
+                      <div className="w-full h-64 bg-gray-100 animate-pulse rounded-lg" />
+                    </div>
+                  );
+                }
+
+                if (state === 'output-available') {
+                  const { output } = part;
+
+                  if ('error' in output) {
+                    return (
+                      <div
+                        key={toolCallId}
+                        className="text-red-500 p-2 border rounded"
+                      >
+                        Error: {String(output.error)}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={toolCallId}>
+                      <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+                        <h3 className="text-lg font-semibold mb-3 text-green-800">
+                          💰 Savings Calculator Results
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-white p-3 rounded-lg">
+                            <div className="text-sm text-gray-600">Annual Savings</div>
+                            <div className="text-xl font-bold text-green-600">
+                              ${output.annualSavings.toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="bg-white p-3 rounded-lg">
+                            <div className="text-sm text-gray-600">Total Savings ({output.timeframe})</div>
+                            <div className="text-xl font-bold text-blue-600">
+                              ${output.totalSavings.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                        {output.breakdown && output.breakdown.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="font-medium mb-2">Breakdown:</h4>
+                            <div className="space-y-1">
+                              {output.breakdown.map((item: any, index: number) => (
+                                <div key={index} className="flex justify-between text-sm">
+                                  <span>{item.item}</span>
+                                  <span className="font-medium">${item.amount.toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {output.recommendations && output.recommendations.length > 0 && (
+                          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                            <h4 className="font-medium mb-2">Recommendations:</h4>
+                            {output.recommendations.map((rec: any, index: number) => (
+                              <div key={index} className="text-sm">
+                                <span className="font-medium">{rec.action}</span>: {rec.impact}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 }
