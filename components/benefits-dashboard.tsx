@@ -21,6 +21,10 @@ interface BenefitsSummary {
     date: string;
     daysRemaining: number;
   }>;
+  savingsOpportunity?: {
+    amount: number;
+    recommendation: string;
+  };
 }
 
 export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
@@ -139,6 +143,31 @@ export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
                   </div>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Savings Opportunity */}
+      {summary.savingsOpportunity && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <TrendingUp className="size-6 text-green-600" />
+                <div>
+                  <div className="font-medium text-green-800">
+                    Potential Savings: ${summary.savingsOpportunity.amount}/year
+                  </div>
+                  <div className="text-sm text-green-700">
+                    {summary.savingsOpportunity.recommendation}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

@@ -5,6 +5,7 @@ import { memo, useState } from 'react';
 import type { Vote } from '@/lib/db/schema';
 import { DocumentToolCall, DocumentToolResult } from './document';
 import { PencilEditIcon, SparklesIcon } from './icons';
+import { Shield } from 'lucide-react';
 import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
@@ -318,8 +319,14 @@ const PurePreviewMessage = ({
 
                 if (state === 'input-available') {
                   return (
-                    <div key={toolCallId} className="skeleton">
-                      <div className="w-full h-96 bg-gray-100 animate-pulse rounded-lg" />
+                    <div key={toolCallId} className="flex items-center gap-2 text-muted-foreground p-4">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                      >
+                        <Shield className="size-4" />
+                      </motion.div>
+                      <span className="text-sm">Comparing insurance plans...</span>
                     </div>
                   );
                 }
@@ -352,8 +359,14 @@ const PurePreviewMessage = ({
 
                 if (state === 'input-available') {
                   return (
-                    <div key={toolCallId} className="skeleton">
-                      <div className="w-full h-64 bg-gray-100 animate-pulse rounded-lg" />
+                    <div key={toolCallId} className="flex items-center gap-2 text-muted-foreground p-4">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                      >
+                        <Shield className="size-4" />
+                      </motion.div>
+                      <span className="text-sm">Calculating benefits costs...</span>
                     </div>
                   );
                 }
@@ -393,8 +406,14 @@ const PurePreviewMessage = ({
 
                 if (state === 'input-available') {
                   return (
-                    <div key={toolCallId} className="skeleton">
-                      <div className="w-full h-64 bg-gray-100 animate-pulse rounded-lg" />
+                    <div key={toolCallId} className="flex items-center gap-2 text-muted-foreground p-4">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                      >
+                        <Shield className="size-4" />
+                      </motion.div>
+                      <span className="text-sm">Loading your benefits dashboard...</span>
                     </div>
                   );
                 }
@@ -427,8 +446,14 @@ const PurePreviewMessage = ({
 
                 if (state === 'input-available') {
                   return (
-                    <div key={toolCallId} className="skeleton">
-                      <div className="w-full h-64 bg-gray-100 animate-pulse rounded-lg" />
+                    <div key={toolCallId} className="flex items-center gap-2 text-muted-foreground p-4">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                      >
+                        <Shield className="size-4" />
+                      </motion.div>
+                      <span className="text-sm">Loading cost calculator...</span>
                     </div>
                   );
                 }
