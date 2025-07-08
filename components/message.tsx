@@ -12,6 +12,7 @@ import { Weather } from './weather';
 import { PlanComparison } from './plan-comparison';
 import { BenefitsDashboard } from './benefits-dashboard';
 import { CostCalculator } from './cost-calculator';
+import { Card } from '@/components/ui/card';
 import equal from 'fast-deep-equal';
 import { cn, sanitizeText } from '@/lib/utils';
 import { Button } from './ui/button';
@@ -373,38 +374,14 @@ const PurePreviewMessage = ({
 
                   return (
                     <div key={toolCallId}>
-                      <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
-                        <h3 className="text-lg font-semibold mb-3 text-green-800">
-                          💰 Benefits Cost Estimate
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-white p-3 rounded-lg">
-                            <div className="text-sm text-gray-600">Estimated Annual Cost</div>
-                            <div className="text-xl font-bold text-green-600">
-                              ${output.estimatedAnnualCost.toLocaleString()}
-                            </div>
-                          </div>
-                          <div className="bg-white p-3 rounded-lg">
-                            <div className="text-sm text-gray-600">Total with Premiums</div>
-                            <div className="text-xl font-bold text-blue-600">
-                              ${output.breakdown.total.toLocaleString()}
-                            </div>
-                          </div>
+                      <Card className="p-4">
+                        <h3 className="font-semibold mb-2">Benefits Cost Analysis</h3>
+                        <div className="space-y-2">
+                          <div>Annual Premium: ${output.annualPremium?.toLocaleString() || output.breakdown?.premiums?.toLocaleString() || 0}</div>
+                          <div>Estimated Out-of-Pocket: ${output.estimatedOutOfPocket?.toLocaleString() || output.breakdown?.estimatedOutOfPocket?.toLocaleString() || 0}</div>
+                          <div className="font-bold">Total Annual Cost: ${output.totalAnnualCost?.toLocaleString() || output.estimatedAnnualCost?.toLocaleString() || output.breakdown?.total?.toLocaleString() || 0}</div>
                         </div>
-                        <div className="mt-4">
-                          <h4 className="font-medium mb-2">Cost Breakdown:</h4>
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                              <span>Annual Premiums</span>
-                              <span className="font-medium">${output.breakdown.premiums.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span>Estimated Out-of-Pocket</span>
-                              <span className="font-medium">${output.breakdown.estimatedOutOfPocket.toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      </Card>
                     </div>
                   );
                 }

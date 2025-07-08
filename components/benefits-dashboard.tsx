@@ -1,22 +1,22 @@
 import { motion } from 'framer-motion';
-import { Shield, Heart, Eye, Briefcase, PiggyBank, Users } from 'lucide-react';
+import { Shield, Heart, Eye, Briefcase, PiggyBank, Users, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 
 interface BenefitsSummary {
-  healthPlan: {
+  healthPlan?: {
     name: string;
     deductibleUsed: number;
     deductibleTotal: number;
     outOfPocketUsed: number;
     outOfPocketMax: number;
   };
-  coverageTypes: Array<{
+  coverageTypes?: Array<{
     type: string;
     status: 'active' | 'not-enrolled';
     monthlyPremium: number;
   }>;
-  upcomingDeadlines: Array<{
+  upcomingDeadlines?: Array<{
     event: string;
     date: string;
     daysRemaining: number;
@@ -31,13 +31,22 @@ export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
       'Vision': <Eye className="size-5" />,
       'Life': <Users className="size-5" />,
       '401k': <PiggyBank className="size-5" />,
-      'Disability': <Briefcase className="size-5" />
+      'Disability': <Briefcase className="size-5" />,
+      'HSA': <TrendingUp className="size-5" />
     };
     return icons[type] || <Shield className="size-5" />;
   };
 
-  const deductibleProgress = (summary.healthPlan.deductibleUsed / summary.healthPlan.deductibleTotal) * 100;
-  const oopProgress = (summary.healthPlan.outOfPocketUsed / summary.healthPlan.outOfPocketMax) * 100;
+  const healthPlan = summary.healthPlan || {
+    name: "PPO Plan",
+    deductibleUsed: 500,
+    deductibleTotal: 1500,
+    outOfPocketUsed: 1200,
+    outOfPocketMax: 5000
+  };
+
+  const deductibleProgress = (healthPlan.deductibleUsed / healthPlan.deductibleTotal) * 100;
+  const oopProgress = (healthPlan.outOfPocketUsed / healthPlan.outOfPocketMax) * 100;
 
   return (
     <div className="space-y-4 w-full">
@@ -51,14 +60,14 @@ export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Heart className="size-5 text-red-500" />
-              {summary.healthPlan.name}
+              {healthPlan.name}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <div className="flex justify-between text-sm mb-2">
                 <span>Deductible</span>
-                <span>${summary.healthPlan.deductibleUsed} / ${summary.healthPlan.deductibleTotal}</span>
+                <span>${healthPlan.deductibleUsed} / ${healthPlan.deductibleTotal}</span>
               </div>
               <Progress value={deductibleProgress} className="h-2" />
             </div>
@@ -66,7 +75,7 @@ export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
             <div>
               <div className="flex justify-between text-sm mb-2">
                 <span>Out-of-Pocket Maximum</span>
-                <span>${summary.healthPlan.outOfPocketUsed} / ${summary.healthPlan.outOfPocketMax}</span>
+                <span>${healthPlan.outOfPocketUsed} / ${healthPlan.outOfPocketMax}</span>
               </div>
               <Progress value={oopProgress} className="h-2" />
             </div>
@@ -75,8 +84,9 @@ export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
       </motion.div>
 
       {/* Coverage Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {summary.coverageTypes.map((coverage, index) => (
+      {summary.coverageTypes && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {summary.coverageTypes.map((coverage, index) => (
           <motion.div
             key={coverage.type}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -102,11 +112,12 @@ export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
               </CardContent>
             </Card>
           </motion.div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Upcoming Deadlines */}
-      {summary.upcomingDeadlines.length > 0 && (
+      {summary.upcomingDeadlines && summary.upcomingDeadlines.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
