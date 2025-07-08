@@ -9,7 +9,8 @@
       "Bash(grep:*)",
       "Bash(pnpm add:*)",
       "Bash(pnpm run lint:*)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(pnpm lint:*)"
     ],
     "deny": []
   }
