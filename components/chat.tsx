@@ -23,6 +23,7 @@ import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import type { Attachment, ChatMessage } from '@/lib/types';
 import { useDataStream } from './data-stream-provider';
+import { motion } from 'framer-motion';
 
 export function Chat({
   id,
@@ -152,6 +153,15 @@ export function Chat({
         {/* Show quick actions only when there are no messages or just initial greeting */}
         {!isReadonly && messages.length <= 1 && (
           <div className="mx-auto px-4 w-full md:max-w-3xl">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-8"
+            >
+              <h1 className="text-3xl font-bold mb-2">Welcome to Benefits AI Assistant!</h1>
+              <p className="text-muted-foreground">I&apos;m here to help you understand and choose your employee benefits.</p>
+            </motion.div>
             <BenefitsQuickActions 
               onActionClick={(prompt) => {
                 setInput(prompt);

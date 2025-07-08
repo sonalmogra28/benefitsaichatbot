@@ -12,7 +12,8 @@
       "Bash(npx next:*)",
       "Bash(pnpm lint:*)",
       "Bash(pnpm remove:*)",
-      "Bash(pnpm dlx:*)"
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm run:*)"
     ],
     "deny": []
   }

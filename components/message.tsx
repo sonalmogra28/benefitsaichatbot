@@ -5,7 +5,19 @@ import { memo, useState } from 'react';
 import type { Vote } from '@/lib/db/schema';
 import { DocumentToolCall, DocumentToolResult } from './document';
 import { PencilEditIcon, SparklesIcon } from './icons';
-import { Shield } from 'lucide-react';
+
+// Reusable loading component
+const ToolLoading = ({ message }: { message: string }) => (
+  <div className="flex items-center gap-3 text-muted-foreground p-4 bg-muted/30 rounded-lg">
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+      className="size-8 border-3 border-primary border-t-transparent rounded-full"
+    />
+    <span className="text-sm font-medium">{message}</span>
+  </div>
+);
+
 import { Markdown } from './markdown';
 import { MessageActions } from './message-actions';
 import { PreviewAttachment } from './preview-attachment';
@@ -319,14 +331,8 @@ const PurePreviewMessage = ({
 
                 if (state === 'input-available') {
                   return (
-                    <div key={toolCallId} className="flex items-center gap-2 text-muted-foreground p-4">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                      >
-                        <Shield className="size-4" />
-                      </motion.div>
-                      <span className="text-sm">Comparing insurance plans...</span>
+                    <div key={toolCallId}>
+                      <ToolLoading message="Comparing insurance plans..." />
                     </div>
                   );
                 }
@@ -359,14 +365,8 @@ const PurePreviewMessage = ({
 
                 if (state === 'input-available') {
                   return (
-                    <div key={toolCallId} className="flex items-center gap-2 text-muted-foreground p-4">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                      >
-                        <Shield className="size-4" />
-                      </motion.div>
-                      <span className="text-sm">Calculating benefits costs...</span>
+                    <div key={toolCallId}>
+                      <ToolLoading message="Calculating benefits costs..." />
                     </div>
                   );
                 }
@@ -406,14 +406,8 @@ const PurePreviewMessage = ({
 
                 if (state === 'input-available') {
                   return (
-                    <div key={toolCallId} className="flex items-center gap-2 text-muted-foreground p-4">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                      >
-                        <Shield className="size-4" />
-                      </motion.div>
-                      <span className="text-sm">Loading your benefits dashboard...</span>
+                    <div key={toolCallId}>
+                      <ToolLoading message="Loading your benefits dashboard..." />
                     </div>
                   );
                 }
@@ -446,14 +440,8 @@ const PurePreviewMessage = ({
 
                 if (state === 'input-available') {
                   return (
-                    <div key={toolCallId} className="flex items-center gap-2 text-muted-foreground p-4">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                      >
-                        <Shield className="size-4" />
-                      </motion.div>
-                      <span className="text-sm">Loading cost calculator...</span>
+                    <div key={toolCallId}>
+                      <ToolLoading message="Loading cost calculator..." />
                     </div>
                   );
                 }
@@ -474,7 +462,7 @@ const PurePreviewMessage = ({
 
                   return (
                     <div key={toolCallId}>
-                      <CostCalculator />
+                      <CostCalculator plans={output.plans} assumptions={output.assumptions} />
                     </div>
                   );
                 }

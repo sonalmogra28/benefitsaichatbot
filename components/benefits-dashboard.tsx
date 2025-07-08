@@ -1,20 +1,25 @@
 import { motion } from 'framer-motion';
-import { Shield, Heart, Eye, Briefcase, PiggyBank, Users, TrendingUp } from 'lucide-react';
+import { Shield, Heart, Eye, Users, PiggyBank, TrendingUp, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 
 interface BenefitsSummary {
   healthPlan?: {
     name: string;
+    type: string;
     deductibleUsed: number;
     deductibleTotal: number;
     outOfPocketUsed: number;
     outOfPocketMax: number;
+    premiumPaid?: number;
+    premiumTotal?: number;
   };
   coverageTypes?: Array<{
     type: string;
     status: 'active' | 'not-enrolled';
     monthlyPremium: number;
+    coverageLevel?: string;
   }>;
   upcomingDeadlines?: Array<{
     event: string;
@@ -35,135 +40,145 @@ export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
       'Vision': <Eye className="size-5" />,
       'Life': <Users className="size-5" />,
       '401k': <PiggyBank className="size-5" />,
-      'Disability': <Briefcase className="size-5" />,
       'HSA': <TrendingUp className="size-5" />
     };
     return icons[type] || <Shield className="size-5" />;
   };
 
   const healthPlan = summary.healthPlan || {
-    name: "PPO Plan",
-    deductibleUsed: 500,
-    deductibleTotal: 1500,
-    outOfPocketUsed: 1200,
-    outOfPocketMax: 5000
+    name: "Select a Plan",
+    type: "N/A",
+    deductibleUsed: 0,
+    deductibleTotal: 1,
+    outOfPocketUsed: 0,
+    outOfPocketMax: 1,
+    premiumPaid: 0,
+    premiumTotal: 1
   };
 
   const deductibleProgress = (healthPlan.deductibleUsed / healthPlan.deductibleTotal) * 100;
   const oopProgress = (healthPlan.outOfPocketUsed / healthPlan.outOfPocketMax) * 100;
 
   return (
-    <div className="space-y-4 w-full">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full space-y-4"
+    >
       {/* Current Plan Overview */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
               <Heart className="size-5 text-red-500" />
               {healthPlan.name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Deductible</span>
-                <span>${healthPlan.deductibleUsed} / ${healthPlan.deductibleTotal}</span>
-              </div>
-              <Progress value={deductibleProgress} className="h-2" />
+            </span>
+            <Badge variant="secondary">{healthPlan.type}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <div className="flex justify-between text-sm mb-2">
+              <span>Deductible Progress</span>
+              <span className="font-medium">${healthPlan.deductibleUsed.toLocaleString()} / ${healthPlan.deductibleTotal.toLocaleString()}</span>
             </div>
-            
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Out-of-Pocket Maximum</span>
-                <span>${healthPlan.outOfPocketUsed} / ${healthPlan.outOfPocketMax}</span>
-              </div>
-              <Progress value={oopProgress} className="h-2" />
+            <Progress value={deductibleProgress} className="h-2" />
+          </div>
+          
+          <div>
+            <div className="flex justify-between text-sm mb-2">
+              <span>Out-of-Pocket Maximum</span>
+              <span className="font-medium">${healthPlan.outOfPocketUsed.toLocaleString()} / ${healthPlan.outOfPocketMax.toLocaleString()}</span>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+            <Progress value={oopProgress} className="h-2" />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Coverage Grid */}
       {summary.coverageTypes && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {summary.coverageTypes.map((coverage, index) => (
-          <motion.div
-            key={coverage.type}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card className={`${coverage.status === 'active' ? 'border-green-500' : 'border-gray-300'}`}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {getCoverageIcon(coverage.type)}
-                    <span className="font-medium">{coverage.type}</span>
+            <motion.div
+              key={coverage.type}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Card className={`${coverage.status === 'active' ? 'border-green-500 bg-green-50/50' : 'border-gray-300'}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {getCoverageIcon(coverage.type)}
+                      <span className="font-medium">{coverage.type}</span>
+                    </div>
+                    {coverage.status === 'active' && (
+                      <Badge variant="default" className="bg-green-500 text-xs">Active</Badge>
+                    )}
                   </div>
                   {coverage.status === 'active' && (
-                    <div className="text-xs text-green-600 font-medium">Active</div>
+                    <div className="text-sm text-muted-foreground">
+                      ${coverage.monthlyPremium}/mo
+                      {coverage.coverageLevel && (
+                        <div className="text-xs mt-1">{coverage.coverageLevel}</div>
+                      )}
+                    </div>
                   )}
-                </div>
-                {coverage.status === 'active' && (
-                  <div className="text-sm text-muted-foreground mt-1">
-                    ${coverage.monthlyPremium}/mo
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
         </div>
       )}
 
       {/* Upcoming Deadlines */}
       {summary.upcomingDeadlines && summary.upcomingDeadlines.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Upcoming Deadlines</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {summary.upcomingDeadlines.map((deadline, idx) => (
-                <div key={`${deadline.event}-${idx}`} className="flex justify-between items-center py-2 border-b last:border-0">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Calendar className="size-5" />
+              Important Dates
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {summary.upcomingDeadlines.map((deadline) => (
+                <div key={deadline.event} className="flex justify-between items-center py-2 border-b last:border-0">
                   <div>
                     <div className="font-medium">{deadline.event}</div>
                     <div className="text-sm text-muted-foreground">{deadline.date}</div>
                   </div>
-                  <div className={`text-sm font-medium ${deadline.daysRemaining <= 7 ? 'text-red-500' : 'text-green-500'}`}>
+                  <Badge 
+                    variant={deadline.daysRemaining <= 7 ? "destructive" : "secondary"}
+                    className="ml-2"
+                  >
                     {deadline.daysRemaining} days
-                  </div>
+                  </Badge>
                 </div>
               ))}
-            </CardContent>
-          </Card>
-        </motion.div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Savings Opportunity */}
       {summary.savingsOpportunity && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
         >
-          <Card className="border-green-200 bg-green-50">
+          <Card className="border-blue-500 bg-blue-50/50">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <TrendingUp className="size-6 text-green-600" />
-                <div>
-                  <div className="font-medium text-green-800">
-                    Potential Savings: ${summary.savingsOpportunity.amount}/year
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <TrendingUp className="size-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-blue-900">
+                    Potential Savings: ${summary.savingsOpportunity.amount.toLocaleString()}/year
                   </div>
-                  <div className="text-sm text-green-700">
+                  <div className="text-sm text-blue-700 mt-1">
                     {summary.savingsOpportunity.recommendation}
                   </div>
                 </div>
@@ -172,6 +187,6 @@ export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
           </Card>
         </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

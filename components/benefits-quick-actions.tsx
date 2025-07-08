@@ -80,19 +80,31 @@ export function BenefitsQuickActions({ onActionClick, isVisible = true }: Benefi
             key={action.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            whileHover={{ scale: 1.05 }}
+            transition={{ 
+              delay: index * 0.05,
+              type: "spring",
+              stiffness: 100
+            }}
+            whileHover={{ 
+              scale: 1.05,
+              transition: { duration: 0.2 }
+            }}
             whileTap={{ scale: 0.95 }}
           >
             <Button
               variant="outline"
-              className={`w-full h-auto ${action.color} transition-all duration-200 shadow-sm hover:shadow-md`}
+              className={`w-full h-auto ${action.color} transition-all duration-200 shadow-sm hover:shadow-lg border-2`}
               onClick={() => onActionClick(action.prompt)}
             >
-              <div className="flex flex-col items-center gap-2 p-2">
-                {action.icon}
-                <span className="font-medium">{action.label}</span>
-                <span className="text-xs opacity-70 hidden md:block">{action.description}</span>
+              <div className="flex flex-col items-center gap-2 py-2 px-4">
+                <motion.div
+                  whileHover={{ rotate: [0, -10, 10, -10, 0] }}
+                  transition={{ duration: 0.5 }}
+                >
+                  {action.icon}
+                </motion.div>
+                <span className="font-semibold text-sm">{action.label}</span>
+                <span className="text-xs opacity-70">{action.description}</span>
               </div>
             </Button>
           </motion.div>
