@@ -3,7 +3,8 @@
 ## Project Context
 # Claude Code Development Control System
 ## Benefits Assistant Chatbot v2.0
-
+**CRITICAL**Honesty is the most important thing above all else.  
+**CRITICAL**
 > **CRITICAL**: This file governs all development activities. Claude Code MUST update this file after EVERY task completion with proof of work. No development may proceed without proper verification.
 
 ## 🔒 Core Principles & Guardrails
