@@ -2,22 +2,38 @@
  * Central error handler
  * TODO: Add proper error tracking service (e.g., Sentry) when available
  */
-export function handleError(error: unknown, context: string) {
-  if (process.env.NODE_ENV !== 'test') {
-    console.error(`[${context}]`, error);
-  }
-  
-  // Log to structured logging in production
-  if (process.env.NODE_ENV === 'production') {
-    console.error(JSON.stringify({
+
+export function handleError(error: unknown): {
+  message: string;
+  statusCode: number;
+} {
+  console.error('Error occurred:', error);
+
+  // Basic error handling without Sentry for now
+  if (error instanceof Error) {
+    // Log to console instead of Sentry
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
       timestamp: new Date().toISOString(),
-      context,
-      error: error instanceof Error ? {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      } : String(error),
-      level: 'error'
-    }));
+    });
+
+    return {
+      message: error.message || 'An unexpected error occurred',
+      statusCode: 500,
+    };
   }
+
+  return {
+    message: 'An unexpected error occurred',
+    statusCode: 500,
+  };
+}
+
+export function logError(error: unknown, context?: Record<string, any>): void {
+  console.error('Error logged:', {
+    error,
+    context,
+    timestamp: new Date().toISOString(),
+  });
 }
