@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import { guestRegex, isDevelopmentEnvironment } from './lib/constants';
+import { stackServerApp } from './stack';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -13,27 +12,27 @@ export async function middleware(request: NextRequest) {
     return new Response('pong', { status: 200 });
   }
 
-  if (pathname.startsWith('/api/auth')) {
+  // Allow Stack Auth handler routes
+  if (pathname.startsWith('/handler')) {
     return NextResponse.next();
   }
 
-  const token = await getToken({
-    req: request,
-    secret: process.env.AUTH_SECRET,
-    secureCookie: !isDevelopmentEnvironment,
-  });
+  // Check if user is authenticated with Stack Auth
+  const user = await stackServerApp.getUser();
 
-  if (!token) {
+  // Public routes that don't require authentication
+  const publicRoutes = ['/login', '/register', '/api/auth/guest'];
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+
+  if (!user && !isPublicRoute) {
     const redirectUrl = encodeURIComponent(request.url);
-
     return NextResponse.redirect(
-      new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url),
+      new URL(`/login?redirect=${redirectUrl}`, request.url),
     );
   }
 
-  const isGuest = guestRegex.test(token?.email ?? '');
-
-  if (token && !isGuest && ['/login', '/register'].includes(pathname)) {
+  // Redirect authenticated users away from auth pages
+  if (user && ['/login', '/register'].includes(pathname)) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 

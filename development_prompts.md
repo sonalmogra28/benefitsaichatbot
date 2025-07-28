@@ -419,3 +419,80 @@ The [COMPONENT] isn't integrating with [SYSTEM]. Fix properly:
 
 Production fix, no hacks.
 ```
+
+---
+
+## Architecture & Tech Stack Summary
+
+### Current Tech Stack (as of 2025-07-28)
+
+#### Core Framework
+- **Next.js**: 15.3.0-canary.31 (App Router)
+- **React**: 19.0.0-rc (Release Candidate - stability risk)
+- **TypeScript**: 5.6.3
+
+#### AI & LLM
+- **AI SDK**: 5.0.0-beta.6 (Beta - requires type patches)
+- **Google Generative AI**: Gemini 1.5 Pro (primary)
+- **OpenAI**: Configuration ready (not active)
+
+#### Authentication
+- **Stack Auth**: 2.8.22 (multi-tenant ready)
+- ~~NextAuth~~ (removed)
+
+#### Database
+- **PostgreSQL**: Vercel Postgres
+- **Drizzle ORM**: 0.34.0
+- **Multi-tenant Schema**: Implemented but not enforced
+
+#### UI/UX
+- **Tailwind CSS**: 3.4.1
+- **shadcn/ui**: Component library  
+- **Framer Motion**: 11.3.19
+
+### Critical Development Issues
+
+1. **🔴 No Tenant Isolation**
+   - Multi-tenant schema exists but queries don't filter by company
+   - Risk of data leakage between companies
+   - Need middleware for tenant context
+
+2. **🔴 Missing User Onboarding**
+   - No flow to assign users to companies
+   - Stack Auth integrated but not fully utilized
+   - Company creation flow needed
+
+3. **🟠 AI SDK Beta Instability**
+   - Using beta with manual type patches
+   - May break with updates
+   - Consider stable v3.x for production
+
+4. **🟠 Incomplete Features**
+   - Document management scaffolded but unused
+   - Artifacts system completely unused
+   - Knowledge base tables without UI
+
+### Project Structure Overview
+
+```
+Key Directories:
+- app/(auth)/ - Stack Auth integration
+- app/(chat)/ - Main chat interface and APIs
+- components/ - Mix of used and unused components
+- lib/ai/tools/ - AI tool implementations
+- lib/db/ - Database layer (use schema-v2.ts)
+
+Unused/Legacy:
+- /artifacts/ - Entire directory
+- /lib/repositories/ - Old pattern (use /lib/db/repositories/)
+- Components: weather, document-*, artifact-*
+```
+
+### Recommended Development Order
+
+1. **Immediate**: Implement tenant isolation
+2. **Next**: Create onboarding flow
+3. **Then**: Stabilize AI SDK
+4. **Finally**: Remove unused code
+
+Full architecture details in ARCHITECTURE.md

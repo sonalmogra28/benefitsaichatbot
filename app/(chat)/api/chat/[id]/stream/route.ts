@@ -1,4 +1,4 @@
-import { auth } from '@/app/(auth)/auth';
+import { auth } from '@/app/(auth)/stack-auth';
 import {
   getChatById,
   getMessagesByChatId,
@@ -62,9 +62,9 @@ export async function GET(
     return new ChatSDKError('not_found:stream').toResponse();
   }
 
-  const emptyDataStream = createUIMessageStream<ChatMessage>({
+  const emptyDataStream = createUIMessageStream({
     execute: () => {},
-  });
+  }) as any;
 
   const stream = await streamContext.resumableStream(recentStreamId, () =>
     emptyDataStream.pipeThrough(new JsonToSseTransformStream()),
@@ -92,8 +92,8 @@ export async function GET(
       return new Response(emptyDataStream, { status: 200 });
     }
 
-    const restoredStream = createUIMessageStream<ChatMessage>({
-      execute: ({ writer }) => {
+    const restoredStream = createUIMessageStream({
+      execute: ({ writer }: { writer: any }) => {
         writer.write({
           type: 'data-appendMessage',
           data: JSON.stringify(mostRecentMessage),

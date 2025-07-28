@@ -1,7 +1,485 @@
 # claude.md - Benefits AI Demo-First Development
 
 ## Project Context
+# Claude Code Development Control System
+## Benefits Assistant Chatbot v2.0
+**CRITICAL**Honesty is the most important thing above all else.  
+**CRITICAL**
+> **CRITICAL**: This file governs all development activities. Claude Code MUST update this file after EVERY task completion with proof of work. No development may proceed without proper verification.
 
+## 🔒 Core Principles & Guardrails
+
+### 1. NO FAKE CODE PRINCIPLE
+```yaml
+Rule: NEVER generate simulated, mock, or placeholder code unless:
+  - Explicitly requested with "MOCK:" prefix
+  - Marked with /* MOCK DATA - REPLACE BEFORE PRODUCTION */
+  - Tracked in Technical Debt Registry below
+  
+Verification: Every code block must be:
+  - Syntactically valid
+  - Type-safe (no 'any' without TODO)
+  - Connected to real systems
+  - Testable with actual data
+```
+
+### 2. PROOF OF WORK (PoW) REQUIREMENT
+Every completed task MUST provide:
+1. **File Manifest**: List of all files created/modified
+2. **Code Fingerprint**: Key snippets showing implementation
+3. **Test Evidence**: Test results or validation output
+4. **Build Verification**: Successful build logs
+5. **Integration Proof**: Evidence of system integration
+
+### 3. CONTINUOUS VALIDATION FRAMEWORK
+```mermaid
+graph LR
+    A[Start Task] --> B[Read Specification]
+    B --> C[Generate Code]
+    C --> D[Run Validation]
+    D --> E{Valid?}
+    E -->|No| F[Fix & Document Issue]
+    F --> C
+    E -->|Yes| G[Update claude.md]
+    G --> H[Commit Changes]
+    H --> I[Next Task]
+```
+
+## 📋 Task Tracking System
+
+### Current Sprint: [SPRINT_ID]
+### Current Task: [TASK_ID]
+### Last Updated: [TIMESTAMP]
+
+## ✅ Completed Tasks Registry
+
+### Task Template (COPY THIS FOR EACH TASK)
+```markdown
+### Task ID: [TASK_NUMBER] - [TASK_NAME]
+**Completed**: [TIMESTAMP]
+**Duration**: [TIME_SPENT]
+**Confidence**: [HIGH|MEDIUM|LOW]
+
+#### Files Modified/Created:
+- [ ] `path/to/file1.ts` - [Description of changes]
+- [ ] `path/to/file2.tsx` - [Description of changes]
+- [ ] `path/to/file3.sql` - [Description of changes]
+
+#### Code Fingerprint:
+```typescript
+// Key implementation snippet that proves work was done
+// Must be actual code from the files, not simplified
+```
+
+#### Test Evidence:
+```bash
+# Test command and output
+$ pnpm test specific-test.spec.ts
+✓ Test case 1 (23ms)
+✓ Test case 2 (45ms)
+✓ Test case 3 (12ms)
+```
+
+#### Build Verification:
+```bash
+$ pnpm build
+✓ Compiled successfully
+✓ Type checking passed
+✓ No ESLint warnings
+Build completed in 34.2s
+```
+
+#### Integration Points:
+- Connected to: [System/Component]
+- API Endpoint: [If applicable]
+- Database Tables: [If applicable]
+- External Services: [If applicable]
+
+#### Known Issues:
+- [ ] Issue 1: [Description] - Tracked in TECH_DEBT_[ID]
+- [ ] Issue 2: [Description] - Tracked in RISK_[ID]
+```
+
+---
+
+## 🚀 Implementation Verification Gates
+
+### Pre-Development Checklist
+```yaml
+Before ANY code generation:
+  - [ ] Specification reviewed and understood
+  - [ ] Existing code analyzed for integration points
+  - [ ] Dependencies verified as available
+  - [ ] No conflicting changes in progress
+  - [ ] Database backup created (if applicable)
+```
+
+### Post-Development Checklist
+```yaml
+After EVERY task completion:
+  - [ ] All files compile without errors
+  - [ ] Type checking passes (no 'any' without TODO)
+  - [ ] Tests written and passing
+  - [ ] No console.log statements (except for debugging with TODO)
+  - [ ] Error handling implemented
+  - [ ] Loading states implemented
+  - [ ] claude.md updated with PoW
+```
+
+## 💰 Technical Debt Registry
+
+### Debt Template
+```markdown
+### TECH_DEBT_[ID]: [Title]
+**Created**: [DATE]
+**Priority**: [CRITICAL|HIGH|MEDIUM|LOW]
+**Est. Hours**: [NUMBER]
+
+**Description**: 
+[What is the debt and why does it exist]
+
+**Impact**:
+- Performance: [Impact description]
+- Maintainability: [Impact description]
+- Security: [Impact description]
+
+**Resolution Plan**:
+[Specific steps to resolve]
+
+**Files Affected**:
+- `path/to/file1.ts`
+- `path/to/file2.ts`
+```
+
+### Active Technical Debt
+
+#### TECH_DEBT_001: Mock Data in Tools
+**Created**: 2024-01-18
+**Priority**: CRITICAL
+**Est. Hours**: 8
+
+**Description**: 
+AI tools currently return hardcoded data instead of querying database
+
+**Impact**:
+- Performance: None
+- Maintainability: HIGH - Changes require code updates
+- Security: MEDIUM - No data validation
+
+**Resolution Plan**:
+1. Implement repository pattern
+2. Connect tools to repositories
+3. Add data validation
+4. Update tests
+
+**Files Affected**:
+- `lib/ai/tools/compare-benefits-plans.ts`
+- `lib/ai/tools/calculate-benefits-cost.ts`
+- `lib/ai/tools/show-benefits-dashboard.ts`
+
+---
+
+## ⚠️ Risk Registry
+
+### Risk Template
+```markdown
+### RISK_[ID]: [Title]
+**Identified**: [DATE]
+**Probability**: [HIGH|MEDIUM|LOW]
+**Impact**: [CRITICAL|HIGH|MEDIUM|LOW]
+**Status**: [ACTIVE|MITIGATED|ACCEPTED]
+
+**Description**:
+[What could go wrong]
+
+**Mitigation Strategy**:
+[How to prevent or handle]
+
+**Contingency Plan**:
+[What to do if it happens]
+
+**Success Indicators**:
+[How to know if mitigation worked]
+```
+
+### Active Risks
+
+#### RISK_001: Database Migration Data Loss
+**Identified**: 2024-01-18
+**Probability**: LOW
+**Impact**: CRITICAL
+**Status**: ACTIVE
+
+**Description**:
+Multi-tenant migration could corrupt existing data
+
+**Mitigation Strategy**:
+1. Test migrations on copy of production
+2. Implement rollback procedures
+3. Take backups before migration
+
+**Contingency Plan**:
+1. Immediate rollback to backup
+2. Run data recovery scripts
+3. Notify affected users
+
+**Success Indicators**:
+- All data integrity checks pass
+- No user complaints
+- Rollback not needed
+
+---
+
+## 📊 Development Metrics
+
+### Code Quality Metrics
+```yaml
+Target Metrics:
+  - Type Coverage: >95%
+  - Test Coverage: >80%
+  - Build Time: <60s
+  - Bundle Size: <500KB
+  - Lighthouse Score: >90
+
+Current Status:
+  - Type Coverage: [CURRENT]%
+  - Test Coverage: [CURRENT]%
+  - Build Time: [CURRENT]s
+  - Bundle Size: [CURRENT]KB
+  - Lighthouse Score: [CURRENT]
+```
+
+### Implementation Confidence Tracking
+```yaml
+High Confidence (90-100%):
+  - Will work as specified
+  - Well-understood problem
+  - Clear implementation path
+  - Existing patterns to follow
+
+Medium Confidence (60-89%):
+  - Should work with minor adjustments
+  - Some unknowns exist
+  - May need iteration
+  - New patterns required
+
+Low Confidence (0-59%):
+  - Experimental approach
+  - Significant unknowns
+  - High risk of refactoring
+  - No clear patterns
+```
+
+## 🔍 Verification Commands
+
+### Daily Verification Suite
+```bash
+#!/bin/bash
+# Run this BEFORE and AFTER each development session
+
+echo "🔍 Running Claude Code Verification Suite..."
+
+# 1. Check git status
+echo "📋 Git Status:"
+git status --short
+
+# 2. Verify builds
+echo "🏗️ Build Check:"
+pnpm build || exit 1
+
+# 3. Run type checking
+echo "📝 Type Check:"
+pnpm tsc --noEmit || exit 1
+
+# 4. Run tests
+echo "🧪 Test Suite:"
+pnpm test || exit 1
+
+# 5. Check for TODOs
+echo "📌 TODO Scan:"
+grep -r "TODO" --include="*.ts" --include="*.tsx" . | wc -l
+
+# 6. Security scan
+echo "🔒 Security Check:"
+pnpm audit
+
+# 7. Bundle size
+echo "📦 Bundle Analysis:"
+pnpm analyze
+
+echo "✅ Verification Complete"
+```
+
+## 🚨 STOP Conditions
+
+### Development MUST STOP if:
+1. **Type Coverage Drops Below 90%**
+   - Action: Fix type issues before proceeding
+   
+2. **Tests Failing**
+   - Action: Fix tests or roll back changes
+   
+3. **Build Broken for >30 minutes**
+   - Action: Revert to last known good state
+   
+4. **Security Vulnerability Found**
+   - Action: Patch immediately or document risk
+   
+5. **Performance Regression >20%**
+   - Action: Profile and optimize before continuing
+
+## 📝 Best Practices Enforcement
+
+### 1. Real Data Principle
+```typescript
+// ❌ NEVER DO THIS (unless marked as MOCK)
+const plans = [
+  { name: "Plan A", cost: 100 },
+  { name: "Plan B", cost: 200 }
+];
+
+// ✅ ALWAYS DO THIS
+const plans = await db.select()
+  .from(benefitPlan)
+  .where(eq(benefitPlan.companyId, companyId));
+```
+
+### 2. Error Handling Principle
+```typescript
+// ❌ NEVER DO THIS
+async function riskyOperation() {
+  const result = await someApiCall();
+  return result.data;
+}
+
+// ✅ ALWAYS DO THIS
+async function riskyOperation() {
+  try {
+    const result = await someApiCall();
+    if (!result.data) {
+      throw new Error('No data returned');
+    }
+    return result.data;
+  } catch (error) {
+    logger.error('Operation failed:', error);
+    throw new OperationError('Failed to complete operation', { cause: error });
+  }
+}
+```
+
+### 3. Type Safety Principle
+```typescript
+// ❌ NEVER DO THIS (without TODO)
+function processData(data: any) {
+  return data.someField;
+}
+
+// ✅ ALWAYS DO THIS
+interface ProcessedData {
+  someField: string;
+  // ... other fields
+}
+
+function processData(data: unknown): ProcessedData {
+  const validated = processDataSchema.parse(data);
+  return validated;
+}
+
+// OR with TODO for gradual migration
+function processData(data: any /* TODO: Define proper type */) {
+  // TECH_DEBT_002: Define proper types for data parameter
+  return data.someField;
+}
+```
+
+## 🔄 Continuous Improvement Log
+
+### Improvement Template
+```markdown
+### Date: [DATE]
+**Improvement**: [What was improved]
+**Reason**: [Why it was needed]
+**Impact**: [What changed]
+**Metrics Before**: [Relevant metrics]
+**Metrics After**: [Relevant metrics]
+```
+
+## 🚀 Release Readiness Checklist
+
+### Before ANY Production Release:
+- [ ] All tasks in sprint completed with PoW
+- [ ] Technical debt documented and prioritized
+- [ ] Risks assessed and mitigations in place
+- [ ] All tests passing (unit, integration, e2e)
+- [ ] Performance benchmarks met
+- [ ] Security scan clean
+- [ ] Documentation updated
+- [ ] Rollback plan tested
+- [ ] Stakeholders notified
+
+## 📊 Task Completion Statistics
+
+```yaml
+Sprint Statistics:
+  Total Tasks: [NUMBER]
+  Completed: [NUMBER]
+  In Progress: [NUMBER]
+  Blocked: [NUMBER]
+  
+  High Confidence: [NUMBER]
+  Medium Confidence: [NUMBER]
+  Low Confidence: [NUMBER]
+  
+  Technical Debt Created: [NUMBER]
+  Technical Debt Resolved: [NUMBER]
+  
+  Risks Identified: [NUMBER]
+  Risks Mitigated: [NUMBER]
+```
+
+---
+
+## ⚡ Quick Reference
+
+### File Naming Conventions
+```
+feature.repository.ts    - Data access layer
+feature.service.ts       - Business logic
+feature.controller.ts    - HTTP endpoints
+feature.types.ts         - TypeScript types
+feature.test.ts          - Test files
+feature.mock.ts          - Mock data (clearly marked)
+```
+
+### Commit Message Format
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+
+Types: feat, fix, docs, style, refactor, test, chore
+Scope: component or file affected
+Subject: imperative mood, <50 chars
+Body: what and why, not how
+Footer: TECH_DEBT_ID, RISK_ID, closes #issue
+```
+
+### Code Review Checklist
+- [ ] No hardcoded values (use env vars or config)
+- [ ] No commented-out code (use git for history)
+- [ ] No console.log (use proper logging)
+- [ ] Error boundaries implemented
+- [ ] Loading states implemented
+- [ ] Empty states handled
+- [ ] Responsive design verified
+- [ ] Accessibility checked
+- [ ] Performance impact assessed
+
+---
+
+**REMEMBER**: This file is the source of truth for development progress. If it's not documented here with proof of work, it didn't happen. Every line of code must be accounted for, validated, and integrated into the living system.
 Building a benefits advisor AI by transforming the Next.js Gemini chatbot template. Priority: Visual impact features FIRST, but every line must be production-quality code. This is demo-first ordering, NOT demo-quality code.
 
 ## Core Development Principles
