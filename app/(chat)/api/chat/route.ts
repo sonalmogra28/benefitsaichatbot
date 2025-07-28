@@ -6,7 +6,8 @@ import {
   stepCountIs,
   streamText,
 } from 'ai';
-import { auth, type UserType } from '@/app/(auth)/auth';
+import { auth } from '@/app/(auth)/stack-auth';
+import type { UserType } from '@/app/(auth)/stack-auth';
 import { type RequestHints, systemPrompt } from '@/lib/ai/prompts';
 import {
   createStreamId,
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
       return new ChatSDKError('unauthorized:chat').toResponse();
     }
 
-    const userType: UserType = session.user.type;
+    const userType = session.user.type;
 
     const messageCount = await getMessageCountByUserId({
       id: session.user.id,

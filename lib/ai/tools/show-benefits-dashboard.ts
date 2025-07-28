@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { auth } from '@/app/(auth)/auth';
+import { auth } from '@/app/(auth)/stack-auth';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { eq, and } from 'drizzle-orm';

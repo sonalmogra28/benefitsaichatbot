@@ -1,4 +1,4 @@
-import type { UserType } from '@/app/(auth)/auth';
+import type { UserType } from '@/app/(auth)/stack-auth';
 import type { ChatModel } from './models';
 
 interface Entitlements {
@@ -8,7 +8,7 @@ interface Entitlements {
 
 export const entitlementsByUserType: Record<UserType, Entitlements> = {
   /*
-   * For users without an account
+   * For guest users (no company)
    */
   guest: {
     maxMessagesPerDay: 20,
@@ -16,14 +16,26 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
   },
 
   /*
-   * For users with an account
+   * For regular employees
    */
-  regular: {
+  employee: {
     maxMessagesPerDay: 100,
     availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
   },
 
   /*
-   * TODO: For users with an account and a paid membership
+   * For HR administrators
    */
+  hr_admin: {
+    maxMessagesPerDay: 200,
+    availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
+  },
+
+  /*
+   * For company administrators
+   */
+  company_admin: {
+    maxMessagesPerDay: 500,
+    availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
+  },
 };

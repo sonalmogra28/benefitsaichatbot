@@ -7,10 +7,12 @@ declare module 'ai' {
   // Re-export commonly used types and functions
   export type UIMessage = import('@ai-sdk/react').Message;
   export type ChatMessage = import('@ai-sdk/react').Message;
+  export type DefaultChatTransport = any;
   
   // Export functions that are missing
   export const generateText: any;
   export const streamText: any;
+  export const streamObject: any;
   export const createUIMessageStream: any;
   export const JsonToSseTransformStream: any;
   export const convertToModelMessages: any;
@@ -18,4 +20,5 @@ declare module 'ai' {
   export const stepCountIs: any;
   export const convertToUIMessages: any;
   export const tool: any;
+  export const experimental_generateImage: any;
 }

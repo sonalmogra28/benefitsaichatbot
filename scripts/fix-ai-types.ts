@@ -5,8 +5,8 @@
  * This script creates a type declaration patch for the AI SDK beta
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const typePatchContent = `
 // Temporary type patch for AI SDK beta

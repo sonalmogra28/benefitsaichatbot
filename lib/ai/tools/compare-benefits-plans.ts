@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { tool } from 'ai';
-import { auth } from '@/app/(auth)/auth';
+import { auth } from '@/app/(auth)/stack-auth';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { benefitPlans, benefitEnrollments, users, companies } from '@/lib/db/schema-v2';
@@ -78,18 +78,18 @@ export const compareBenefitsPlans = tool({
         const coverageType = userContext?.coverageType || 'individual';
         const plansWithAnalysis = plans.map((plan) => {
           const monthlyCost = coverageType === 'family' 
-            ? parseFloat(plan.monthlyPremiumFamily || '0')
-            : parseFloat(plan.monthlyPremiumEmployee || '0');
+            ? Number.parseFloat(plan.monthlyPremiumFamily || '0')
+            : Number.parseFloat(plan.monthlyPremiumEmployee || '0');
           
           const annualCost = monthlyCost * 12;
           
           const deductible = coverageType === 'family'
-            ? parseFloat(plan.deductibleFamily || '0')
-            : parseFloat(plan.deductibleIndividual || '0');
+            ? Number.parseFloat(plan.deductibleFamily || '0')
+            : Number.parseFloat(plan.deductibleIndividual || '0');
 
           const outOfPocketMax = coverageType === 'family'
-            ? parseFloat(plan.outOfPocketMaxFamily || '0')
-            : parseFloat(plan.outOfPocketMaxIndividual || '0');
+            ? Number.parseFloat(plan.outOfPocketMaxFamily || '0')
+            : Number.parseFloat(plan.outOfPocketMaxIndividual || '0');
 
           return {
             id: plan.id,
@@ -103,8 +103,8 @@ export const compareBenefitsPlans = tool({
               annualCost,
               deductible,
               outOfPocketMax,
-              copayPrimaryCare: parseFloat(plan.copayPrimaryCare || '0'),
-              copaySpecialist: parseFloat(plan.copaySpecialist || '0'),
+              copayPrimaryCare: Number.parseFloat(plan.copayPrimaryCare || '0'),
+              copaySpecialist: Number.parseFloat(plan.copaySpecialist || '0'),
               coinsurancePercentage: plan.coinsurancePercentage || 0
             },
             features: plan.features || [],
