@@ -155,7 +155,7 @@ export async function POST(request: Request) {
     await createStreamId({ streamId, chatId: id });
 
     const stream = createUIMessageStream({
-      execute: ({ writer: dataStream }) => {
+      execute: ({ writer: dataStream }: { writer: any }) => {
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
