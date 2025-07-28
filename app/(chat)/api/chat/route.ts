@@ -42,6 +42,7 @@ import { ChatSDKError } from '@/lib/errors';
 import type { ChatMessage } from '@/lib/types';
 import type { ChatModel } from '@/lib/ai/models';
 import type { VisibilityType } from '@/components/visibility-selector';
+import { Session } from 'next-auth';
 
 export const maxDuration = 60;
 
@@ -65,6 +66,14 @@ export function getStreamContext() {
   }
 
   return globalStreamContext;
+}
+
+// Helper function to convert AuthSession to Session
+function toSession(authSession: AuthSession): Session {
+  return {
+    ...authSession,
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+  };
 }
 
 export async function POST(request: Request) {
@@ -179,10 +188,10 @@ export async function POST(request: Request) {
             calculateBenefitsCost,
             showBenefitsDashboard,
             showCostCalculator,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
+            createDocument: createDocument({ session: toSession(session), dataStream }),
+            updateDocument: updateDocument({ session: toSession(session), dataStream }),
             requestSuggestions: requestSuggestions({
-              session,
+              session: toSession(session),
               dataStream,
             }),
           },
@@ -201,52 +210,51 @@ export async function POST(request: Request) {
         );
       },
       generateId: generateUUID,
-      onFinish: async ({ messages }) => {
-        await saveMessages({
-          messages: messages.map((message) => ({
-            id: message.id,
-            role: message.role,
-            parts: message.parts,
-            createdAt: new Date(),
-            attachments: [],
-            chatId: id,
-          })),
-        });
-      },
-      onError: (error) => {
-        console.log(error);
-        return 'Oops, an error occurred!';
       },
     });
 
     const streamContext = getStreamContext();
 
     if (streamContext) {
-      return new Response(
-        await streamContext.resumableStream(streamId, () =>
-          stream.pipeThrough(new JsonToSseTransformStream()),
+      return new Response(Finish: async ({ messages }) => {
+        await streamContext.resumableStream(streamId, () => await saveMessages({
+          stream.pipeThrough(new JsonToSseTransformStream()),          messages: messages.map((message) => ({
         ),
-      );
-    } else {
-      return new Response(stream);
+      );            role: message.role,
+    } else {ge.parts,
+      return new Response(stream); Date(),
     }
   } catch (error) {
-    if (error instanceof ChatSDKError) {
-      return error.toResponse();
+    if (error instanceof ChatSDKError) {})),
+      return error.toResponse();});
     }
   }
-}
-
+}   console.log(error);
+s, an error occurred!';
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
-
+ const streamContext = getStreamContext();
   if (!id) {
-    return new ChatSDKError('bad_request:api').toResponse();
+    return new ChatSDKError('bad_request:api').toResponse();    if (streamContext) {
   }
-
-  const session = await auth();
-
+amId, () =>
+  const session = await auth();nToSseTransformStream()),
+        ),
+  if (!session?.user) {
+    return new ChatSDKError('unauthorized:chat').toResponse();
+  }   return new Response(stream);
+    }
+  const chat = await getChatById({ id });
+    if (error instanceof ChatSDKError) {
+  if (chat.userId !== session.user.id) {sponse();
+    return new ChatSDKError('forbidden:chat').toResponse();
+  }
+}
+  const deletedChat = await deleteChatById({ id });
+export async function DELETE(request: Request) {
+  return Response.json(deletedChat, { status: 200 });st.url);
+}
   if (!session?.user) {
     return new ChatSDKError('unauthorized:chat').toResponse();
   }
