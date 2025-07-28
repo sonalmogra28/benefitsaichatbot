@@ -13,7 +13,14 @@
       "Bash(pnpm lint:*)",
       "Bash(pnpm remove:*)",
       "Bash(pnpm dlx:*)",
-      "Bash(pnpm run:*)"
+      "Bash(pnpm run:*)",
+      "Bash(ls:*)",
+      "Bash(timeout 60 pnpm build:*)",
+      "Bash(find:*)",
+      "Bash(pnpm tsc:*)",
+      "Bash(pnpm install:*)",
+      "Bash(tsx scripts/fix-ai-types.ts:*)",
+      "Bash(npx tsx:*)"
     ],
     "deny": []
   }

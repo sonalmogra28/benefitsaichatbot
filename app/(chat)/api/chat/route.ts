@@ -23,7 +23,7 @@ import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
 // import { getWeather } from '@/lib/ai/tools/get-weather'; // Removed - not needed for benefits
-import { comparePlans } from '@/lib/ai/tools/compare-benefits-plans';
+import { compareBenefitsPlans as comparePlans } from '@/lib/ai/tools/compare-benefits-plans';
 import { calculateBenefitsCost } from '@/lib/ai/tools/calculate-benefits-cost';
 import { showBenefitsDashboard } from '@/lib/ai/tools/show-benefits-dashboard';
 import { showCostCalculator } from '@/lib/ai/tools/show-cost-calculator';

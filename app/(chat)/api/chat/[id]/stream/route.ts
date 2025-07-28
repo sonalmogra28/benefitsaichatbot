@@ -93,7 +93,7 @@ export async function GET(
     }
 
     const restoredStream = createUIMessageStream<ChatMessage>({
-      execute: ({ writer }) => {
+      execute: ({ writer }: { writer: any }) => {
         writer.write({
           type: 'data-appendMessage',
           data: JSON.stringify(mostRecentMessage),

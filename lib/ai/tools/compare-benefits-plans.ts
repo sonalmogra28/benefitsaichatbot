@@ -8,7 +8,7 @@ import { eq, and, inArray } from 'drizzle-orm';
 import { config } from 'dotenv';
 
 // Load environment variables
-config({ path: '.env.local' });
+config({ path: process.env.NODE_ENV === 'production' ? undefined : '.env' });
 
 const compareBenefitsPlansSchema = z.object({
   planIds: z.array(z.string()).min(2).max(5).describe('Array of benefit plan IDs to compare'),
@@ -33,9 +33,10 @@ export const compareBenefitsPlans = tool({
       }
 
       // Connect to database
-      const connectionString = process.env.POSTGRES_URL || 
-                              process.env.DATABASE_URL || 
-                              'postgres://neondb_owner:npg_3PRwIzrhfCo9@ep-holy-unit-ad50jybn-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
+      const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+      if (!connectionString) {
+        throw new Error('Database connection string not configured');
+      }
       const client = postgres(connectionString);
       const db = drizzle(client, { 
         schema: { benefitPlans, benefitEnrollments, users, companies }
