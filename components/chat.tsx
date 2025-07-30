@@ -16,7 +16,7 @@ import { useArtifactSelector } from '@/hooks/use-artifact';
 import { unstable_serialize } from 'swr/infinite';
 import { getChatHistoryPaginationKey } from './sidebar-history';
 import { toast } from './toast';
-import type { Session } from 'next-auth';
+import type { AuthSession } from '@/app/(auth)/stack-auth';
 import { useSearchParams } from 'next/navigation';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
@@ -39,7 +39,7 @@ export function Chat({
   initialChatModel: string;
   initialVisibilityType: VisibilityType;
   isReadonly: boolean;
-  session: Session;
+  session: AuthSession;
   autoResume: boolean;
 }) {
   const { visibilityType } = useChatVisibility({
@@ -68,7 +68,7 @@ export function Chat({
     transport: new DefaultChatTransport({
       api: '/api/chat',
       fetch: fetchWithErrorHandlers,
-      prepareSendMessagesRequest({ messages, id, body }) {
+      prepareSendMessagesRequest({ messages, id, body }: { messages: any[], id: any, body: any }) {
         return {
           body: {
             id,
@@ -80,13 +80,13 @@ export function Chat({
         };
       },
     }),
-    onData: (dataPart) => {
+    onData: (dataPart: any) => {
       setDataStream((ds) => (ds ? [...ds, dataPart] : []));
     },
     onFinish: () => {
       mutate(unstable_serialize(getChatHistoryPaginationKey));
     },
-    onError: (error) => {
+    onError: (error: any) => {
       if (error instanceof ChatSDKError) {
         toast({
           type: 'error',

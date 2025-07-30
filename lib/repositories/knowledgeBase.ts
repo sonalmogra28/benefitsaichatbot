@@ -14,7 +14,9 @@ export class KnowledgeBaseRepository {
 
   async create(input: KnowledgeBaseDocumentInput) {
     const data = knowledgeBaseDocumentSchema.parse(input);
-    const [doc] = await this.db.insert(knowledgeBaseDocuments).values(data).returning();
+    // Remove timestamp fields that are auto-generated
+    const { createdAt, updatedAt, ...insertData } = data;
+    const [doc] = await this.db.insert(knowledgeBaseDocuments).values(insertData).returning();
     return doc;
   }
 
@@ -27,16 +29,18 @@ export class KnowledgeBaseRepository {
 
   async update(id: string, input: Partial<KnowledgeBaseDocumentInput>) {
     try {
-      const data = knowledgeBaseDocumentSchema.partial().parse(input);
+      const validatedData = knowledgeBaseDocumentSchema.partial().parse(input);
+      // Remove timestamp fields
+      const { createdAt, updatedAt, ...updateData } = validatedData;
       const [doc] = await this.db
         .update(knowledgeBaseDocuments)
-        .set({ ...data, updatedAt: new Date().toISOString() })
+        .set({ ...updateData, updatedAt: new Date() })
         .where(eq(knowledgeBaseDocuments.id, id))
         .returning();
       return doc;
     } catch (err) {
-      handleError(err, 'KnowledgeBaseRepository.update');
-      throw err;
+      const errorResult = handleError(err);
+      throw new Error(`KnowledgeBaseRepository.update: ${errorResult.message}`);
     }
   }
 }

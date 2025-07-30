@@ -15,21 +15,22 @@ import { cn } from '@/lib/utils';
 
 import { CheckCircleFillIcon, ChevronDownIcon } from './icons';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
-import type { Session } from 'next-auth';
+import type { AuthSession } from '@/app/(auth)/stack-auth';
 
 export function ModelSelector({
   session,
   selectedModelId,
   className,
 }: {
-  session: Session;
+  session: AuthSession;
   selectedModelId: string;
 } & React.ComponentProps<typeof Button>) {
   const [open, setOpen] = useState(false);
   const [optimisticModelId, setOptimisticModelId] =
     useOptimistic(selectedModelId);
 
-  const userType = session.user.type;
+  // Default to 'employee' user type for now since Stack Auth doesn't have user types
+  const userType = 'employee';
   const { availableChatModelIds } = entitlementsByUserType[userType];
 
   const availableChatModels = chatModels.filter((chatModel) =>

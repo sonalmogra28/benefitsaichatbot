@@ -1,4 +1,5 @@
-import { tool, type UIMessageStreamWriter } from 'ai';
+import { tool } from 'ai';
+import type { UIMessageStreamWriter } from 'ai';
 import type { Session } from 'next-auth';
 import { z } from 'zod';
 import { getDocumentById } from '@/lib/db/queries';
@@ -7,7 +8,7 @@ import type { ChatMessage } from '@/lib/types';
 
 interface UpdateDocumentProps {
   session: Session;
-  dataStream: UIMessageStreamWriter<ChatMessage>;
+  dataStream: UIMessageStreamWriter;
 }
 
 export const updateDocument = ({ session, dataStream }: UpdateDocumentProps) =>
@@ -19,7 +20,7 @@ export const updateDocument = ({ session, dataStream }: UpdateDocumentProps) =>
         .string()
         .describe('The description of changes that need to be made'),
     }),
-    execute: async ({ id, description }) => {
+    execute: async ({ id, description }: { id: string; description: string }) => {
       const document = await getDocumentById({ id });
 
       if (!document) {

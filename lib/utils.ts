@@ -101,7 +101,7 @@ export function convertToUIMessages(messages: DBMessage[]): ChatMessage[] {
   return messages.map((message) => ({
     id: message.id,
     role: message.role as 'user' | 'assistant' | 'system',
-    parts: message.parts as UIMessagePart<CustomUIDataTypes, ChatTools>[],
+    parts: message.parts as UIMessagePart[],
     metadata: {
       createdAt: formatISO(message.createdAt),
     },
@@ -110,7 +110,7 @@ export function convertToUIMessages(messages: DBMessage[]): ChatMessage[] {
 
 export function getTextFromMessage(message: ChatMessage): string {
   return message.parts
-    .filter((part) => part.type === 'text')
-    .map((part) => part.text)
+    .filter((part: any) => part.type === 'text')
+    .map((part: any) => part.text)
     .join('');
 }

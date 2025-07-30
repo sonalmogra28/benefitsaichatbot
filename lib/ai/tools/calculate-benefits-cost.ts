@@ -7,9 +7,9 @@ export const calculateBenefitsCost = tool({
     expectedMedicalUsage: z.enum(['low', 'moderate', 'high']),
     planType: z.string()
   }),
-  execute: async ({ expectedMedicalUsage, planType }) => {
-    const usageMultipliers = { low: 0.3, moderate: 0.6, high: 0.9 };
-    const multiplier = usageMultipliers[expectedMedicalUsage];
+  execute: async ({ expectedMedicalUsage, planType }: { expectedMedicalUsage: string; planType: string }) => {
+    const usageMultipliers: Record<string, number> = { low: 0.3, moderate: 0.6, high: 0.9 };
+    const multiplier = usageMultipliers[expectedMedicalUsage] || 0.6;
     
     return {
       estimatedAnnualCost: Math.round(5000 * multiplier),

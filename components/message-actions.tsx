@@ -43,8 +43,8 @@ export function PureMessageActions({
               variant="outline"
               onClick={async () => {
                 const textFromParts = message.parts
-                  ?.filter((part) => part.type === 'text')
-                  .map((part) => part.text)
+                  ?.filter((part: any) => part.type === 'text')
+                  .map((part: any) => part.text)
                   .join('\n')
                   .trim();
 

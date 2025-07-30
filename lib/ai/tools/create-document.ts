@@ -1,5 +1,6 @@
 import { generateUUID } from '@/lib/utils';
-import { tool, type UIMessageStreamWriter } from 'ai';
+import { tool } from 'ai';
+import type { UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
 import type { Session } from 'next-auth';
 import {
@@ -10,7 +11,7 @@ import type { ChatMessage } from '@/lib/types';
 
 interface CreateDocumentProps {
   session: Session;
-  dataStream: UIMessageStreamWriter<ChatMessage>;
+  dataStream: UIMessageStreamWriter;
 }
 
 export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
@@ -21,7 +22,7 @@ export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
       title: z.string(),
       kind: z.enum(artifactKinds),
     }),
-    execute: async ({ title, kind }) => {
+    execute: async ({ title, kind }: { title: string; kind: string }) => {
       const id = generateUUID();
 
       dataStream.write({

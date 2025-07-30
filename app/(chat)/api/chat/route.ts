@@ -215,9 +215,9 @@ export async function POST(request: Request) {
         );
       },
       generateId: generateUUID,
-      onFinish: async ({ messages }) => {
+      onFinish: async ({ messages }: { messages: any[] }) => {
         await saveMessages({
-          messages: messages.map((message) => ({
+          messages: messages.map((message: any) => ({
             chatId: id,
             id: message.id,
             role: message.role,

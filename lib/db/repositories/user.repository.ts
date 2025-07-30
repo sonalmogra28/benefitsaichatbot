@@ -23,17 +23,20 @@ export class UserRepository {
   async findByStackUserId(stackUserId: string): Promise<(User & { company: any }) | null> {
     const db = await import('../tenant-context').then(m => m.getDatabase());
     
-    const [user] = await db
-      .select({
-        ...users,
-        company: companies,
-      })
+    const result = await db
+      .select()
       .from(users)
       .leftJoin(companies, eq(users.companyId, companies.id))
       .where(eq(users.stackUserId, stackUserId))
       .limit(1);
     
-    return user || null;
+    const [row] = result;
+    if (!row) return null;
+    
+    return {
+      ...row.users,
+      company: row.companies
+    };
   }
 
   /**

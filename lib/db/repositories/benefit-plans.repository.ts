@@ -55,7 +55,7 @@ export class BenefitPlansRepository {
             // Only current or future plans
             or(
               isNull(benefitPlans.endDate),
-              gte(benefitPlans.endDate, new Date())
+              gte(benefitPlans.endDate, new Date().toISOString().split('T')[0])
             )
           )
         )
@@ -92,10 +92,10 @@ export class BenefitPlansRepository {
           and(
             eq(benefitPlans.isActive, true),
             // Only current plans
-            lte(benefitPlans.effectiveDate, new Date()),
+            lte(benefitPlans.effectiveDate, new Date().toISOString().split('T')[0]),
             or(
               isNull(benefitPlans.endDate),
-              gte(benefitPlans.endDate, new Date())
+              gte(benefitPlans.endDate, new Date().toISOString().split('T')[0])
             )
           )
         )
@@ -131,10 +131,10 @@ export class BenefitPlansRepository {
             eq(benefitEnrollments.userId, userId),
             eq(benefitEnrollments.status, 'active'),
             // Only current enrollments
-            lte(benefitEnrollments.effectiveDate, new Date()),
+            lte(benefitEnrollments.effectiveDate, new Date().toISOString().split('T')[0]),
             or(
               isNull(benefitEnrollments.endDate),
-              gte(benefitEnrollments.endDate, new Date())
+              gte(benefitEnrollments.endDate, new Date().toISOString().split('T')[0])
             )
           )
         );

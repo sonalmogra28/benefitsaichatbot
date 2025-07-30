@@ -7,7 +7,7 @@ export const getWeather = tool({
     latitude: z.number(),
     longitude: z.number(),
   }),
-  execute: async ({ latitude, longitude }) => {
+  execute: async ({ latitude, longitude }: { latitude: number; longitude: number }) => {
     const response = await fetch(
       `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m&hourly=temperature_2m&daily=sunrise,sunset&timezone=auto`,
     );

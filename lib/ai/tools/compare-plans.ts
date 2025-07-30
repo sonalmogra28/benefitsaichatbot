@@ -28,9 +28,9 @@ export const comparePlans = tool({
       preferredDoctors: z.array(z.string()).optional().describe('Names of preferred doctors'),
     }).optional().describe('User profile for personalized recommendations'),
   }),
-  execute: async ({ planType, plans, userProfile }) => {
+  execute: async ({ planType, plans, userProfile }: { planType: string; plans: any[]; userProfile: any }) => {
     // Calculate annual costs for each plan
-    const planComparisons = plans.map(plan => {
+    const planComparisons = plans.map((plan: any) => {
       const annualPremium = plan.monthlyPremium * 12;
       const totalMaxCost = annualPremium + plan.maxOutOfPocket;
       
@@ -58,7 +58,7 @@ export const comparePlans = tool({
     });
 
     // Sort by estimated annual cost
-    planComparisons.sort((a, b) => a.estimatedAnnualCost - b.estimatedAnnualCost);
+    planComparisons.sort((a: any, b: any) => a.estimatedAnnualCost - b.estimatedAnnualCost);
 
     // Mark recommended plan based on user profile
     if (userProfile) {
@@ -66,17 +66,17 @@ export const comparePlans = tool({
       
       if (userProfile.expectedMedicalUsage === 'high') {
         // Recommend plan with lowest max out-of-pocket
-        recommendedIndex = planComparisons.findIndex(plan => 
+        recommendedIndex = planComparisons.findIndex((plan: any) => 
           plan.maxOutOfPocket === Math.min(...planComparisons.map(p => p.maxOutOfPocket))
         );
       } else if (userProfile.expectedMedicalUsage === 'low') {
         // Recommend plan with lowest premium
-        recommendedIndex = planComparisons.findIndex(plan => 
+        recommendedIndex = planComparisons.findIndex((plan: any) => 
           plan.monthlyPremium === Math.min(...planComparisons.map(p => p.monthlyPremium))
         );
       } else {
         // Recommend plan with best value score
-        recommendedIndex = planComparisons.findIndex(plan => 
+        recommendedIndex = planComparisons.findIndex((plan: any) => 
           plan.valueScore === Math.min(...planComparisons.map(p => p.valueScore))
         );
       }
@@ -88,16 +88,16 @@ export const comparePlans = tool({
       planType,
       plans: planComparisons,
       summary: {
-        lowestPremium: Math.min(...planComparisons.map(p => p.monthlyPremium)),
-        highestPremium: Math.max(...planComparisons.map(p => p.monthlyPremium)),
-        averagePremium: Math.round(planComparisons.reduce((sum, p) => sum + p.monthlyPremium, 0) / planComparisons.length),
-        lowestDeductible: Math.min(...planComparisons.map(p => p.deductible)),
-        highestDeductible: Math.max(...planComparisons.map(p => p.deductible)),
+        lowestPremium: Math.min(...planComparisons.map((p: any) => p.monthlyPremium)),
+        highestPremium: Math.max(...planComparisons.map((p: any) => p.monthlyPremium)),
+        averagePremium: Math.round(planComparisons.reduce((sum: number, p: any) => sum + p.monthlyPremium, 0) / planComparisons.length),
+        lowestDeductible: Math.min(...planComparisons.map((p: any) => p.deductible)),
+        highestDeductible: Math.max(...planComparisons.map((p: any) => p.deductible)),
         potentialSavings: Math.round(planComparisons[planComparisons.length - 1].estimatedAnnualCost - planComparisons[0].estimatedAnnualCost),
       },
       recommendations: planComparisons
-        .filter(plan => plan.isRecommended)
-        .map(plan => ({
+        .filter((plan: any) => plan.isRecommended)
+        .map((plan: any) => ({
           planName: plan.name,
           reason: userProfile?.expectedMedicalUsage === 'high' 
             ? 'Best for high medical usage - lowest maximum out-of-pocket'

@@ -46,7 +46,7 @@ export const compareBenefitsPlans = tool({
   description:
     'Compare multiple benefit plans side by side with detailed analysis of costs, coverage, and features',
   parameters: compareBenefitsPlansSchema,
-  execute: async (rawParams) => {
+  execute: async (rawParams: any) => {
     const { planIds, comparisonType, userContext } =
       compareBenefitsPlansSchema.parse(rawParams);
 

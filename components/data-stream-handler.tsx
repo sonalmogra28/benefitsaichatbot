@@ -32,43 +32,44 @@ export function DataStreamHandler() {
 
       setArtifact((draftArtifact) => {
         if (!draftArtifact) {
-          return { ...initialArtifactData, status: 'streaming' };
+          return { ...initialArtifactData, status: 'streaming' } as any;
         }
 
-        switch (delta.type) {
+        const deltaType = (delta as any).type;
+        switch (deltaType) {
           case 'data-id':
             return {
               ...draftArtifact,
-              documentId: delta.data,
+              documentId: (delta as any).data,
               status: 'streaming',
-            };
+            } as any;
 
           case 'data-title':
             return {
               ...draftArtifact,
-              title: delta.data,
+              title: (delta as any).data,
               status: 'streaming',
-            };
+            } as any;
 
           case 'data-kind':
             return {
               ...draftArtifact,
-              kind: delta.data,
+              kind: (delta as any).data,
               status: 'streaming',
-            };
+            } as any;
 
           case 'data-clear':
             return {
               ...draftArtifact,
               content: '',
               status: 'streaming',
-            };
+            } as any;
 
           case 'data-finish':
             return {
               ...draftArtifact,
               status: 'idle',
-            };
+            } as any;
 
           default:
             return draftArtifact;

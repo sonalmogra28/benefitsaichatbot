@@ -15,22 +15,27 @@ export class UsersRepository {
   async create(input: UserInput) {
     try {
       const data = userSchema.parse(input);
-      const [user] = await this.db.insert(users).values(data).returning();
+      // Remove timestamp fields that are auto-generated
+      const { createdAt, updatedAt, ...insertData } = data;
+      const [user] = await this.db.insert(users).values(insertData).returning();
       return user;
     } catch (err) {
-      handleError(err, 'UsersRepository.create');
-      throw err;
+      const errorResult = handleError(err);
+      throw new Error(`UsersRepository.create: ${errorResult.message}`);
     }
   }
 
   async findByEmail(companyId: string, email: string) {
     try {
-      return this.db.query.users.findFirst({
-        where: and(eq(users.companyId, companyId), eq(users.email, email)),
-      });
+      const [user] = await this.db
+        .select()
+        .from(users)
+        .where(and(eq(users.companyId, companyId), eq(users.email, email)))
+        .limit(1);
+      return user;
     } catch (err) {
-      handleError(err, 'UsersRepository.findByEmail');
-      throw err;
+      const errorResult = handleError(err);
+      throw new Error(`UsersRepository.findByEmail: ${errorResult.message}`);
     }
   }
 }

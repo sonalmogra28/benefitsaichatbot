@@ -116,15 +116,18 @@ export async function getCompanyByStackOrgId(stackOrgId: string) {
 export async function getUserByStackUserId(stackUserId: string) {
   const db = getDatabase();
   
-  const [user] = await db
-    .select({
-      ...schema.users,
-      company: schema.companies,
-    })
+  const result = await db
+    .select()
     .from(schema.users)
     .leftJoin(schema.companies, sql`${schema.users.companyId} = ${schema.companies.id}`)
     .where(sql`${schema.users.stackUserId} = ${stackUserId}`)
     .limit(1);
   
-  return user || null;
+  const [row] = result;
+  if (!row) return null;
+  
+  return {
+    ...row.users,
+    company: row.companies
+  };
 }

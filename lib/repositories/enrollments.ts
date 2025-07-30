@@ -15,11 +15,13 @@ export class EnrollmentsRepository {
   async create(input: BenefitEnrollmentInput) {
     try {
       const data = benefitEnrollmentSchema.parse(input);
-      const [row] = await this.db.insert(benefitEnrollments).values(data).returning();
+      // Remove timestamp fields that are auto-generated
+      const { createdAt, updatedAt, ...insertData } = data;
+      const [row] = await this.db.insert(benefitEnrollments).values(insertData).returning();
       return row;
     } catch (err) {
-      handleError(err, 'EnrollmentsRepository.create');
-      throw err;
+      const errorResult = handleError(err);
+      throw new Error(`EnrollmentsRepository.create: ${errorResult.message}`);
     }
   }
 
@@ -34,13 +36,13 @@ export class EnrollmentsRepository {
     try {
       const [row] = await this.db
         .update(benefitEnrollments)
-        .set({ status: 'terminated', endDate })
+        .set({ status: 'terminated', endDate, updatedAt: new Date() })
         .where(eq(benefitEnrollments.id, id))
         .returning();
       return row;
     } catch (err) {
-      handleError(err, 'EnrollmentsRepository.terminate');
-      throw err;
+      const errorResult = handleError(err);
+      throw new Error(`EnrollmentsRepository.terminate: ${errorResult.message}`);
     }
   }
 }

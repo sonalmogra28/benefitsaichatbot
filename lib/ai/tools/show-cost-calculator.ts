@@ -6,7 +6,7 @@ export const showCostCalculator = tool({
   inputSchema: z.object({
     currentPlanType: z.string().optional().describe("User's current plan type")
   }),
-  execute: async ({ currentPlanType }) => {
+  execute: async ({ currentPlanType }: { currentPlanType?: string }) => {
     return {
       plans: [
         {

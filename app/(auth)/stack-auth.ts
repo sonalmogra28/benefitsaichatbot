@@ -17,6 +17,7 @@ export interface AuthUser {
 
 export interface AuthSession {
   user: AuthUser | null;
+  expires?: string;
 }
 
 /**
