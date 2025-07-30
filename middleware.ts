@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
   const user = await stackServerApp.getUser();
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/api/auth/guest', '/api/onboarding'];
+  const publicRoutes = ['/login', '/register', '/api/auth/guest', '/api/onboarding', '/api/user/check'];
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
   if (!user && !isPublicRoute) {
@@ -29,6 +29,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(
       new URL(`/login?redirect=${redirectUrl}`, request.url),
     );
+  }
+
+  // Special handling for onboarding flow
+  if (user && pathname !== '/onboarding' && pathname !== '/api/user/check' && pathname !== '/api/onboarding') {
+    // Check if user exists in our database
+    try {
+      const response = await fetch(new URL('/api/user/check', request.url), {
+        headers: { 'X-Stack-User-Id': user.id }
+      });
+      
+      if (response.status === 404) {
+        // User doesn't exist in our DB, needs onboarding
+        return NextResponse.redirect(new URL('/onboarding', request.url));
+      }
+    } catch (error) {
+      console.error('Error checking user:', error);
+    }
   }
 
   // Redirect authenticated users away from auth pages
