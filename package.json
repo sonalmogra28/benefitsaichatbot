@@ -16,6 +16,7 @@
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
+    "db:seed": "npx tsx scripts/seed-companies.ts",
     "test": "vitest run --coverage"
   },
   "dependencies": {

@@ -21,7 +21,7 @@ export class UserRepository {
    * Find user by Stack user ID
    */
   async findByStackUserId(stackUserId: string): Promise<(User & { company: any }) | null> {
-    const db = await import('../tenant-context').then(m => m.getDatabase());
+    const { db } = await import('@/lib/db');
     
     const result = await db
       .select()

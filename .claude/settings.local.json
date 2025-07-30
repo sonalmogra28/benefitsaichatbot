@@ -20,7 +20,10 @@
       "Bash(pnpm tsc:*)",
       "Bash(pnpm install:*)",
       "Bash(tsx scripts/fix-ai-types.ts:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(pnpm db:migrate:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
