@@ -67,7 +67,7 @@ graph TB
     
     subgraph "API Gateway"
         GATEWAY[Vercel Edge Functions]
-        AUTH[Auth Middleware - Clerk]
+        AUTH[Auth Middleware - Stack Auth]
         RATE[Rate Limiter]
     end
     
@@ -98,7 +98,7 @@ graph TB
     subgraph "External Services"
         OPENAI[OpenAI API]
         XAI[xAI API]
-        CLERK_AUTH[Clerk Auth]
+        STACK_AUTH[Stack Auth]
         SENDGRID[SendGrid]
     end
     
@@ -126,7 +126,7 @@ graph TB
     
     ROUTER --> OPENAI
     ROUTER --> XAI
-    AUTH --> CLERK_AUTH
+    AUTH --> STACK_AUTH
 ```
 
 ## Detailed Component Architecture
@@ -135,12 +135,12 @@ graph TB
 
 ```typescript
 // middleware.ts - Edge-based routing and auth
-import { authMiddleware } from '@clerk/nextjs';
+import { stackServerApp } from '@/stack';
 import { rateLimiter } from '@/lib/rate-limit';
 import { tenantResolver } from '@/lib/tenant';
 
-export default authMiddleware({
-  publicRoutes: ['/api/health', '/api/webhook/clerk'],
+export default async function middleware(request: Request) {
+  const publicRoutes = ['/api/health', '/api/webhook/stack'];
   
   afterAuth: async (auth, req) => {
     // Resolve tenant from auth

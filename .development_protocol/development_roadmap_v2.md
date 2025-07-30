@@ -54,7 +54,7 @@ Record pass/fail with reproducible PoW (logs, screenshots, test reports).
 ## 3  Items Deferred to Phase 2
 | Feature | Reason |
 |---------|--------|
-|Clerk auth migration|High integration risk; keep enhanced NextAuth until Phase 2|
+|Stack Auth migration|Already completed; using Stack Auth for authentication|
 |Vector search (Pinecone)|Infra not ready; keyword search sufficient for now|
 |Advanced analytics dashboard|Requires events data from Phase 1|
 |Employer admin portal UI|Depends on permission system|

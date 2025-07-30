@@ -167,10 +167,10 @@ Transform mock data into real, manageable benefits information while enhancing t
 ### Sprint 2.1: Authentication & Authorization (Week 5)
 
 **Deliverables:**
-1. **Clerk Integration**
+1. **Stack Auth Integration**
    ```typescript
    // Implementation:
-   - Replace NextAuth with Clerk
+   - Stack Auth already integrated
    - Implement role-based middleware
    - Add organization/company support
    ```

@@ -23,7 +23,6 @@ import { generateTitleFromUserMessage } from '../../actions';
 import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
 import { requestSuggestions } from '@/lib/ai/tools/request-suggestions';
-// import { getWeather } from '@/lib/ai/tools/get-weather'; // Removed - not needed for benefits
 import { compareBenefitsPlans } from '@/lib/ai/tools/compare-benefits-plans';
 import { calculateBenefitsCost } from '@/lib/ai/tools/calculate-benefits-cost';
 import { showBenefitsDashboard } from '@/lib/ai/tools/show-benefits-dashboard';
@@ -42,7 +41,7 @@ import { ChatSDKError } from '@/lib/errors';
 import type { ChatMessage } from '@/lib/types';
 import type { ChatModel } from '@/lib/ai/models';
 import type { VisibilityType } from '@/components/visibility-selector';
-import { Session } from 'next-auth';
+import type { Session } from 'next-auth';
 
 export const maxDuration = 60;
 
@@ -69,10 +68,10 @@ export function getStreamContext() {
 }
 
 // Helper function to convert AuthSession to Session
-function toSession(authSession: AuthSession): Session {
+function toSession(authSession: any): Session {
   return {
     ...authSession,
-    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
   };
 }
 
@@ -188,8 +187,14 @@ export async function POST(request: Request) {
             calculateBenefitsCost,
             showBenefitsDashboard,
             showCostCalculator,
-            createDocument: createDocument({ session: toSession(session), dataStream }),
-            updateDocument: updateDocument({ session: toSession(session), dataStream }),
+            createDocument: createDocument({
+              session: toSession(session),
+              dataStream,
+            }),
+            updateDocument: updateDocument({
+              session: toSession(session),
+              dataStream,
+            }),
             requestSuggestions: requestSuggestions({
               session: toSession(session),
               dataStream,
@@ -210,56 +215,59 @@ export async function POST(request: Request) {
         );
       },
       generateId: generateUUID,
+      onFinish: async ({ messages }) => {
+        await saveMessages({
+          messages: messages.map((message) => ({
+            chatId: id,
+            id: message.id,
+            role: message.role,
+            parts: message.parts,
+            attachments: [],
+            createdAt: new Date(),
+          })),
+        });
       },
     });
 
     const streamContext = getStreamContext();
 
     if (streamContext) {
-      return new Response(Finish: async ({ messages }) => {
-        await streamContext.resumableStream(streamId, () => await saveMessages({
-          stream.pipeThrough(new JsonToSseTransformStream()),          messages: messages.map((message) => ({
+      return new Response(
+        await streamContext.resumableStream(streamId, () =>
+          stream.pipeThrough(new JsonToSseTransformStream()),
         ),
-      );            role: message.role,
-    } else {ge.parts,
-      return new Response(stream); Date(),
+      );
+    } else {
+      return new Response(stream);
     }
   } catch (error) {
-    if (error instanceof ChatSDKError) {})),
-      return error.toResponse();});
+    if (error instanceof ChatSDKError) {
+      return error.toResponse();
     }
+    console.log(error);
+    return new Response('Internal server error', { status: 500 });
   }
-}   console.log(error);
-s, an error occurred!';
+}
+
 export async function DELETE(request: Request) {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
- const streamContext = getStreamContext();
+
   if (!id) {
-    return new ChatSDKError('bad_request:api').toResponse();    if (streamContext) {
+    return new ChatSDKError('bad_request:api').toResponse();
   }
-amId, () =>
-  const session = await auth();nToSseTransformStream()),
-        ),
-  if (!session?.user) {
-    return new ChatSDKError('unauthorized:chat').toResponse();
-  }   return new Response(stream);
-    }
-  const chat = await getChatById({ id });
-    if (error instanceof ChatSDKError) {
-  if (chat.userId !== session.user.id) {sponse();
-    return new ChatSDKError('forbidden:chat').toResponse();
-  }
-}
-  const deletedChat = await deleteChatById({ id });
-export async function DELETE(request: Request) {
-  return Response.json(deletedChat, { status: 200 });st.url);
-}
+
+  const session = await auth();
+
   if (!session?.user) {
     return new ChatSDKError('unauthorized:chat').toResponse();
   }
 
   const chat = await getChatById({ id });
+
+  if (!chat) {
+    return new ChatSDKError('not_found:chat').toResponse();
+  }
 
   if (chat.userId !== session.user.id) {
     return new ChatSDKError('forbidden:chat').toResponse();
