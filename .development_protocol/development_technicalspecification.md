@@ -12,7 +12,7 @@ The Benefits Assistant Chatbot System v2.0 is a multi-tenant, AI-powered platfor
 - **Backend**: Next.js API Routes, Edge Functions, Vercel Infrastructure
 - **Database**: Neon Postgres with Drizzle ORM 0.34.0
 - **AI/ML**: Vercel AI SDK 5.0, xAI Grok-2 (with OpenAI GPT-4 fallback)
-- **Authentication**: NextAuth 5.0 beta with Clerk.dev integration
+- **Authentication**: Stack Auth 2.8.22 (@stackframe/stack)
 - **File Storage**: Vercel Blob Storage
 - **Testing**: Playwright for E2E, Vitest for unit tests
 - **Monitoring**: Vercel Analytics, Sentry for error tracking
@@ -694,8 +694,8 @@ POSTGRES_URL_NON_POOLING=postgresql://user:pass@neon.tech/benefits
 AUTH_SECRET=generated-secret-key
 OPENAI_API_KEY=sk-...
 XAI_API_KEY=xai-...
-CLERK_SECRET_KEY=sk_...
-CLERK_PUBLISHABLE_KEY=pk_...
+STACK_PROJECT_ID=your-stack-project-id
+STACK_PUBLISHABLE_CLIENT_KEY=your-stack-key
 VERCEL_BLOB_READ_WRITE_TOKEN=...
 SENTRY_DSN=https://...@sentry.io/...
 PINECONE_API_KEY=...
@@ -726,16 +726,15 @@ UPDATE "User" SET "companyId" = (SELECT id FROM "Company" WHERE name = 'Pilot Co
 
 ### Phase 2: Authentication Migration
 ```typescript
-// Gradual migration from NextAuth to Clerk
+// Using Stack Auth for authentication
 export async function auth() {
-  // Check for Clerk session first
-  const clerkUser = await currentUser();
-  if (clerkUser) {
-    return mapClerkToSession(clerkUser);
+  // Get Stack Auth user
+  const stackUser = await stackServerApp.getUser();
+  if (stackUser) {
+    return mapStackToSession(stackUser);
   }
   
-  // Fall back to NextAuth
-  return getServerSession(authOptions);
+  return null;
 }
 ```
 
