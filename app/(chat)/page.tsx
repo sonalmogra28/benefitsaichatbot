@@ -14,6 +14,13 @@ export default async function Page() {
     redirect('/login');
   }
 
+  // Redirect based on user type
+  if (session.user.type === 'platform_admin') {
+    redirect('/admin');
+  } else if (session.user.type === 'company_admin' || session.user.type === 'hr_admin') {
+    redirect('/company-admin');
+  }
+
   const id = generateUUID();
 
   const cookieStore = await cookies();

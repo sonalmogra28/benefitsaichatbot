@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
   const user = await stackServerApp.getUser();
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/api/auth/guest'];
+  const publicRoutes = ['/login', '/register', '/api/auth/guest', '/api/onboarding'];
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
 
   if (!user && !isPublicRoute) {

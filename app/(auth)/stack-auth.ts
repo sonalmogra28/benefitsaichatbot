@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { users, companies } from '@/lib/db/schema-v2';
 import { eq } from 'drizzle-orm';
 
-export type UserType = 'employee' | 'hr_admin' | 'company_admin' | 'guest';
+export type UserType = 'employee' | 'hr_admin' | 'company_admin' | 'platform_admin' | 'guest';
 
 export interface AuthUser {
   id: string;

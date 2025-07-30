@@ -38,4 +38,12 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
     maxMessagesPerDay: 500,
     availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
   },
+
+  /*
+   * For platform administrators
+   */
+  platform_admin: {
+    maxMessagesPerDay: 1000,
+    availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
+  },
 };
