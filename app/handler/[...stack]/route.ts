@@ -1,34 +1,58 @@
 import { StackHandler } from "@stackframe/stack";
 import { stackServerApp } from "@/stack";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-// StackHandler returns a Promise, so we need to wrap it properly for Next.js route handlers
+// StackHandler for Next.js App Router
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ stack: string[] }> }
 ) {
-  const resolvedParams = await params;
-  return StackHandler({
-    app: stackServerApp,
-    fullPage: true,
-    routeProps: {
-      params: { stack: resolvedParams.stack },
-      searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
-    },
-  });
+  try {
+    const resolvedParams = await params;
+    const response = await StackHandler({
+      app: stackServerApp,
+      fullPage: true,
+      routeProps: {
+        params: { stack: resolvedParams.stack },
+        searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
+      },
+    });
+    
+    // Ensure we always return a Response
+    if (!response) {
+      return NextResponse.json({ error: "No response from Stack handler" }, { status: 500 });
+    }
+    
+    return response;
+  } catch (error) {
+    console.error("Stack handler error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ stack: string[] }> }
 ) {
-  const resolvedParams = await params;
-  return StackHandler({
-    app: stackServerApp,
-    fullPage: true,
-    routeProps: {
-      params: { stack: resolvedParams.stack },
-      searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
-    },
-  });
+  try {
+    const resolvedParams = await params;
+    const response = await StackHandler({
+      app: stackServerApp,
+      fullPage: true,
+      routeProps: {
+        params: { stack: resolvedParams.stack },
+        searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
+      },
+    });
+    
+    // Ensure we always return a Response
+    if (!response) {
+      return NextResponse.json({ error: "No response from Stack handler" }, { status: 500 });
+    }
+    
+    return response;
+  } catch (error) {
+    console.error("Stack handler error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
