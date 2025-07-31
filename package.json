@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "tsx lib/db/migrate && next build",
+    "build": "tsx -r dotenv/config lib/db/migrate dotenv_config_path=.env.local && next build",
     "start": "next start",
     "lint": "next lint && biome lint --write --unsafe",
     "lint:fix": "next lint --fix && biome lint --write --unsafe",
@@ -17,7 +17,8 @@
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
     "db:seed": "npx tsx scripts/seed-companies.ts",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "test:document-upload": "npx tsx scripts/test-document-upload.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "2.0.0-beta.5",
@@ -63,10 +64,11 @@
     "framer-motion": "^11.3.19",
     "geist": "^1.3.1",
     "lucide-react": "^0.446.0",
-    "nanoid": "^5.0.8",
+    "nanoid": "^5.1.3",
     "next": "15.3.0-canary.31",
     "next-auth": "5.0.0-beta.25",
     "next-themes": "^0.3.0",
+    "openai": "^5.11.0",
     "orderedmap": "^2.1.1",
     "papaparse": "^5.5.2",
     "postgres": "^3.4.4",
@@ -91,6 +93,7 @@
     "swr": "^2.2.5",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
+    "unpdf": "^1.1.0",
     "usehooks-ts": "^3.1.0",
     "zod": "^3.25.68"
   },

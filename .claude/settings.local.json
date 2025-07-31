@@ -25,7 +25,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm db:seed:*)"
     ],
     "deny": []
   }
