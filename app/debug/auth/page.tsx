@@ -23,27 +23,36 @@ export default async function AuthDebugPage() {
   }
 
   // Get cookies
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const stackCookies = {
     'stack-access': cookieStore.get('stack-access')?.value || 'Not found',
     'stack-refresh': cookieStore.get('stack-refresh')?.value || 'Not found',
-    'stack-access-token': cookieStore.get('stack-access-token')?.value || 'Not found',
-    'stack-refresh-token': cookieStore.get('stack-refresh-token')?.value || 'Not found',
+    'stack-access-token':
+      cookieStore.get('stack-access-token')?.value || 'Not found',
+    'stack-refresh-token':
+      cookieStore.get('stack-refresh-token')?.value || 'Not found',
   };
 
   // Get headers
-  const headersList = await headers();
+  const headersList = headers();
   const relevantHeaders = {
     'user-agent': headersList.get('user-agent') || 'Not found',
-    'host': headersList.get('host') || 'Not found',
+    host: headersList.get('host') || 'Not found',
     'x-forwarded-for': headersList.get('x-forwarded-for') || 'Not found',
   };
 
   // Environment variables (masked for security)
   const envVars = {
-    NEXT_PUBLIC_STACK_PROJECT_ID: process.env.NEXT_PUBLIC_STACK_PROJECT_ID ? '✓ Set' : '✗ Not set',
-    NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY ? '✓ Set' : '✗ Not set',
-    STACK_SECRET_SERVER_KEY: process.env.STACK_SECRET_SERVER_KEY ? '✓ Set' : '✗ Not set',
+    NEXT_PUBLIC_STACK_PROJECT_ID: process.env.NEXT_PUBLIC_STACK_PROJECT_ID
+      ? '✓ Set'
+      : '✗ Not set',
+    NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: process.env
+      .NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY
+      ? '✓ Set'
+      : '✗ Not set',
+    STACK_SECRET_SERVER_KEY: process.env.STACK_SECRET_SERVER_KEY
+      ? '✓ Set'
+      : '✗ Not set',
     DATABASE_URL: process.env.DATABASE_URL ? '✓ Set' : '✗ Not set',
   };
 
@@ -63,12 +72,30 @@ export default async function AuthDebugPage() {
           <div className="space-y-2">
             <p className="text-green-600 font-medium">✓ Authenticated</p>
             <div className="pl-4 space-y-1 text-sm">
-              <p><span className="font-medium">User ID:</span> {authSession.user.id}</p>
-              <p><span className="font-medium">Email:</span> {authSession.user.email}</p>
-              <p><span className="font-medium">Name:</span> {authSession.user.name || 'Not set'}</p>
-              <p><span className="font-medium">Type:</span> {authSession.user.type}</p>
-              <p><span className="font-medium">Company ID:</span> {authSession.user.companyId || 'Not set'}</p>
-              <p><span className="font-medium">Stack User ID:</span> {authSession.user.stackUserId}</p>
+              <p>
+                <span className="font-medium">User ID:</span>{' '}
+                {authSession.user.id}
+              </p>
+              <p>
+                <span className="font-medium">Email:</span>{' '}
+                {authSession.user.email}
+              </p>
+              <p>
+                <span className="font-medium">Name:</span>{' '}
+                {authSession.user.name || 'Not set'}
+              </p>
+              <p>
+                <span className="font-medium">Type:</span>{' '}
+                {authSession.user.type}
+              </p>
+              <p>
+                <span className="font-medium">Company ID:</span>{' '}
+                {authSession.user.companyId || 'Not set'}
+              </p>
+              <p>
+                <span className="font-medium">Stack User ID:</span>{' '}
+                {authSession.user.stackUserId}
+              </p>
             </div>
           </div>
         ) : (
@@ -88,11 +115,25 @@ export default async function AuthDebugPage() {
           <div className="space-y-2">
             <p className="text-green-600 font-medium">✓ Stack User Found</p>
             <div className="pl-4 space-y-1 text-sm">
-              <p><span className="font-medium">ID:</span> {stackUser.id}</p>
-              <p><span className="font-medium">Email:</span> {stackUser.primaryEmail || 'Not set'}</p>
-              <p><span className="font-medium">Email Verified:</span> {stackUser.primaryEmailVerified ? 'Yes' : 'No'}</p>
-              <p><span className="font-medium">Display Name:</span> {stackUser.displayName || 'Not set'}</p>
-              <p><span className="font-medium">Created:</span> {new Date(stackUser.signedUpAt).toLocaleString()}</p>
+              <p>
+                <span className="font-medium">ID:</span> {stackUser.id}
+              </p>
+              <p>
+                <span className="font-medium">Email:</span>{' '}
+                {stackUser.primaryEmail || 'Not set'}
+              </p>
+              <p>
+                <span className="font-medium">Email Verified:</span>{' '}
+                {stackUser.primaryEmailVerified ? 'Yes' : 'No'}
+              </p>
+              <p>
+                <span className="font-medium">Display Name:</span>{' '}
+                {stackUser.displayName || 'Not set'}
+              </p>
+              <p>
+                <span className="font-medium">Created:</span>{' '}
+                {new Date(stackUser.signedUpAt).toLocaleString()}
+              </p>
             </div>
           </div>
         ) : (
@@ -107,7 +148,11 @@ export default async function AuthDebugPage() {
           {Object.entries(stackCookies).map(([name, value]) => (
             <div key={name} className="flex">
               <span className="font-medium w-48">{name}:</span>
-              <span className={value === 'Not found' ? 'text-red-600' : 'text-green-600'}>
+              <span
+                className={
+                  value === 'Not found' ? 'text-red-600' : 'text-green-600'
+                }
+              >
                 {value === 'Not found' ? '✗ Not found' : '✓ Present (hidden)'}
               </span>
             </div>
@@ -122,7 +167,11 @@ export default async function AuthDebugPage() {
           {Object.entries(envVars).map(([name, status]) => (
             <div key={name} className="flex">
               <span className="font-medium w-64">{name}:</span>
-              <span className={status.includes('✓') ? 'text-green-600' : 'text-red-600'}>
+              <span
+                className={
+                  status.includes('✓') ? 'text-green-600' : 'text-red-600'
+                }
+              >
                 {status}
               </span>
             </div>
@@ -134,26 +183,26 @@ export default async function AuthDebugPage() {
       <section className="mb-8 p-6 bg-gray-50 rounded-lg">
         <h2 className="text-xl font-semibold mb-4">Test Actions</h2>
         <div className="space-x-4">
-          <Link 
-            href="/login" 
+          <Link
+            href="/login"
             className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Test Sign In
           </Link>
-          <Link 
-            href="/register" 
+          <Link
+            href="/register"
             className="inline-block px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
           >
             Test Sign Up
           </Link>
-          <Link 
-            href="/handler/sign-out" 
+          <Link
+            href="/handler/sign-out"
             className="inline-block px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Test Sign Out
           </Link>
-          <Link 
-            href="/admin" 
+          <Link
+            href="/admin"
             className="inline-block px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
           >
             Test Protected Route
@@ -178,10 +227,19 @@ export default async function AuthDebugPage() {
       <section className="p-6 bg-blue-50 rounded-lg">
         <h2 className="text-xl font-semibold mb-4">Debugging Instructions</h2>
         <ul className="list-disc list-inside space-y-2 text-sm">
-          <li>If "Auth Session Status" shows authenticated but "Stack User Status" doesn't, there's a sync issue</li>
-          <li>If cookies are missing, Stack Auth isn't setting them properly</li>
-          <li>If environment variables show "Not set", add them to your .env.local file</li>
-          <li>Test the sign in/out flow using the buttons above</li>
+          <li>
+            If &quot;Auth Session Status&quot; shows authenticated but
+            &quot;Stack User Status&quot; doesn&apos;t, there&apos;s a sync
+            issue
+          </li>
+          <li>
+            If cookies are missing, Stack Auth isn&apos;t setting them properly
+          </li>
+          <li>
+            If environment variables show &quot;Not set&quot;, add them to your
+            .env.local file
+          </li>
+          <li>Test the sign&nbsp;in/out flow using the buttons above</li>
           <li>Check browser console for any client-side errors</li>
         </ul>
       </section>

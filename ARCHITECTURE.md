@@ -1,6 +1,7 @@
 # Benefits AI Chatbot - Architecture Documentation
 
 ## Table of Contents
+
 1. [User Flows](#user-flows)
 2. [Information Architecture](#information-architecture)
 3. [Project Structure](#project-structure)
@@ -13,6 +14,7 @@
 ## User Flows
 
 ### 1. Authentication Flow
+
 ```mermaid
 graph LR
     A[User Visits App] --> B{Authenticated?}
@@ -25,6 +27,7 @@ graph LR
 ```
 
 ### 2. Benefits Query Flow
+
 ```mermaid
 graph LR
     A[User Types Question] --> B[Send to AI Chat API]
@@ -37,6 +40,7 @@ graph LR
 ```
 
 ### 3. Multi-Tenant Data Flow
+
 ```mermaid
 graph TD
     A[Stack Auth User] --> B[Lookup User in DB]
@@ -50,6 +54,7 @@ graph TD
 ## Information Architecture
 
 ### Data Hierarchy
+
 ```
 Stack Auth Organization
 ├── Company (Multi-tenant)
@@ -71,6 +76,7 @@ Stack Auth Organization
 ```
 
 ### User Roles & Permissions
+
 - **Guest**: Limited chat access, no benefits data
 - **Employee**: View own benefits, use calculators
 - **HR Admin**: View all employee benefits, manage knowledge base
@@ -118,37 +124,44 @@ benefitschatbot/
 ## Tech Stack
 
 ### Core Framework
+
 - **Next.js**: 15.3.0-canary.31 (App Router, React 19 RC)
 - **React**: 19.0.0-rc-45804af1-20241021 (Release Candidate)
 - **TypeScript**: 5.6.3
 
 ### UI & Styling
+
 - **Tailwind CSS**: 3.4.1
 - **shadcn/ui**: Component library
 - **Framer Motion**: 11.3.19 (Animations)
 - **Lucide React**: 0.446.0 (Icons)
 
 ### AI & LLM
+
 - **AI SDK**: 5.0.0-beta.6 (Vercel AI SDK - Beta)
 - **Google Generative AI**: Gemini 1.5 Pro
 - **OpenAI**: Ready for GPT-4 (not active)
 
 ### Authentication
+
 - **Stack Auth**: 2.8.22 (@stackframe/stack)
 - **Multi-tenant**: Stack Organizations
 
 ### Database
+
 - **PostgreSQL**: Via Neon Postgres
 - **Drizzle ORM**: 0.34.0
 - **Redis**: 5.0.0 (For caching - not fully implemented)
 
 ### Development Tools
+
 - **pnpm**: 9.12.3 (Package manager)
 - **Biome**: 1.9.4 (Linting/Formatting)
 - **Vitest**: For testing
 - **Playwright**: E2E testing
 
 ### Deployment
+
 - **Vercel**: Hosting platform
 - **Edge Runtime**: Serverless functions
 
@@ -159,6 +172,7 @@ benefitschatbot/
 ### `/app` Directory
 
 #### `/app/(auth)/`
+
 - **Purpose**: Authentication-related pages and logic
 - **Files**:
   - `stack-auth.ts`: Stack Auth integration and helper functions
@@ -169,6 +183,7 @@ benefitschatbot/
   - ~~`actions.ts`~~ (REMOVED - was NextAuth)
 
 #### `/app/(chat)/`
+
 - **Purpose**: Main chat interface and API
 - **Key Files**:
   - `api/chat/route.ts`: Main AI chat endpoint
@@ -179,13 +194,15 @@ benefitschatbot/
   - `layout.tsx`: Chat layout with sidebar
 
 #### `/app/handler/[...stack]/`
+
 - **Purpose**: Stack Auth route handlers
-- **Files**: 
+- **Files**:
   - `route.ts`: Handles Stack Auth callbacks
 
 ### `/components` Directory
 
 #### Feature Components
+
 - `benefits-dashboard.tsx`: Visual benefits overview
 - `plan-comparison.tsx`: Compare benefit plans
 - `cost-calculator.tsx`: Benefits cost calculator
@@ -194,6 +211,7 @@ benefitschatbot/
 - `app-sidebar.tsx`: Application sidebar
 
 #### Unused/Legacy Components
+
 - `auth-form.tsx`: Legacy auth form (NextAuth)
 - `weather.tsx`: Demo component (not used)
 - `document-*.tsx`: Document editing features (not fully implemented)
@@ -202,6 +220,7 @@ benefitschatbot/
 ### `/lib` Directory
 
 #### `/lib/ai/`
+
 - **Purpose**: AI configuration and tools
 - **Key Files**:
   - `tools/show-benefits-dashboard.ts`: Dashboard data tool
@@ -211,6 +230,7 @@ benefitschatbot/
   - `models.ts`: AI model configuration
 
 #### `/lib/db/`
+
 - **Purpose**: Database layer
 - **Key Files**:
   - `schema-v2.ts`: Multi-tenant database schema
@@ -220,20 +240,24 @@ benefitschatbot/
   - ~~`schema.ts`~~ (DEPRECATED - use schema-v2.ts)
 
 #### `/lib/repositories/` (DEPRECATED)
+
 - **Status**: Should be removed
 - **Use Instead**: `/lib/db/repositories/`
 
 ### `/scripts` Directory
+
 - `insert-sample-data.ts`: Seed database with sample data
 - `fix-ai-types.ts`: TypeScript patches for AI SDK
 - `run-migration.ts`: Database migration runner
 - `seed-test-fixtures.ts`: Test data seeding
 
 ### `/types` Directory
+
 - `ai-sdk-patch.d.ts`: TypeScript patches for AI SDK beta
 - `ai.d.ts`: AI-related type definitions
 
 ### Root Configuration Files
+
 - `stack.ts`: Stack Auth configuration
 - `middleware.ts`: Next.js middleware for auth
 - `drizzle.config.ts`: Drizzle ORM configuration
@@ -243,6 +267,7 @@ benefitschatbot/
 - `AuditReport.md`: Security audit findings
 
 ### Unused/Legacy Files
+
 1. `/artifacts/` - Entire directory unused
 2. `/components/weather.tsx` - Demo component
 3. `/lib/ai/tools/get-weather.ts` - Demo tool
@@ -258,6 +283,7 @@ benefitschatbot/
 ### 1. 🔴 Critical Issues
 
 #### Tenant Isolation Not Implemented
+
 ```typescript
 // Current queries don't filter by company
 const plans = await db.select().from(benefitPlans);
@@ -269,6 +295,7 @@ const plans = await db.select()
 ```
 
 #### User Onboarding Flow Missing
+
 - No way to assign users to companies
 - No company creation flow
 - No initial data setup
@@ -276,16 +303,19 @@ const plans = await db.select()
 ### 2. 🟠 High Priority Issues
 
 #### AI SDK Beta Instability
+
 - Using beta version with manual type patches
 - May break with updates
 - Consider downgrading to stable v3.x
 
 #### Incomplete Multi-tenant Implementation
+
 - Schema exists but not used consistently
 - Need tenant context middleware
 - Repository pattern partially implemented
 
 #### No Caching Strategy
+
 - Redis configured but not used
 - Expensive calculations repeated
 - No query result caching
@@ -293,16 +323,19 @@ const plans = await db.select()
 ### 3. 🟡 Medium Priority Issues
 
 #### Mixed Repository Patterns
+
 - Old pattern in `/lib/repositories/`
 - New pattern in `/lib/db/repositories/`
 - Inconsistent usage across codebase
 
 #### Incomplete Features
+
 - Document management system scaffolded but not implemented
 - Artifact system completely unused
 - Knowledge base tables exist but no UI
 
 #### No Error Tracking
+
 - Basic console logging only
 - No production error aggregation
 - No performance monitoring
@@ -310,11 +343,13 @@ const plans = await db.select()
 ### 4. 🔵 Low Priority Issues
 
 #### Test Coverage
+
 - Minimal test implementation
 - E2E tests exist but limited
 - No unit tests for business logic
 
 #### Bundle Size
+
 - Using heavy dependencies
 - No code splitting implemented
 - Could optimize for performance
@@ -324,23 +359,27 @@ const plans = await db.select()
 ## Recommended Next Steps
 
 ### Immediate (1-2 days)
+
 1. Implement tenant isolation middleware
 2. Create user onboarding flow
 3. Remove unused files and directories
 
 ### Short Term (1 week)
+
 1. Implement company assignment during registration
 2. Add tenant filtering to all queries
 3. Create company admin dashboard
 4. Implement basic caching
 
 ### Medium Term (2-4 weeks)
+
 1. Downgrade to stable AI SDK version
 2. Implement knowledge base UI
 3. Add comprehensive error tracking
 4. Create admin tools for benefit plan management
 
 ### Long Term (1-2 months)
+
 1. Implement document management system
 2. Add advanced analytics
 3. Create mobile app
@@ -351,21 +390,25 @@ const plans = await db.select()
 ## Architecture Decisions
 
 ### Why Stack Auth?
+
 - Built for multi-tenant SaaS
 - Simple integration with Next.js
 - Handles organizations natively
 
 ### Why Drizzle ORM?
+
 - Type-safe database queries
 - Excellent PostgreSQL support
 - Good migration tooling
 
 ### Why AI SDK Beta?
+
 - Latest features for streaming
 - Better tool support
 - (Trade-off: stability issues)
 
 ### Why Vercel?
+
 - Seamless Next.js integration
 - Edge functions for AI
 - Built-in analytics
