@@ -141,6 +141,10 @@ export default async function AdminDashboard() {
             <CardDescription>Platform management tasks</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
+            <a href="/admin/documents" className="block p-4 border rounded-lg hover:bg-muted bg-primary/5 border-primary/20">
+              📄 Document Management
+              <span className="text-sm text-muted-foreground block mt-1">Upload and manage benefits documents</span>
+            </a>
             <a href="/admin/companies/new" className="block p-4 border rounded-lg hover:bg-muted">
               Add New Company
             </a>

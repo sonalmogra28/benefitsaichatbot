@@ -116,18 +116,34 @@ export async function searchDocuments(
 /**
  * Delete all vectors for a document
  */
-export async function deleteDocument(
+export async function deleteDocumentVectors(
   companyId: string,
   documentId: string
 ) {
   const namespace = getCompanyNamespace(companyId);
   
-  // Delete all chunks for this document
-  await namespace.deleteMany({
-    filter: {
-      documentId: { $eq: documentId }
+  try {
+    // Note: The filter-based deletion requires metadata filtering to be enabled
+    // If not available, we'll fall back to ID-based deletion
+    await namespace.deleteMany({
+      filter: {
+        documentId: { $eq: documentId }
+      }
+    });
+  } catch (error) {
+    console.log('Filter-based deletion failed, trying ID-based deletion');
+    // Fallback: Delete by ID pattern
+    const idsToDelete = [];
+    for (let i = 0; i < 100; i++) {
+      idsToDelete.push(`${documentId}-chunk-${i}`);
     }
-  });
+    
+    try {
+      await namespace.deleteMany(idsToDelete);
+    } catch (err) {
+      console.error('Error deleting vectors:', err);
+    }
+  }
 }
 
 /**
