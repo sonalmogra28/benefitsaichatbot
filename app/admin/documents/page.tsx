@@ -8,81 +8,93 @@ import DocumentUploadSection from '@/components/admin/document-upload-section';
 import DocumentList from '@/components/admin/document-list';
 
 async function getCompanies() {
-  return await db
-    .select({
-      id: companies.id,
-      name: companies.name,
-      domain: companies.domain
-    })
-    .from(companies)
-    .where(sql`${companies.domain} != 'platform'`)
-    .then(results => results.filter(c => c.domain !== null) as { id: string; name: string; domain: string }[]);
+  try {
+    const results = await db
+      .select({
+        id: companies.id,
+        name: companies.name,
+        domain: companies.domain
+      })
+      .from(companies)
+      .where(sql`${companies.domain} != 'platform'`);
+    
+    return results.filter(c => c.domain !== null) as { id: string; name: string; domain: string }[];
+  } catch (error) {
+    console.error('Failed to fetch companies:', error);
+    return [];
+  }
 }
 
 async function getAllDocuments() {
-  const results = await db
-    .select({
-      id: knowledgeBaseDocuments.id,
-      title: knowledgeBaseDocuments.title,
-      documentType: knowledgeBaseDocuments.documentType,
-      category: knowledgeBaseDocuments.category,
-      tags: knowledgeBaseDocuments.tags,
-      fileUrl: knowledgeBaseDocuments.fileUrl,
-      fileType: knowledgeBaseDocuments.fileType,
-      processedAt: knowledgeBaseDocuments.processedAt,
-      createdAt: knowledgeBaseDocuments.createdAt,
-      companyId: knowledgeBaseDocuments.companyId,
-      companyName: companies.name,
-      companyDomain: companies.domain
-    })
-    .from(knowledgeBaseDocuments)
-    .leftJoin(companies, eq(knowledgeBaseDocuments.companyId, companies.id))
-    .orderBy(desc(knowledgeBaseDocuments.createdAt));
-    
-  // Filter out documents with null fileUrl or fileType
-  return results.filter(doc => doc.fileUrl && doc.fileType) as Array<{
-    id: string;
-    title: string;
-    documentType: string;
-    category: string | null;
-    tags: unknown;
-    fileUrl: string;
-    fileType: string;
-    processedAt: Date | null;
-    createdAt: Date;
-    companyId: string;
-    companyName: string | null;
-    companyDomain: string | null;
-  }>;
+  try {
+    const results = await db
+      .select({
+        id: knowledgeBaseDocuments.id,
+        title: knowledgeBaseDocuments.title,
+        documentType: knowledgeBaseDocuments.documentType,
+        category: knowledgeBaseDocuments.category,
+        tags: knowledgeBaseDocuments.tags,
+        fileUrl: knowledgeBaseDocuments.fileUrl,
+        fileType: knowledgeBaseDocuments.fileType,
+        processedAt: knowledgeBaseDocuments.processedAt,
+        createdAt: knowledgeBaseDocuments.createdAt,
+        companyId: knowledgeBaseDocuments.companyId,
+        companyName: companies.name,
+        companyDomain: companies.domain
+      })
+      .from(knowledgeBaseDocuments)
+      .leftJoin(companies, eq(knowledgeBaseDocuments.companyId, companies.id))
+      .orderBy(desc(knowledgeBaseDocuments.createdAt));
+      
+    // Filter out documents with null fileUrl or fileType
+    return results.filter(doc => doc.fileUrl && doc.fileType) as Array<{
+      id: string;
+      title: string;
+      documentType: string;
+      category: string | null;
+      tags: unknown;
+      fileUrl: string;
+      fileType: string;
+      processedAt: Date | null;
+      createdAt: Date;
+      companyId: string;
+      companyName: string | null;
+      companyDomain: string | null;
+    }>;
+  } catch (error) {
+    console.error('Failed to fetch documents:', error);
+    return [];
+  }
 }
 
 export default async function AdminDocumentsPage() {
-  const session = await auth();
-  
-  if (!session?.user || session.user.type !== 'platform_admin') {
-    redirect('/login');
-  }
-  
-  const [companiesList, documents] = await Promise.all([
-    getCompanies(),
-    getAllDocuments()
-  ]);
-  
-  // Group documents by company
-  const documentsByCompany = documents.reduce((acc, doc) => {
-    const companyId = doc.companyId;
-    if (!acc[companyId]) {
-      acc[companyId] = {
-        companyName: doc.companyName,
-        companyDomain: doc.companyDomain,
-        documents: []
-      };
+  try {
+    const session = await auth();
+    
+    if (!session?.user || session.user.type !== 'platform_admin') {
+      redirect('/login');
     }
-    acc[companyId].documents.push(doc);
-    return acc;
-  }, {} as Record<string, { companyName: string | null; companyDomain: string | null; documents: typeof documents }>);
-  
-  return (
+    
+    const [companiesList, documents] = await Promise.all([
+      getCompanies(),
+      getAllDocuments()
+    ]);
+    
+    // Group documents by company
+    const documentsByCompany = documents.reduce((acc, doc) => {
+      const companyId = doc.companyId;
+      if (!acc[companyId]) {
+        acc[companyId] = {
+          companyName: doc.companyName,
+          companyDomain: doc.companyDomain,
+          documents: []
+        };
+      }
+      acc[companyId].documents.push(doc);
+      return acc;
+    }, {} as Record<string, { companyName: string | null; companyDomain: string | null; documents: typeof documents }>);
+    
+    return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Document Management</h1>
@@ -156,4 +168,23 @@ export default async function AdminDocumentsPage() {
       </div>
     </div>
   );
+  } catch (error) {
+    console.error('Error in AdminDocumentsPage:', error);
+    
+    return (
+      <div className="p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Document Management</h1>
+          <p className="text-muted-foreground">Upload and manage benefits documents for all companies</p>
+        </div>
+        
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-lg text-muted-foreground mb-4">Unable to load documents</p>
+            <p className="text-sm text-muted-foreground">Please check your database connection and try again.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 }
