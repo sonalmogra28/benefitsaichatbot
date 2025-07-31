@@ -35,7 +35,8 @@
       "WebFetch(domain:docs.stack-auth.com)",
       "WebFetch(domain:www.npmjs.com)",
       "Bash(cat:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

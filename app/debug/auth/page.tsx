@@ -1,71 +1,190 @@
 import { auth } from '@/app/(auth)/stack-auth';
 import { stackServerApp } from '@/stack';
-import { cookies } from 'next/headers';
+import { headers, cookies } from 'next/headers';
+import Link from 'next/link';
 
 export default async function AuthDebugPage() {
-  const session = await auth();
-  const cookieStore = await cookies();
-  const allCookies = cookieStore.getAll();
-  
+  // Get auth session
+  let authSession = null;
+  let authError = null;
+  try {
+    authSession = await auth();
+  } catch (error) {
+    authError = error instanceof Error ? error.message : 'Unknown error';
+  }
+
+  // Get Stack user directly
   let stackUser = null;
   let stackError = null;
-  
   try {
     stackUser = await stackServerApp.getUser();
   } catch (error) {
     stackError = error instanceof Error ? error.message : 'Unknown error';
   }
 
+  // Get cookies
+  const cookieStore = await cookies();
+  const stackCookies = {
+    'stack-access': cookieStore.get('stack-access')?.value || 'Not found',
+    'stack-refresh': cookieStore.get('stack-refresh')?.value || 'Not found',
+    'stack-access-token': cookieStore.get('stack-access-token')?.value || 'Not found',
+    'stack-refresh-token': cookieStore.get('stack-refresh-token')?.value || 'Not found',
+  };
+
+  // Get headers
+  const headersList = await headers();
+  const relevantHeaders = {
+    'user-agent': headersList.get('user-agent') || 'Not found',
+    'host': headersList.get('host') || 'Not found',
+    'x-forwarded-for': headersList.get('x-forwarded-for') || 'Not found',
+  };
+
+  // Environment variables (masked for security)
+  const envVars = {
+    NEXT_PUBLIC_STACK_PROJECT_ID: process.env.NEXT_PUBLIC_STACK_PROJECT_ID ? '✓ Set' : '✗ Not set',
+    NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY ? '✓ Set' : '✗ Not set',
+    STACK_SECRET_SERVER_KEY: process.env.STACK_SECRET_SERVER_KEY ? '✓ Set' : '✗ Not set',
+    DATABASE_URL: process.env.DATABASE_URL ? '✓ Set' : '✗ Not set',
+  };
+
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Auth Debug Information</h1>
-      
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Session Information</h2>
-          <pre className="bg-gray-100 p-4 rounded overflow-auto">
-            {JSON.stringify(session, null, 2)}
-          </pre>
-        </div>
+    <div className="container mx-auto p-8 max-w-4xl">
+      <h1 className="text-3xl font-bold mb-8">Authentication Debug Page</h1>
 
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Stack User (Direct)</h2>
-          <pre className="bg-gray-100 p-4 rounded overflow-auto">
-            {stackUser ? JSON.stringify(stackUser, null, 2) : 'No user found'}
-          </pre>
-          {stackError && (
-            <p className="text-red-600 mt-2">Error: {stackError}</p>
-          )}
-        </div>
+      {/* Auth Session Status */}
+      <section className="mb-8 p-6 bg-gray-50 rounded-lg">
+        <h2 className="text-xl font-semibold mb-4">Auth Session Status</h2>
+        {authError ? (
+          <div className="p-4 bg-red-100 text-red-700 rounded">
+            <p className="font-medium">Auth Error:</p>
+            <p className="text-sm">{authError}</p>
+          </div>
+        ) : authSession?.user ? (
+          <div className="space-y-2">
+            <p className="text-green-600 font-medium">✓ Authenticated</p>
+            <div className="pl-4 space-y-1 text-sm">
+              <p><span className="font-medium">User ID:</span> {authSession.user.id}</p>
+              <p><span className="font-medium">Email:</span> {authSession.user.email}</p>
+              <p><span className="font-medium">Name:</span> {authSession.user.name || 'Not set'}</p>
+              <p><span className="font-medium">Type:</span> {authSession.user.type}</p>
+              <p><span className="font-medium">Company ID:</span> {authSession.user.companyId || 'Not set'}</p>
+              <p><span className="font-medium">Stack User ID:</span> {authSession.user.stackUserId}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-yellow-600">⚠ Not authenticated</p>
+        )}
+      </section>
 
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Cookies</h2>
-          <pre className="bg-gray-100 p-4 rounded overflow-auto">
-            {JSON.stringify(allCookies.map(c => ({ name: c.name, value: c.value.substring(0, 20) + '...' })), null, 2)}
-          </pre>
-        </div>
+      {/* Stack User Status */}
+      <section className="mb-8 p-6 bg-gray-50 rounded-lg">
+        <h2 className="text-xl font-semibold mb-4">Stack Auth User Status</h2>
+        {stackError ? (
+          <div className="p-4 bg-red-100 text-red-700 rounded">
+            <p className="font-medium">Stack Error:</p>
+            <p className="text-sm">{stackError}</p>
+          </div>
+        ) : stackUser ? (
+          <div className="space-y-2">
+            <p className="text-green-600 font-medium">✓ Stack User Found</p>
+            <div className="pl-4 space-y-1 text-sm">
+              <p><span className="font-medium">ID:</span> {stackUser.id}</p>
+              <p><span className="font-medium">Email:</span> {stackUser.primaryEmail || 'Not set'}</p>
+              <p><span className="font-medium">Email Verified:</span> {stackUser.primaryEmailVerified ? 'Yes' : 'No'}</p>
+              <p><span className="font-medium">Display Name:</span> {stackUser.displayName || 'Not set'}</p>
+              <p><span className="font-medium">Created:</span> {new Date(stackUser.signedUpAt).toLocaleString()}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-yellow-600">⚠ No Stack user found</p>
+        )}
+      </section>
 
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Environment Check</h2>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>Stack Project ID: {process.env.NEXT_PUBLIC_STACK_PROJECT_ID ? '✓ Set' : '✗ Missing'}</li>
-            <li>Stack Publishable Key: {process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY ? '✓ Set' : '✗ Missing'}</li>
-            <li>Stack Secret Key: {process.env.STACK_SECRET_SERVER_KEY ? '✓ Set' : '✗ Missing'}</li>
-          </ul>
+      {/* Cookies */}
+      <section className="mb-8 p-6 bg-gray-50 rounded-lg">
+        <h2 className="text-xl font-semibold mb-4">Stack Auth Cookies</h2>
+        <div className="space-y-2 text-sm">
+          {Object.entries(stackCookies).map(([name, value]) => (
+            <div key={name} className="flex">
+              <span className="font-medium w-48">{name}:</span>
+              <span className={value === 'Not found' ? 'text-red-600' : 'text-green-600'}>
+                {value === 'Not found' ? '✗ Not found' : '✓ Present (hidden)'}
+              </span>
+            </div>
+          ))}
         </div>
+      </section>
 
-        <div className="flex gap-4">
-          <a href="/login" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-            Go to Login
-          </a>
-          <a href="/register" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-            Go to Register
-          </a>
-          <a href="/" className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-            Go to Home
-          </a>
+      {/* Environment Variables */}
+      <section className="mb-8 p-6 bg-gray-50 rounded-lg">
+        <h2 className="text-xl font-semibold mb-4">Environment Variables</h2>
+        <div className="space-y-2 text-sm">
+          {Object.entries(envVars).map(([name, status]) => (
+            <div key={name} className="flex">
+              <span className="font-medium w-64">{name}:</span>
+              <span className={status.includes('✓') ? 'text-green-600' : 'text-red-600'}>
+                {status}
+              </span>
+            </div>
+          ))}
         </div>
-      </div>
+      </section>
+
+      {/* Test Actions */}
+      <section className="mb-8 p-6 bg-gray-50 rounded-lg">
+        <h2 className="text-xl font-semibold mb-4">Test Actions</h2>
+        <div className="space-x-4">
+          <Link 
+            href="/login" 
+            className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Test Sign In
+          </Link>
+          <Link 
+            href="/register" 
+            className="inline-block px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Test Sign Up
+          </Link>
+          <Link 
+            href="/handler/sign-out" 
+            className="inline-block px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Test Sign Out
+          </Link>
+          <Link 
+            href="/admin" 
+            className="inline-block px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+          >
+            Test Protected Route
+          </Link>
+        </div>
+      </section>
+
+      {/* Debug Info */}
+      <section className="mb-8 p-6 bg-gray-50 rounded-lg">
+        <h2 className="text-xl font-semibold mb-4">Request Headers</h2>
+        <div className="space-y-2 text-sm">
+          {Object.entries(relevantHeaders).map(([name, value]) => (
+            <div key={name} className="flex">
+              <span className="font-medium w-48">{name}:</span>
+              <span className="text-gray-600">{value}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Instructions */}
+      <section className="p-6 bg-blue-50 rounded-lg">
+        <h2 className="text-xl font-semibold mb-4">Debugging Instructions</h2>
+        <ul className="list-disc list-inside space-y-2 text-sm">
+          <li>If "Auth Session Status" shows authenticated but "Stack User Status" doesn't, there's a sync issue</li>
+          <li>If cookies are missing, Stack Auth isn't setting them properly</li>
+          <li>If environment variables show "Not set", add them to your .env.local file</li>
+          <li>Test the sign in/out flow using the buttons above</li>
+          <li>Check browser console for any client-side errors</li>
+        </ul>
+      </section>
     </div>
   );
 }
