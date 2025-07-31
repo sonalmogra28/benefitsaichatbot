@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { stackServerApp } from './stack';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -26,8 +27,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // For now, let's simplify and just pass through all requests
-  // The individual pages will handle their own authentication
+  // Protected routes that require authentication
+  const protectedPaths = ['/admin', '/company-admin', '/chat', '/debug/auth'];
+  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
+
+  if (isProtectedPath) {
+    try {
+      const user = await stackServerApp.getUser();
+      if (!user) {
+        // Redirect to login if not authenticated
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+    } catch (error) {
+      // If there's an error checking auth, redirect to login
+      console.error('Auth check error in middleware:', error);
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
