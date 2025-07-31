@@ -1,5 +1,6 @@
 import { auth } from '@/app/(auth)/stack-auth';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { db } from '@/lib/db';
 import { companies, users, benefitPlans, benefitEnrollments } from '@/lib/db/schema-v2';
 import { count, sql, eq } from 'drizzle-orm';
@@ -141,22 +142,22 @@ export default async function AdminDashboard() {
             <CardDescription>Platform management tasks</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <a href="/admin/documents" className="block p-4 border rounded-lg hover:bg-muted bg-primary/5 border-primary/20">
+            <Link href="/admin/documents" className="block p-4 border rounded-lg hover:bg-muted bg-primary/5 border-primary/20">
               📄 Document Management
               <span className="text-sm text-muted-foreground block mt-1">Upload and manage benefits documents</span>
-            </a>
-            <a href="/admin/companies/new" className="block p-4 border rounded-lg hover:bg-muted">
+            </Link>
+            <Link href="/admin/companies/new" className="block p-4 border rounded-lg hover:bg-muted">
               Add New Company
-            </a>
-            <a href="/admin/users" className="block p-4 border rounded-lg hover:bg-muted">
+            </Link>
+            <Link href="/admin/users" className="block p-4 border rounded-lg hover:bg-muted">
               Manage Users
-            </a>
-            <a href="/admin/analytics" className="block p-4 border rounded-lg hover:bg-muted">
+            </Link>
+            <Link href="/admin/analytics" className="block p-4 border rounded-lg hover:bg-muted">
               View Platform Analytics
-            </a>
-            <a href="/admin/settings" className="block p-4 border rounded-lg hover:bg-muted">
+            </Link>
+            <Link href="/admin/settings" className="block p-4 border rounded-lg hover:bg-muted">
               Platform Settings
-            </a>
+            </Link>
           </CardContent>
         </Card>
       </div>
