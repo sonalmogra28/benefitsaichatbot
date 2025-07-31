@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
-import { knowledgeBaseDocuments } from '@/lib/db/schema-v2';
+import { knowledgeBaseDocuments } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { uploadDocument, validateFile } from '@/lib/storage/blob';
 import { z } from 'zod';

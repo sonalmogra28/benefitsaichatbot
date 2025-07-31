@@ -8,7 +8,7 @@ import type { calculateSavings } from './ai/tools/calculate-savings';
 import type { InferUITool, UIMessage } from 'ai';
 
 import type { ArtifactKind } from '@/components/artifact';
-import type { Suggestion } from './db/schema';
+import type { Suggestion } from './db/schema-chat';
 
 export type DataPart = { type: 'append-message'; message: string };
 

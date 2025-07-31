@@ -6,7 +6,7 @@ import {
   users,
   benefitPlans,
   benefitEnrollments,
-} from '@/lib/db/schema-v2';
+} from '@/lib/db/schema';
 import { nanoid } from 'nanoid';
 
 (async () => {

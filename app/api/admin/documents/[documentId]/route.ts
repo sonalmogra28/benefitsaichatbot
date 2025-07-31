@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
-import { knowledgeBaseDocuments } from '@/lib/db/schema-v2';
+import { knowledgeBaseDocuments } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { deleteDocument } from '@/lib/storage/blob';
 import { deleteDocumentVectors } from '@/lib/vectors/pinecone';

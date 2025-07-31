@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { companies, users, benefitPlans, benefitEnrollments } from '@/lib/db/schema-v2';
+import { companies, users, benefitPlans, benefitEnrollments } from '@/lib/db/schema';
 
 async function seedDatabase() {
   console.log('🌱 Starting database seed...');

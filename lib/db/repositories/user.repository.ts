@@ -8,7 +8,7 @@ import {
   type User, 
   type NewUser,
   type Company 
-} from '../schema-v2';
+} from '@/lib/db/schema';
 
 /**
  * User Repository

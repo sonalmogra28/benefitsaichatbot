@@ -5,7 +5,7 @@ import {
   users,
   type BenefitEnrollment, 
   type NewBenefitEnrollment 
-} from '@/lib/db/schema-v2';
+} from '@/lib/db/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { withAuthTenantContext } from '@/lib/db/tenant-context';
 import type { NextRequest } from 'next/server';

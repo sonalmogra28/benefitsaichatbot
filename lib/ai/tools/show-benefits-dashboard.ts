@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
 import { eq, and } from 'drizzle-orm';
-import { benefitPlans, benefitEnrollments, users } from '../../db/schema-v2';
+import { benefitPlans, benefitEnrollments, users } from '@/lib/db/schema';
 import { getCurrentTenantContext } from '@/lib/db/tenant-context';
 
 export const showBenefitsDashboard = tool({

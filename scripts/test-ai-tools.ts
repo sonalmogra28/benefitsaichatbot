@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { config } from 'dotenv';
-import { benefitPlans, users, companies } from '../lib/db/schema-v2';
+import { benefitPlans, users, companies } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 // Load environment variables

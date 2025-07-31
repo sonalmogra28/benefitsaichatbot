@@ -1,7 +1,7 @@
 import { extractText } from 'unpdf';
 import { generateEmbedding as generateOpenAIEmbedding } from '@/lib/ai/embeddings';
 import { db } from '@/lib/db';
-import { knowledgeBaseDocuments } from '@/lib/db/schema-v2';
+import { knowledgeBaseDocuments } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { upsertDocumentChunks, type DocumentChunk } from '@/lib/vectors/pinecone';
 

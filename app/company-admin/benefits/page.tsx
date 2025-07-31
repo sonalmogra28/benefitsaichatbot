@@ -1,7 +1,7 @@
 import { auth } from '@/app/(auth)/stack-auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
-import { benefitPlans } from '@/lib/db/schema-v2';
+import { benefitPlans } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';

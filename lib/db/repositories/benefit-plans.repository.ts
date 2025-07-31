@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { benefitPlans, benefitEnrollments, type BenefitPlan, type NewBenefitPlan } from '@/lib/db/schema-v2';
+import { benefitPlans, benefitEnrollments, type BenefitPlan, type NewBenefitPlan } from '@/lib/db/schema';
 import { eq, and, sql, gte } from 'drizzle-orm';
 import { withAuthTenantContext } from '@/lib/db/tenant-context';
 import type { NextRequest } from 'next/server';

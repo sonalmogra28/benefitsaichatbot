@@ -5,7 +5,7 @@ import path from 'path';
 config({ path: path.resolve(process.cwd(), '.env.local') });
 
 import { db } from '../lib/db';
-import { companies, users, knowledgeBaseDocuments } from '../lib/db/schema-v2';
+import { companies, users, knowledgeBaseDocuments } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 async function testFullDocumentFlow() {

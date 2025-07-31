@@ -2,7 +2,7 @@ import { auth } from '@/app/(auth)/stack-auth';
 import { redirect } from 'next/navigation';
 import { withAuthTenantContext } from '@/lib/db/tenant-context';
 import { db } from '@/lib/db';
-import { users, benefitPlans, benefitEnrollments } from '@/lib/db/schema-v2';
+import { users, benefitPlans, benefitEnrollments } from '@/lib/db/schema';
 import { eq, and, count } from 'drizzle-orm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 

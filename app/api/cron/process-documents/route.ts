@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { knowledgeBaseDocuments } from '@/lib/db/schema-v2';
+import { knowledgeBaseDocuments } from '@/lib/db/schema';
 import { eq, isNull } from 'drizzle-orm';
 import { processDocument } from '@/lib/documents/processor';
 

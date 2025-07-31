@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
 import { auth } from '@/app/(auth)/stack-auth';
-import * as schema from './schema-v2';
+import * as schema from './schema';
 import type { NextRequest } from 'next/server';
 
 /**

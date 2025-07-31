@@ -2,7 +2,7 @@ import { auth } from '@/app/(auth)/stack-auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { db } from '@/lib/db';
-import { companies, users, benefitPlans, benefitEnrollments } from '@/lib/db/schema-v2';
+import { companies, users, benefitPlans, benefitEnrollments } from '@/lib/db/schema';
 import { count, sql, eq } from 'drizzle-orm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 

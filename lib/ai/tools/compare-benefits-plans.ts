@@ -8,7 +8,7 @@ import {
   benefitEnrollments,
   users,
   companies,
-} from '@/lib/db/schema-v2';
+} from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { config } from 'dotenv';
 

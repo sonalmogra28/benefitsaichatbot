@@ -3,7 +3,7 @@ import type { Session } from 'next-auth';
 import { streamObject, tool } from 'ai';
 import type { UIMessageStreamWriter } from 'ai';
 import { getDocumentById, saveSuggestions } from '@/lib/db/queries';
-import type { Suggestion } from '@/lib/db/schema';
+import type { Suggestion } from '@/lib/db/schema-chat';
 import { generateUUID } from '@/lib/utils';
 import { myProvider } from '../providers';
 import type { ChatMessage } from '@/lib/types';
