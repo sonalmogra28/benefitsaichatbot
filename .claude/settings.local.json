@@ -31,7 +31,9 @@
       "Bash(for:*)",
       "Bash(do echo \"=== $file ===\")",
       "Bash(done)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "WebFetch(domain:docs.stack-auth.com)",
+      "WebFetch(domain:www.npmjs.com)"
     ],
     "deny": []
   }

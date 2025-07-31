@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@stackframe/stack';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
-export default function OnboardingPage() {
+function OnboardingForm() {
   const user = useUser();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -169,5 +169,19 @@ export default function OnboardingPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-dvh w-screen items-center justify-center bg-background">
+        <div className="animate-pulse">
+          <div className="h-96 w-96 bg-gray-200 rounded-lg dark:bg-gray-700"></div>
+        </div>
+      </div>
+    }>
+      <OnboardingForm />
+    </Suspense>
   );
 }
