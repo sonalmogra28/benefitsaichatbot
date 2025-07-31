@@ -1,7 +1,7 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { withTenantContext } from '../tenant-context';
 import { db } from '@/lib/db';
-import { companies, users, type Company, type NewCompany, type User } from '@/lib/db/schema';
+import { companies, users, type Company, type NewCompany, } from '@/lib/db/schema';
 
 /**
  * Company Repository

@@ -1,7 +1,7 @@
 // Minimal type declarations to satisfy TS until library types are updated
 
 declare module 'ai' {
-  import { ZodTypeAny } from 'zod';
+  import type { ZodTypeAny } from 'zod';
 
   export interface ToolDefinition<P extends ZodTypeAny, R = any> {
     description: string;

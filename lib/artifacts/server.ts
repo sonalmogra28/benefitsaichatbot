@@ -7,7 +7,6 @@ import type { Document } from '../db/schema-chat';
 import { saveDocument } from '../db/queries';
 import type { Session } from 'next-auth';
 import type { UIMessageStreamWriter } from 'ai';
-import type { ChatMessage } from '../types';
 
 export interface SaveDocumentProps {
   id: string;

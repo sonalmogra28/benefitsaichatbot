@@ -2,6 +2,8 @@ import { auth } from '@/app/(auth)/stack-auth';
 import { redirect } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+export const dynamic = 'force-dynamic';
+
 export default async function UsersPage() {
   const session = await auth();
   

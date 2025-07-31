@@ -7,7 +7,6 @@ import {
   artifactKinds,
   documentHandlersByArtifactKind,
 } from '@/lib/artifacts/server';
-import type { ChatMessage } from '@/lib/types';
 
 interface CreateDocumentProps {
   session: Session;

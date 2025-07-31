@@ -52,15 +52,19 @@ export async function withAuthTenantContext<T>(
     throw new Error('User not associated with any company');
   }
   
+  // Store user reference for TypeScript - we know companyId exists after the check above
+  const user = session.user;
+  const companyId = session.user.companyId;
+  
   // Get the company's stack org ID
-  const company = await getCompanyById(session.user.companyId);
+  const company = await getCompanyById(companyId);
   if (!company) {
     throw new Error('Company not found');
   }
   
   // Execute with tenant context
   return await withTenantContext(company.stackOrgId, async () => {
-    return await handler(session.user!.companyId!, session.user!.id);
+    return await handler(companyId, user.id);
   });
 }
 

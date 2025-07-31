@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Download, Trash2, Clock, CheckCircle, ExternalLink } from 'lucide-react';
+import { Download, Trash2, Clock, CheckCircle, ExternalLink } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,

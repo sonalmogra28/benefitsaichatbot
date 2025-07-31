@@ -1,10 +1,8 @@
 import { config } from 'dotenv';
-import path from 'path';
+import path from 'node:path';
 
 // Load environment variables BEFORE any other imports
 config({ path: path.resolve(process.cwd(), '.env.local') });
-
-import { processDocument } from '../lib/documents/processor';
 import { db } from '../lib/db';
 import { knowledgeBaseDocuments } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';

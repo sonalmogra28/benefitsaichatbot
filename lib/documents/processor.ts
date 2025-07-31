@@ -159,7 +159,7 @@ export function chunkText(
         .slice(-Math.floor(overlapSize / 10)) // Approximate word count for overlap
         .join(' ');
       
-      currentChunk = overlap + ' ' + sentence;
+      currentChunk = `${overlap} ${sentence}`;
       currentSize = currentChunk.length;
     } else {
       currentChunk += (currentChunk ? ' ' : '') + sentence;

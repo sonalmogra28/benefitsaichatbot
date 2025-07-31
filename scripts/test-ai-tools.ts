@@ -57,8 +57,8 @@ async function testAITools() {
       
       // Simulate the AI tool logic
       const plansWithAnalysis = healthPlans.slice(0, 2).map((plan) => {
-        const monthlyCost = parseFloat(plan.monthlyPremiumEmployee || '0');
-        const deductible = parseFloat(plan.deductibleIndividual || '0');
+        const monthlyCost = Number.parseFloat(plan.monthlyPremiumEmployee || '0');
+        const deductible = Number.parseFloat(plan.deductibleIndividual || '0');
         
         return {
           id: plan.id,
@@ -68,8 +68,8 @@ async function testAITools() {
           costs: {
             monthlyCost,
             deductible,
-            copayPrimaryCare: parseFloat(plan.copayPrimaryCare || '0'),
-            copaySpecialist: parseFloat(plan.copaySpecialist || '0')
+            copayPrimaryCare: Number.parseFloat(plan.copayPrimaryCare || '0'),
+            copaySpecialist: Number.parseFloat(plan.copaySpecialist || '0')
           },
           features: plan.features || []
         };

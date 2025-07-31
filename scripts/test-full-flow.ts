@@ -1,11 +1,11 @@
 import { config } from 'dotenv';
-import path from 'path';
+import path from 'node:path';
 
 // Load environment variables BEFORE any other imports
 config({ path: path.resolve(process.cwd(), '.env.local') });
 
 import { db } from '../lib/db';
-import { companies, users, knowledgeBaseDocuments } from '../lib/db/schema';
+import { companies, knowledgeBaseDocuments } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 async function testFullDocumentFlow() {

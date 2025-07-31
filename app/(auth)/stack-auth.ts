@@ -1,5 +1,4 @@
 import { stackServerApp } from '@/stack';
-import { getUser as getUserFromDb } from '@/lib/db/queries';
 import { db } from '@/lib/db';
 import { users, companies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';

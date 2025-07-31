@@ -12,6 +12,7 @@ export const SignOutForm = () => {
 
   return (
     <button
+      type="button"
       onClick={handleSignOut}
       className="w-full text-left px-1 py-0.5 text-red-500"
     >

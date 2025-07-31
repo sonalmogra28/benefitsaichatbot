@@ -240,11 +240,12 @@ export class BenefitPlansRepository {
         return Number(plan.monthlyPremiumEmployee || 0);
       case 'family':
         return Number(plan.monthlyPremiumFamily || 0);
-      case 'employee_spouse':
+      case 'employee_spouse': {
         // Typically employee + spouse is between individual and family rates
         const individual = Number(plan.monthlyPremiumEmployee || 0);
         const family = Number(plan.monthlyPremiumFamily || 0);
         return individual + ((family - individual) * 0.6); // 60% of the difference
+      }
       default:
         return 0;
     }

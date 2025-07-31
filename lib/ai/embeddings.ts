@@ -16,7 +16,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   // Truncate text if too long (max ~8000 tokens, but we'll be conservative)
   const maxLength = 6000;
   const truncatedText = text.length > maxLength 
-    ? text.substring(0, maxLength) + '...' 
+    ? `${text.substring(0, maxLength)}...` 
     : text;
   
   try {

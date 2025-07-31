@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
 import { knowledgeBaseDocuments } from '@/lib/db/schema';
@@ -57,7 +57,7 @@ export async function POST(
     }
     
     // Parse and validate metadata
-    let parsedMetadata;
+    let parsedMetadata: z.infer<typeof uploadMetadataSchema>;
     try {
       parsedMetadata = uploadMetadataSchema.parse(JSON.parse(metadata));
     } catch (error) {

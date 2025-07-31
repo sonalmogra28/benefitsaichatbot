@@ -7,7 +7,6 @@ import {
   streamText,
 } from 'ai';
 import { auth } from '@/app/(auth)/stack-auth';
-import type { UserType } from '@/app/(auth)/stack-auth';
 import { type RequestHints, systemPrompt } from '@/lib/ai/prompts';
 import {
   createStreamId,

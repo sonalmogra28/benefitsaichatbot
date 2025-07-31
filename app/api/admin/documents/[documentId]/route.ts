@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
 import { knowledgeBaseDocuments } from '@/lib/db/schema';

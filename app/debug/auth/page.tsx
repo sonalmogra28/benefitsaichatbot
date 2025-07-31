@@ -3,6 +3,8 @@ import { stackServerApp } from '@/stack';
 import { headers, cookies } from 'next/headers';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AuthDebugPage() {
   // Get auth session
   let authSession = null;
@@ -23,7 +25,7 @@ export default async function AuthDebugPage() {
   }
 
   // Get cookies
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const stackCookies = {
     'stack-access': cookieStore.get('stack-access')?.value || 'Not found',
     'stack-refresh': cookieStore.get('stack-refresh')?.value || 'Not found',
@@ -34,7 +36,7 @@ export default async function AuthDebugPage() {
   };
 
   // Get headers
-  const headersList = headers();
+  const headersList = await headers();
   const relevantHeaders = {
     'user-agent': headersList.get('user-agent') || 'Not found',
     host: headersList.get('host') || 'Not found',

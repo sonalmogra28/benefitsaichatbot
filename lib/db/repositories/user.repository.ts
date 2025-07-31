@@ -53,7 +53,7 @@ export class UserRepository {
     }
   ): Promise<User[]> {
     return withTenantContext(stackOrgId, async (db) => {
-      let conditions = [eq(users.companyId, companyId)];
+      const conditions = [eq(users.companyId, companyId)];
       
       if (!options?.includeInactive) {
         conditions.push(eq(users.isActive, true));

@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import DocumentUploadSection from '@/components/admin/document-upload-section';
 import DocumentList from '@/components/admin/document-list';
 
+export const dynamic = 'force-dynamic';
+
 async function getCompanies() {
   try {
     const results = await db

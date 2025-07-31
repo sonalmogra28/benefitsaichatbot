@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { stackServerApp } from './stack';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

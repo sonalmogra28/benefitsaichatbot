@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
 import { eq, and } from 'drizzle-orm';
-import { benefitPlans, users } from '@/lib/db/schema';
+import { benefitPlans, } from '@/lib/db/schema';
 import { getCurrentTenantContext } from '@/lib/db/tenant-context';
 
 export const calculateBenefitsCost = tool({
@@ -61,7 +61,7 @@ export const calculateBenefitsCost = tool({
       }
 
       // Get benefit plan(s) to calculate costs
-      let plans;
+      let plans: typeof benefitPlans.$inferSelect[] = [];
       if (planId) {
         // Get specific plan
         plans = await db

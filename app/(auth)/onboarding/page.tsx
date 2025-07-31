@@ -177,7 +177,7 @@ export default function OnboardingPage() {
     <Suspense fallback={
       <div className="flex h-dvh w-screen items-center justify-center bg-background">
         <div className="animate-pulse">
-          <div className="h-96 w-96 bg-gray-200 rounded-lg dark:bg-gray-700"></div>
+          <div className="h-96 w-96 bg-gray-200 rounded-lg dark:bg-gray-700" />
         </div>
       </div>
     }>

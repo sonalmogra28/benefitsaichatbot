@@ -3,10 +3,9 @@ import {
   benefitEnrollments, 
   benefitPlans, 
   users,
-  type BenefitEnrollment, 
   type NewBenefitEnrollment 
 } from '@/lib/db/schema';
-import { eq, and, sql, desc } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { withAuthTenantContext } from '@/lib/db/tenant-context';
 import type { NextRequest } from 'next/server';
 

@@ -6,6 +6,8 @@ import { companies, users, benefitPlans, benefitEnrollments } from '@/lib/db/sch
 import { count, sql, eq } from 'drizzle-orm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+export const dynamic = 'force-dynamic';
+
 async function getPlatformStats() {
   const [companyCount] = await db
     .select({ count: count() })

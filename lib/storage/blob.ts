@@ -1,4 +1,4 @@
-import { put, del, list, head, type PutBlobResult, type ListBlobResultBlob } from '@vercel/blob';
+import { put, del, list, head, } from '@vercel/blob';
 import { customAlphabet } from 'nanoid';
 
 // Generate URL-safe IDs
