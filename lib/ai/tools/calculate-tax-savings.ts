@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 
-export const calculateSavings = tool({
+export const calculateTaxSavings = tool({
   description: 'Calculate potential savings from benefits decisions like HSA contributions, plan changes, or retirement contributions',
   inputSchema: z.object({
     calculationType: z.enum(['hsa', 'planChange', 'retirement', 'fsa']).describe('Type of savings calculation'),
