@@ -1,13 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useUser } from '@stackframe/stack';
 
 export const SignOutForm = () => {
-  const router = useRouter();
+  const user = useUser();
 
   const handleSignOut = async () => {
-    // Redirect to Stack Auth sign out handler
-    router.push('/handler/sign-out');
+    if (user) {
+      await user.signOut();
+    }
   };
 
   return (

@@ -610,6 +610,64 @@ AI tools currently return hardcoded data instead of querying database
 - `lib/ai/tools/calculate-benefits-cost.ts` - Complete rewrite with real calculations
 - `lib/ai/tools/show-benefits-dashboard.ts` - Connected to user enrollments
 
+### Task ID: 007 - Implement Proper Stack Auth Integration
+**Completed**: 2025-07-31T13:00:00Z  
+**Duration**: 45 minutes
+**Confidence**: HIGH
+
+#### Files Modified/Created:
+- [x] `/app/handler/[...stack]/page.tsx` - Created proper Stack Auth handler page with StackHandler component
+- [x] `/app/handler/[...stack]/route.ts` - Removed (Stack Auth uses page.tsx, not route.ts)
+- [x] `/app/loading.tsx` - Created root loading component for Suspense boundaries
+- [x] `/components/sign-out-form.tsx` - Updated to use Stack Auth's signOut method
+- [x] `/app/layout.tsx` - Already had StackProvider and StackTheme configured
+
+#### Code Fingerprint:
+```typescript
+// From /app/handler/[...stack]/page.tsx
+import { StackHandler } from "@stackframe/stack";
+import { stackServerApp } from "@/stack";
+
+export default function Handler(props: any) {
+  return <StackHandler fullPage app={stackServerApp} {...props} />;
+}
+
+export const dynamic = 'force-dynamic';
+
+// From /components/sign-out-form.tsx
+const user = useUser();
+const handleSignOut = async () => {
+  if (user) {
+    await user.signOut();
+  }
+};
+```
+
+#### Build Verification:
+```bash
+$ pnpm build
+✓ Compiled successfully
+✓ All routes built without errors
+✓ Stack Auth handler at /handler/[...stack]
+```
+
+#### Integration Points:
+- Stack Auth StackHandler component handles all auth routes
+- StackProvider wraps the application in layout.tsx
+- Login/Register pages use Stack Auth SignIn/SignUp components
+- SignOut properly uses Stack Auth's signOut method
+- Auth helper uses stackServerApp.getUser() for session retrieval
+
+#### Stack Auth Routes Now Available:
+- `/handler/signin` - Sign in page
+- `/handler/signup` - Sign up page  
+- `/handler/signout` - Sign out handler
+- `/handler/account-settings` - Account management
+- `/handler/oauth-redirect` - OAuth callbacks
+- `/handler/password-reset` - Password reset flow
+
+---
+
 #### TECH_DEBT_002: Missing Row-Level Security
 **Created**: 2025-07-30
 **Priority**: CRITICAL
