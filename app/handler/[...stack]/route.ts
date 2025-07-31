@@ -2,27 +2,37 @@ import { StackHandler } from "@stackframe/stack";
 import { stackServerApp } from "@/stack";
 import { NextRequest } from "next/server";
 
-// Stack Auth handler for Next.js App Router
+// Stack Auth handler for Next.js 15 App Router
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ stack: string[] }> }
+  props: { params: Promise<{ stack: string[] }> }
 ) {
-  const resolvedParams = await params;
+  const params = await props.params;
   
-  return StackHandler({
+  // Pass the route props explicitly as required by Next.js 15
+  return await StackHandler({
     app: stackServerApp,
     fullPage: true,
+    routeProps: {
+      params: { stack: params.stack },
+      searchParams: Object.fromEntries(request.nextUrl.searchParams),
+    },
   });
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ stack: string[] }> }
+  props: { params: Promise<{ stack: string[] }> }
 ) {
-  const resolvedParams = await params;
+  const params = await props.params;
   
-  return StackHandler({
+  // Pass the route props explicitly as required by Next.js 15
+  return await StackHandler({
     app: stackServerApp,
     fullPage: true,
+    routeProps: {
+      params: { stack: params.stack },
+      searchParams: Object.fromEntries(request.nextUrl.searchParams),
+    },
   });
 }
