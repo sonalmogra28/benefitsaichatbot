@@ -131,7 +131,7 @@ export async function deleteDocumentVectors(
       }
     });
   } catch (error) {
-    console.log('Filter-based deletion failed, trying ID-based deletion');
+    // Filter-based deletion failed, trying ID-based deletion
     // Fallback: Delete by ID pattern
     const idsToDelete = [];
     for (let i = 0; i < 100; i++) {

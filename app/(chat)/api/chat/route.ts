@@ -53,8 +53,8 @@ export function getStreamContext() {
       globalStreamContext = createResumableStreamContext({
         waitUntil: after,
       });
-    } catch (error: any) {
-      if (error.message.includes('REDIS_URL')) {
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('REDIS_URL')) {
         // Resumable streams are disabled due to missing REDIS_URL
       } else {
         // Error initializing stream context
@@ -66,7 +66,7 @@ export function getStreamContext() {
 }
 
 // Helper function to convert AuthSession to Session
-function toSession(authSession: any): Session {
+function toSession(authSession: any /* TODO: Define proper AuthSession type */): Session {
   return {
     ...authSession,
     expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -161,7 +161,7 @@ export async function POST(request: Request) {
     await createStreamId({ streamId, chatId: id });
 
     const stream = createUIMessageStream({
-      execute: ({ writer: dataStream }: { writer: any }) => {
+      execute: ({ writer: dataStream }: { writer: any /* TODO: Define DataStreamWriter type */ }) => {
         const result = streamText({
           model: myProvider.languageModel(selectedChatModel),
           system: systemPrompt({ selectedChatModel, requestHints }),
@@ -213,9 +213,9 @@ export async function POST(request: Request) {
         );
       },
       generateId: generateUUID,
-      onFinish: async ({ messages }: { messages: any[] }) => {
+      onFinish: async ({ messages }: { messages: any[] /* TODO: Define Message type */ }) => {
         await saveMessages({
-          messages: messages.map((message: any) => ({
+          messages: messages.map((message: any /* TODO: Define Message type */) => ({
             chatId: id,
             id: message.id,
             role: message.role,
