@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 
-export const calculateSavings = tool({
+export const calculateTaxSavings = tool({
   description: 'Calculate potential savings from benefits decisions like HSA contributions, plan changes, or retirement contributions',
   inputSchema: z.object({
     calculationType: z.enum(['hsa', 'planChange', 'retirement', 'fsa']).describe('Type of savings calculation'),
@@ -29,7 +29,13 @@ export const calculateSavings = tool({
       familySize: z.number().optional().describe('Number of family members'),
     }).optional().describe('Additional factors for calculation'),
   }),
-  execute: async ({ calculationType, currentSituation, proposedSituation, timeframe, additionalFactors }) => {
+  execute: async ({ calculationType, currentSituation, proposedSituation, timeframe, additionalFactors }: { 
+    calculationType: string;
+    currentSituation: any;
+    proposedSituation: any;
+    timeframe?: string;
+    additionalFactors?: any;
+  }) => {
     const timeMultiplier = timeframe === 'annual' ? 1 : timeframe === '5year' ? 5 : timeframe === '10year' ? 10 : 30;
     
     let calculations: any = {

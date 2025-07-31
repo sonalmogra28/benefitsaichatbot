@@ -1,34 +1,34 @@
 import type { InferUITool } from 'ai';
-import type { comparePlans } from '@/lib/ai/tools/compare-plans';
-import type { calculateSavings } from '@/lib/ai/tools/calculate-savings';
+import type { compareBenefitsPlans } from '@/lib/ai/tools/compare-benefits-plans';
+import type { calculateTaxSavings } from '@/lib/ai/tools/calculate-tax-savings';
 
 // Define the tool types for our custom benefits tools
-export type ComparePlansTool = InferUITool<typeof comparePlans>;
-export type CalculateSavingsTool = InferUITool<typeof calculateSavings>;
+export type CompareBenefitsPlansTool = InferUITool<typeof compareBenefitsPlans>;
+export type CalculateTaxSavingsTool = InferUITool<typeof calculateTaxSavings>;
 
 // Extended tool types that include our custom tools
 export type ExtendedChatTools = {
-  comparePlans: ComparePlansTool;
-  calculateSavings: CalculateSavingsTool;
+  compareBenefitsPlans: CompareBenefitsPlansTool;
+  calculateTaxSavings: CalculateTaxSavingsTool;
 };
 
 // Type guards for custom tool parts
-export function isComparePlansToolPart(part: any): part is {
-  type: 'tool-comparePlans';
+export function isCompareBenefitsPlansToolPart(part: any): part is {
+  type: 'tool-compareBenefitsPlans';
   toolCallId: string;
   state: 'input-available' | 'output-available';
   input?: any;
   output?: any;
 } {
-  return part.type === 'tool-comparePlans';
+  return part.type === 'tool-compareBenefitsPlans';
 }
 
-export function isCalculateSavingsToolPart(part: any): part is {
-  type: 'tool-calculateSavings';
+export function isCalculateTaxSavingsToolPart(part: any): part is {
+  type: 'tool-calculateTaxSavings';
   toolCallId: string;
   state: 'input-available' | 'output-available';
   input?: any;
   output?: any;
 } {
-  return part.type === 'tool-calculateSavings';
+  return part.type === 'tool-calculateTaxSavings';
 }

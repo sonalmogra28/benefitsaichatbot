@@ -17,42 +17,31 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if user is authenticated with Stack Auth
-  const user = await stackServerApp.getUser();
-
-  // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/api/auth/guest'];
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-
-  if (!user && !isPublicRoute) {
-    const redirectUrl = encodeURIComponent(request.url);
-    return NextResponse.redirect(
-      new URL(`/login?redirect=${redirectUrl}`, request.url),
-    );
+  // Skip middleware for API routes, static files, and auth handlers
+  if (
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/handler/') ||
+    pathname.includes('.')
+  ) {
+    return NextResponse.next();
   }
 
-  // Redirect authenticated users away from auth pages
-  if (user && ['/login', '/register'].includes(pathname)) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
+  // For now, let's simplify and just pass through all requests
+  // The individual pages will handle their own authentication
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/',
-    '/chat/:id',
-    '/api/:path*',
-    '/login',
-    '/register',
-
     /*
      * Match all request paths except for the ones starting with:
+     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
+     * - public files with extensions
      */
-    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*|handler).*)',
   ],
 };

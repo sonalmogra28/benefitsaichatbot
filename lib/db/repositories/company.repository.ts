@@ -1,6 +1,7 @@
 import { eq, and, sql } from 'drizzle-orm';
-import { withTenantContext, getDatabase } from '../tenant-context';
-import { companies, users, type Company, type NewCompany, type User } from '../schema-v2';
+import { withTenantContext } from '../tenant-context';
+import { db } from '@/lib/db';
+import { companies, users, type Company, type NewCompany, type User } from '@/lib/db/schema';
 
 /**
  * Company Repository
@@ -29,7 +30,6 @@ export class CompanyRepository {
    * Create a new company
    */
   async create(data: NewCompany): Promise<Company> {
-    const db = getDatabase();
     
     const [company] = await db
       .insert(companies)

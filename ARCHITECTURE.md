@@ -138,7 +138,7 @@ benefitschatbot/
 - **Multi-tenant**: Stack Organizations
 
 ### Database
-- **PostgreSQL**: Via Vercel Postgres
+- **PostgreSQL**: Via Neon Postgres
 - **Drizzle ORM**: 0.34.0
 - **Redis**: 5.0.0 (For caching - not fully implemented)
 

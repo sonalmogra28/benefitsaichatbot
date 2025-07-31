@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { BenefitPlansRepository } from '../../../lib/db/repositories/benefit-plans.repository';
-import { companies, users, benefitPlans, benefitEnrollments } from '../../../lib/db/schema-v2';
+import { companies, users, benefitPlans, benefitEnrollments } from '../../../lib/db/schema';
 import { withTenantContext } from '../../../lib/db/tenant-context';
 
 /**

@@ -2,8 +2,7 @@
 
 import { ChevronUp } from 'lucide-react';
 import Image from 'next/image';
-import type { User } from 'next-auth';
-import { signOut, useSession } from 'next-auth/react';
+import type { AuthUser } from '@/app/(auth)/stack-auth';
 import { useTheme } from 'next-themes';
 
 import {
@@ -23,9 +22,11 @@ import { toast } from './toast';
 import { LoaderIcon } from './icons';
 import { guestRegex } from '@/lib/constants';
 
-export function SidebarUserNav({ user }: { user: User }) {
+export function SidebarUserNav({ user }: { user: AuthUser }) {
   const router = useRouter();
-  const { data, status } = useSession();
+  // Stack Auth doesn't have useSession hook
+  const status = 'authenticated' as 'authenticated' | 'loading' | 'unauthenticated';
+  const data = { user };
   const { setTheme, resolvedTheme } = useTheme();
 
   const isGuest = guestRegex.test(data?.user?.email ?? '');
@@ -97,9 +98,8 @@ export function SidebarUserNav({ user }: { user: User }) {
                   if (isGuest) {
                     router.push('/login');
                   } else {
-                    signOut({
-                      redirectTo: '/',
-                    });
+                    // Stack Auth sign out
+                    router.push('/handler/sign-out');
                   }
                 }}
               >

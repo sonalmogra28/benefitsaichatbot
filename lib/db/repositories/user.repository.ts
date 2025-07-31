@@ -6,8 +6,9 @@ import {
   benefitEnrollments,
   benefitPlans,
   type User, 
-  type NewUser 
-} from '../schema-v2';
+  type NewUser,
+  type Company 
+} from '@/lib/db/schema';
 
 /**
  * User Repository
@@ -20,20 +21,23 @@ export class UserRepository {
   /**
    * Find user by Stack user ID
    */
-  async findByStackUserId(stackUserId: string): Promise<(User & { company: any }) | null> {
-    const db = await import('../tenant-context').then(m => m.getDatabase());
+  async findByStackUserId(stackUserId: string): Promise<(User & { company: Company | null }) | null> {
+    const { db } = await import('@/lib/db');
     
-    const [user] = await db
-      .select({
-        ...users,
-        company: companies,
-      })
+    const result = await db
+      .select()
       .from(users)
       .leftJoin(companies, eq(users.companyId, companies.id))
       .where(eq(users.stackUserId, stackUserId))
       .limit(1);
     
-    return user || null;
+    const [row] = result;
+    if (!row) return null;
+    
+    return {
+      ...row.users,
+      company: row.companies
+    };
   }
 
   /**

@@ -1,10 +1,10 @@
 import { stackServerApp } from '@/stack';
 import { getUser as getUserFromDb } from '@/lib/db/queries';
 import { db } from '@/lib/db';
-import { users, companies } from '@/lib/db/schema-v2';
+import { users, companies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-export type UserType = 'employee' | 'hr_admin' | 'company_admin' | 'guest';
+export type UserType = 'employee' | 'hr_admin' | 'company_admin' | 'platform_admin' | 'guest';
 
 export interface AuthUser {
   id: string;
@@ -17,6 +17,7 @@ export interface AuthUser {
 
 export interface AuthSession {
   user: AuthUser | null;
+  expires?: string;
 }
 
 /**

@@ -20,7 +20,22 @@
       "Bash(pnpm tsc:*)",
       "Bash(pnpm install:*)",
       "Bash(tsx scripts/fix-ai-types.ts:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(pnpm db:migrate:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(rg:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm db:seed:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(done)",
+      "Bash(mv:*)",
+      "WebFetch(domain:docs.stack-auth.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(cat:*)",
+      "Bash(chmod:*)"
     ],
     "deny": []
   }

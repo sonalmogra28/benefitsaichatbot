@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { sql } from 'drizzle-orm';
-import * as schema from '../schema-v2';
+import * as schema from '../schema';
 
 /**
  * Multi-Tenant Migration Script

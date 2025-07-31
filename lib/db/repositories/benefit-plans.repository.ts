@@ -1,28 +1,16 @@
-import { eq, and, sql, desc, asc, gte, lte, isNull, or } from 'drizzle-orm';
-import { withTenantContext } from '../tenant-context';
-import { 
-  benefitPlans, 
-  benefitEnrollments, 
-  users,
-  type BenefitPlan, 
-  type NewBenefitPlan,
-  type BenefitEnrollment 
-} from '../schema-v2';
-
-/**
- * Benefit Plans Repository
- * 
- * Handles all benefit plan-related database operations with proper tenant isolation.
- * This replaces the mock data in AI tools with real database queries.
- */
+import { db } from '@/lib/db';
+import { benefitPlans, benefitEnrollments, type BenefitPlan, type NewBenefitPlan } from '@/lib/db/schema';
+import { eq, and, sql, gte } from 'drizzle-orm';
+import { withAuthTenantContext } from '@/lib/db/tenant-context';
+import type { NextRequest } from 'next/server';
 
 export class BenefitPlansRepository {
   /**
-   * Get all active benefit plans for a company
+   * Get all active benefit plans for the current tenant
    */
-  async findByCompany(stackOrgId: string, companyId: string): Promise<BenefitPlan[]> {
-    return withTenantContext(stackOrgId, async (db) => {
-      return await db
+  static async getAllActive(request: NextRequest) {
+    return withAuthTenantContext(request, async (companyId) => {
+      const plans = await db
         .select()
         .from(benefitPlans)
         .where(
@@ -31,148 +19,141 @@ export class BenefitPlansRepository {
             eq(benefitPlans.isActive, true)
           )
         )
-        .orderBy(asc(benefitPlans.type), asc(benefitPlans.name));
+        .orderBy(benefitPlans.type, benefitPlans.name);
+      
+      return plans;
     });
   }
 
   /**
-   * Get benefit plans by type (for AI tool: comparePlans)
+   * Get benefit plans by type for the current tenant
    */
-  async findByType(
-    stackOrgId: string, 
-    companyId: string, 
-    planType: string
-  ): Promise<BenefitPlan[]> {
-    return withTenantContext(stackOrgId, async (db) => {
-      return await db
+  static async getByType(request: NextRequest, type: string) {
+    return withAuthTenantContext(request, async (companyId) => {
+      const plans = await db
         .select()
         .from(benefitPlans)
         .where(
           and(
             eq(benefitPlans.companyId, companyId),
-            eq(benefitPlans.type, planType),
-            eq(benefitPlans.isActive, true),
-            // Only current or future plans
-            or(
-              isNull(benefitPlans.endDate),
-              gte(benefitPlans.endDate, new Date())
-            )
+            eq(benefitPlans.type, type),
+            eq(benefitPlans.isActive, true)
           )
         )
-        .orderBy(asc(benefitPlans.monthlyPremiumEmployee));
+        .orderBy(benefitPlans.monthlyPremiumEmployee);
+      
+      return plans;
     });
   }
 
   /**
-   * Get benefit plans with enrollment data for a user (for AI tool: showBenefitsDashboard)
+   * Get a specific benefit plan by ID
    */
-  async findUserBenefitsWithEnrollments(
-    stackOrgId: string,
-    userId: string
-  ): Promise<Array<{
-    plan: BenefitPlan;
-    enrollment: BenefitEnrollment | null;
-  }>> {
-    return withTenantContext(stackOrgId, async (db) => {
-      return await db
+  static async getById(request: NextRequest, planId: string) {
+    return withAuthTenantContext(request, async (companyId) => {
+      const [plan] = await db
+        .select()
+        .from(benefitPlans)
+        .where(
+          and(
+            eq(benefitPlans.id, planId),
+            eq(benefitPlans.companyId, companyId)
+          )
+        )
+        .limit(1);
+      
+      return plan || null;
+    });
+  }
+
+  /**
+   * Get benefit plans with enrollment counts
+   */
+  static async getWithEnrollmentCounts(request: NextRequest) {
+    return withAuthTenantContext(request, async (companyId) => {
+      const plans = await db
         .select({
           plan: benefitPlans,
-          enrollment: benefitEnrollments,
+          enrollmentCount: sql<number>`count(${benefitEnrollments.id})::int`,
+          totalMonthlyCost: sql<number>`coalesce(sum(${benefitEnrollments.monthlyCost}), 0)::numeric`
         })
         .from(benefitPlans)
         .leftJoin(
           benefitEnrollments,
           and(
-            eq(benefitEnrollments.benefitPlanId, benefitPlans.id),
-            eq(benefitEnrollments.userId, userId),
+            eq(benefitPlans.id, benefitEnrollments.benefitPlanId),
             eq(benefitEnrollments.status, 'active')
           )
         )
         .where(
           and(
-            eq(benefitPlans.isActive, true),
-            // Only current plans
-            lte(benefitPlans.effectiveDate, new Date()),
-            or(
-              isNull(benefitPlans.endDate),
-              gte(benefitPlans.endDate, new Date())
-            )
+            eq(benefitPlans.companyId, companyId),
+            eq(benefitPlans.isActive, true)
           )
         )
-        .orderBy(asc(benefitPlans.type), asc(benefitPlans.name));
+        .groupBy(benefitPlans.id)
+        .orderBy(benefitPlans.type, benefitPlans.name);
+      
+      return plans.map(({ plan, enrollmentCount, totalMonthlyCost }) => ({
+        ...plan,
+        enrollmentCount,
+        totalMonthlyCost
+      }));
     });
   }
 
   /**
-   * Calculate total benefit costs for a user (for AI tool: calculateBenefitsCost)
+   * Compare multiple benefit plans
    */
-  async calculateUserBenefitsCosts(
-    stackOrgId: string,
-    userId: string
-  ): Promise<{
-    totalMonthlyCost: number;
-    totalEmployeeContribution: number;
-    totalEmployerContribution: number;
-    enrollments: Array<{
-      plan: BenefitPlan;
-      enrollment: BenefitEnrollment;
-    }>;
-  }> {
-    return withTenantContext(stackOrgId, async (db) => {
-      const enrollments = await db
-        .select({
-          plan: benefitPlans,
-          enrollment: benefitEnrollments,
-        })
-        .from(benefitEnrollments)
-        .innerJoin(benefitPlans, eq(benefitPlans.id, benefitEnrollments.benefitPlanId))
+  static async comparePlans(request: NextRequest, planIds: string[]) {
+    return withAuthTenantContext(request, async (companyId) => {
+      const plans = await db
+        .select()
+        .from(benefitPlans)
         .where(
           and(
-            eq(benefitEnrollments.userId, userId),
-            eq(benefitEnrollments.status, 'active'),
-            // Only current enrollments
-            lte(benefitEnrollments.effectiveDate, new Date()),
-            or(
-              isNull(benefitEnrollments.endDate),
-              gte(benefitEnrollments.endDate, new Date())
-            )
+            eq(benefitPlans.companyId, companyId),
+            sql`${benefitPlans.id} = ANY(${planIds})`
           )
         );
-
-      const totals = enrollments.reduce(
-        (acc, { enrollment }) => ({
-          totalMonthlyCost: acc.totalMonthlyCost + Number(enrollment.monthlyCost),
-          totalEmployeeContribution: acc.totalEmployeeContribution + Number(enrollment.employeeContribution),
-          totalEmployerContribution: acc.totalEmployerContribution + Number(enrollment.employerContribution),
-        }),
-        {
-          totalMonthlyCost: 0,
-          totalEmployeeContribution: 0,
-          totalEmployerContribution: 0,
-        }
-      );
-
-      return {
-        ...totals,
-        enrollments,
-      };
+      
+      return plans;
     });
   }
 
   /**
-   * Create a new benefit plan
+   * Get plans effective on a specific date
    */
-  async create(
-    stackOrgId: string,
-    data: NewBenefitPlan
-  ): Promise<BenefitPlan> {
-    return withTenantContext(stackOrgId, async (db) => {
+  static async getEffectiveOnDate(request: NextRequest, date: Date) {
+    return withAuthTenantContext(request, async (companyId) => {
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const plans = await db
+        .select()
+        .from(benefitPlans)
+        .where(
+          and(
+            eq(benefitPlans.companyId, companyId),
+            gte(benefitPlans.effectiveDate, dateStr),
+            sql`${benefitPlans.endDate} IS NULL OR ${benefitPlans.endDate} > ${dateStr}`
+          )
+        )
+        .orderBy(benefitPlans.type, benefitPlans.name);
+      
+      return plans;
+    });
+  }
+
+  /**
+   * Create a new benefit plan (admin only)
+   */
+  static async create(request: NextRequest, data: Omit<NewBenefitPlan, 'companyId'>) {
+    return withAuthTenantContext(request, async (companyId) => {
       const [plan] = await db
         .insert(benefitPlans)
         .values({
           ...data,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          companyId
         })
         .returning();
       
@@ -181,21 +162,25 @@ export class BenefitPlansRepository {
   }
 
   /**
-   * Update a benefit plan
+   * Update a benefit plan (admin only)
    */
-  async update(
-    stackOrgId: string,
-    planId: string,
-    data: Partial<NewBenefitPlan>
-  ): Promise<BenefitPlan | null> {
-    return withTenantContext(stackOrgId, async (db) => {
+  static async update(request: NextRequest, planId: string, data: Partial<NewBenefitPlan>) {
+    return withAuthTenantContext(request, async (companyId) => {
+      // Remove fields that shouldn't be updated
+      const { companyId: _, id: __, ...updateData } = data;
+      
       const [plan] = await db
         .update(benefitPlans)
         .set({
-          ...data,
-          updatedAt: new Date(),
+          ...updateData,
+          updatedAt: new Date()
         })
-        .where(eq(benefitPlans.id, planId))
+        .where(
+          and(
+            eq(benefitPlans.id, planId),
+            eq(benefitPlans.companyId, companyId)
+          )
+        )
         .returning();
       
       return plan || null;
@@ -203,115 +188,68 @@ export class BenefitPlansRepository {
   }
 
   /**
-   * Get plan comparison data (enhanced version for AI tools)
+   * Deactivate a benefit plan (soft delete)
    */
-  async getComparisonData(
-    stackOrgId: string,
-    companyId: string,
-    planType?: string,
-    familySize?: number
-  ): Promise<Array<{
-    plan: BenefitPlan;
-    adjustedPremium: number;
-    enrollmentCount: number;
-  }>> {
-    return withTenantContext(stackOrgId, async (db) => {
-      const query = db
-        .select({
-          plan: benefitPlans,
-          enrollmentCount: sql<number>`count(${benefitEnrollments.id})::int`,
+  static async deactivate(request: NextRequest, planId: string) {
+    return withAuthTenantContext(request, async (companyId) => {
+      const [plan] = await db
+        .update(benefitPlans)
+        .set({
+          isActive: false,
+          updatedAt: new Date()
         })
-        .from(benefitPlans)
-        .leftJoin(
-          benefitEnrollments,
-          and(
-            eq(benefitEnrollments.benefitPlanId, benefitPlans.id),
-            eq(benefitEnrollments.status, 'active')
-          )
-        )
         .where(
           and(
-            eq(benefitPlans.companyId, companyId),
-            eq(benefitPlans.isActive, true),
-            planType ? eq(benefitPlans.type, planType) : sql`true`
+            eq(benefitPlans.id, planId),
+            eq(benefitPlans.companyId, companyId)
           )
         )
-        .groupBy(benefitPlans.id)
-        .orderBy(asc(benefitPlans.monthlyPremiumEmployee));
-
-      const results = await query;
-
-      return results.map(({ plan, enrollmentCount }) => ({
-        plan,
-        adjustedPremium: familySize && familySize > 1 
-          ? Number(plan.monthlyPremiumFamily || plan.monthlyPremiumEmployee) 
-          : Number(plan.monthlyPremiumEmployee || 0),
-        enrollmentCount,
-      }));
+        .returning();
+      
+      return plan || null;
     });
   }
 
   /**
-   * Get benefit plan statistics for analytics
+   * Get plans by category (HMO, PPO, HDHP, etc.)
    */
-  async getCompanyBenefitStats(
-    stackOrgId: string,
-    companyId: string
-  ): Promise<{
-    totalPlans: number;
-    totalEnrollments: number;
-    plansByType: Record<string, number>;
-    averageCost: number;
-  }> {
-    return withTenantContext(stackOrgId, async (db) => {
-      // Get total plans and enrollments
-      const [totals] = await db
-        .select({
-          totalPlans: sql<number>`count(distinct ${benefitPlans.id})::int`,
-          totalEnrollments: sql<number>`count(${benefitEnrollments.id})::int`,
-          averageCost: sql<number>`avg(${benefitEnrollments.monthlyCost})::numeric`,
-        })
-        .from(benefitPlans)
-        .leftJoin(
-          benefitEnrollments,
-          and(
-            eq(benefitEnrollments.benefitPlanId, benefitPlans.id),
-            eq(benefitEnrollments.status, 'active')
-          )
-        )
-        .where(
-          and(
-            eq(benefitPlans.companyId, companyId),
-            eq(benefitPlans.isActive, true)
-          )
-        );
-
-      // Get plans by type
-      const plansByTypeResults = await db
-        .select({
-          type: benefitPlans.type,
-          count: sql<number>`count(*)::int`,
-        })
+  static async getByCategory(request: NextRequest, category: string) {
+    return withAuthTenantContext(request, async (companyId) => {
+      const plans = await db
+        .select()
         .from(benefitPlans)
         .where(
           and(
             eq(benefitPlans.companyId, companyId),
+            eq(benefitPlans.category, category),
             eq(benefitPlans.isActive, true)
           )
         )
-        .groupBy(benefitPlans.type);
-
-      const plansByType = plansByTypeResults.reduce(
-        (acc, { type, count }) => ({ ...acc, [type]: count }),
-        {} as Record<string, number>
-      );
-
-      return {
-        totalPlans: totals.totalPlans,
-        totalEnrollments: totals.totalEnrollments,
-        plansByType,
-        averageCost: Number(totals.averageCost || 0),
-      };
+        .orderBy(benefitPlans.monthlyPremiumEmployee);
+      
+      return plans;
     });
   }
+
+  /**
+   * Calculate total cost for a plan based on coverage type
+   */
+  static calculateMonthlyCost(plan: BenefitPlan, coverageType: 'individual' | 'family' | 'employee_spouse') {
+    switch (coverageType) {
+      case 'individual':
+        return Number(plan.monthlyPremiumEmployee || 0);
+      case 'family':
+        return Number(plan.monthlyPremiumFamily || 0);
+      case 'employee_spouse':
+        // Typically employee + spouse is between individual and family rates
+        const individual = Number(plan.monthlyPremiumEmployee || 0);
+        const family = Number(plan.monthlyPremiumFamily || 0);
+        return individual + ((family - individual) * 0.6); // 60% of the difference
+      default:
+        return 0;
+    }
+  }
 }
+
+// Export a singleton instance for direct use
+export const benefitPlansRepository = BenefitPlansRepository;

@@ -1,7 +1,8 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
-import * as schema from './schema-v2';
+import { auth } from '@/app/(auth)/stack-auth';
+import * as schema from './schema';
+import type { NextRequest } from 'next/server';
 
 /**
  * Tenant Context Management
@@ -9,22 +10,6 @@ import * as schema from './schema-v2';
  * This module provides utilities for managing multi-tenant database operations
  * with proper isolation and context injection.
  */
-
-let dbInstance: ReturnType<typeof drizzle> | null = null;
-
-export function getDatabase() {
-  if (!dbInstance) {
-    const connectionString = process.env.POSTGRES_URL_NO_SSL || process.env.POSTGRES_URL;
-    if (!connectionString) {
-      throw new Error('Database connection string not found');
-    }
-    
-    const client = postgres(connectionString);
-    dbInstance = drizzle(client, { schema });
-  }
-  
-  return dbInstance;
-}
 
 /**
  * Execute a database operation with tenant context
@@ -34,10 +19,8 @@ export function getDatabase() {
  */
 export async function withTenantContext<T>(
   stackOrgId: string,
-  operation: (db: ReturnType<typeof drizzle>) => Promise<T>
+  operation: (database: typeof db) => Promise<T>
 ): Promise<T> {
-  const db = getDatabase();
-  
   try {
     // Set the current organization ID for RLS policies
     await db.execute(sql`SET LOCAL app.current_org_id = ${stackOrgId}`);
@@ -52,20 +35,62 @@ export async function withTenantContext<T>(
 }
 
 /**
+ * Middleware to ensure tenant context is set for all requests
+ * Wraps a handler function with tenant context from auth
+ */
+export async function withAuthTenantContext<T>(
+  request: NextRequest,
+  handler: (companyId: string, userId: string) => Promise<T>
+): Promise<T> {
+  const session = await auth();
+  
+  if (!session?.user) {
+    throw new Error('Authentication required');
+  }
+  
+  if (!session.user.companyId) {
+    throw new Error('User not associated with any company');
+  }
+  
+  // Get the company's stack org ID
+  const company = await getCompanyById(session.user.companyId);
+  if (!company) {
+    throw new Error('Company not found');
+  }
+  
+  // Execute with tenant context
+  return await withTenantContext(company.stackOrgId, async () => {
+    return await handler(session.user!.companyId!, session.user!.id);
+  });
+}
+
+/**
  * Get the current tenant context from Stack Auth session
  * 
  * This function extracts the organization ID from the current user session
  * and provides it for database operations.
  */
-export function getCurrentTenantContext(): {
+export async function getCurrentTenantContext(): Promise<{
   stackOrgId: string | null;
   stackUserId: string | null;
-} {
-  // This will be implemented when we integrate Stack Auth
-  // For now, return null values
+  companyId: string | null;
+}> {
+  const session = await auth();
+  
+  if (!session?.user || !session.user.companyId) {
+    return {
+      stackOrgId: null,
+      stackUserId: null,
+      companyId: null,
+    };
+  }
+  
+  const company = await getCompanyById(session.user.companyId);
+  
   return {
-    stackOrgId: null,
-    stackUserId: null,
+    stackOrgId: company?.stackOrgId || null,
+    stackUserId: session.user.stackUserId,
+    companyId: session.user.companyId,
   };
 }
 
@@ -79,8 +104,6 @@ export async function validateTenantAccess(
   stackOrgId: string,
   resourceCompanyId: string
 ): Promise<boolean> {
-  const db = getDatabase();
-  
   try {
     const [company] = await db
       .select({ id: schema.companies.id })
@@ -99,8 +122,6 @@ export async function validateTenantAccess(
  * Get company by Stack organization ID
  */
 export async function getCompanyByStackOrgId(stackOrgId: string) {
-  const db = getDatabase();
-  
   const [company] = await db
     .select()
     .from(schema.companies)
@@ -111,20 +132,34 @@ export async function getCompanyByStackOrgId(stackOrgId: string) {
 }
 
 /**
+ * Get company by ID
+ */
+export async function getCompanyById(companyId: string) {
+  const [company] = await db
+    .select()
+    .from(schema.companies)
+    .where(sql`${schema.companies.id} = ${companyId}`)
+    .limit(1);
+  
+  return company || null;
+}
+
+/**
  * Get user by Stack user ID with company context
  */
 export async function getUserByStackUserId(stackUserId: string) {
-  const db = getDatabase();
-  
-  const [user] = await db
-    .select({
-      ...schema.users,
-      company: schema.companies,
-    })
+  const result = await db
+    .select()
     .from(schema.users)
     .leftJoin(schema.companies, sql`${schema.users.companyId} = ${schema.companies.id}`)
     .where(sql`${schema.users.stackUserId} = ${stackUserId}`)
     .limit(1);
   
-  return user || null;
+  const [row] = result;
+  if (!row) return null;
+  
+  return {
+    ...row.users,
+    company: row.companies
+  };
 }
