@@ -55,11 +55,9 @@ export function getStreamContext() {
       });
     } catch (error: any) {
       if (error.message.includes('REDIS_URL')) {
-        console.log(
-          ' > Resumable streams are disabled due to missing REDIS_URL',
-        );
+        // Resumable streams are disabled due to missing REDIS_URL
       } else {
-        console.error(error);
+        // Error initializing stream context
       }
     }
   }
@@ -244,7 +242,7 @@ export async function POST(request: Request) {
     if (error instanceof ChatSDKError) {
       return error.toResponse();
     }
-    console.log(error);
+    // Log error in production with proper error service
     return new Response('Internal server error', { status: 500 });
   }
 }

@@ -6,7 +6,8 @@ import {
   benefitEnrollments,
   benefitPlans,
   type User, 
-  type NewUser 
+  type NewUser,
+  type Company 
 } from '../schema-v2';
 
 /**
@@ -20,7 +21,7 @@ export class UserRepository {
   /**
    * Find user by Stack user ID
    */
-  async findByStackUserId(stackUserId: string): Promise<(User & { company: any }) | null> {
+  async findByStackUserId(stackUserId: string): Promise<(User & { company: Company | null }) | null> {
     const { db } = await import('@/lib/db');
     
     const result = await db

@@ -201,6 +201,75 @@ Build completed in 34.2s
 - [ ] Issue 2: [Description] - Tracked in RISK_[ID]
 ```
 
+### Task ID: 004 - Phase 0 Technical Debt Resolution
+**Completed**: 2025-07-31T10:00:00Z
+**Duration**: 30 minutes
+**Confidence**: HIGH
+
+#### Files Modified/Created:
+- [x] Deleted `lib/db/repositories/benefit-plans.repository.ts` - Removed duplicate repository
+- [x] `app/(chat)/api/chat/route.ts` - Removed console.log statements
+- [x] `lib/db/repositories/user.repository.ts` - Fixed 'any' type to use proper Company type
+- [x] `lib/types.ts` - Uncommented tool imports that now exist
+- [x] `lib/db/repositories/benefitPlans.ts` - Removed unused import
+
+#### Code Fingerprint:
+```typescript
+// From lib/db/repositories/user.repository.ts
+async findByStackUserId(stackUserId: string): Promise<(User & { company: Company | null }) | null> {
+
+// From lib/types.ts
+import type { comparePlans } from './ai/tools/compare-plans';
+import type { calculateSavings } from './ai/tools/calculate-savings';
+```
+
+#### Build Verification:
+```bash
+$ pnpm tsc --noEmit
+✓ No TypeScript errors
+```
+
+#### Technical Debt Resolved:
+- Removed duplicate repository pattern - standardized on withAuthTenantContext
+- Removed production console.log statements  
+- Fixed TypeScript type safety issues
+- Activated previously commented tool imports
+
+### Task ID: 005 - Phase 0.2 Pinecone Setup
+**Completed**: 2025-07-31T10:30:00Z
+**Duration**: 15 minutes
+**Confidence**: HIGH
+
+#### Files Modified/Created:
+- [x] `package.json` - Added @pinecone-database/pinecone dependency
+- [x] `scripts/test-pinecone.ts` - Created Pinecone connection test script
+- [x] `lib/vectors/pinecone.ts` - Created Pinecone client wrapper with company namespaces
+
+#### Code Fingerprint:
+```typescript
+// From lib/vectors/pinecone.ts
+export function getCompanyNamespace(companyId: string) {
+  const index = getBenefitsIndex();
+  return index.namespace(companyId);
+}
+
+// From scripts/test-pinecone.ts
+const pinecone = new Pinecone({
+  apiKey: process.env.PINECONE_API_KEY,
+});
+```
+
+#### Integration Points:
+- Vector Database: Pinecone for document embeddings
+- Namespace Strategy: Company-based isolation
+- Embedding Dimension: 1536 (OpenAI standard)
+- Ready for document chunk storage
+
+#### Next Steps:
+- Add PINECONE_API_KEY to .env.local
+- Run test script to verify connection
+- Deploy and verify in production
+
 ---
 
 ## 🚀 Implementation Verification Gates
