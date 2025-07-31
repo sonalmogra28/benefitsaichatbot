@@ -513,6 +513,8 @@ After EVERY task completion:
 
 ### Active Technical Debt
 
+**Note**: See TECHNICAL_DEBT_REGISTRY.md for comprehensive debt tracking
+
 #### TECH_DEBT_001: Mock Data in Tools ✅ RESOLVED
 **Created**: 2024-01-18
 **Resolved**: 2025-07-30
