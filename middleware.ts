@@ -27,35 +27,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if user is authenticated with Stack Auth
-  const user = await stackServerApp.getUser();
-
-  // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register'];
-  const isPublicRoute = publicRoutes.includes(pathname);
-
-  if (!user && !isPublicRoute) {
-    const redirectUrl = encodeURIComponent(request.url);
-    return NextResponse.redirect(
-      new URL(`/login?redirect=${redirectUrl}`, request.url),
-    );
-  }
-
-  // For authenticated users, check if they need onboarding
-  if (user && !isPublicRoute && pathname !== '/onboarding') {
-    // Skip the fetch call to prevent loops - let the page handle the check
-    const response = NextResponse.next();
-    response.headers.set('X-Stack-User-Id', user.id);
-    return response;
-  }
-
-  // Redirect authenticated users away from auth pages
-  if (user && isPublicRoute) {
-    // Determine redirect based on user role
-    // This will be handled by the onboarding check in the pages
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
+  // For now, let's simplify and just pass through all requests
+  // The individual pages will handle their own authentication
   return NextResponse.next();
 }
 
