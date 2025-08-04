@@ -2,6 +2,7 @@ import { stackServerApp } from '@/stack';
 import { db } from '@/lib/db';
 import { users, companies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { setTenantContext } from '@/lib/db/tenant-utils';
 
 export type UserType = 'employee' | 'hr_admin' | 'company_admin' | 'platform_admin' | 'guest';
 
@@ -29,6 +30,9 @@ export async function auth(): Promise<AuthSession | null> {
     if (!stackUser) {
       return { user: null };
     }
+
+    // Set tenant context for secure queries
+    await setTenantContext(stackUser.id);
 
     // Look up user in our database by Stack user ID
     const dbUsers = await db
