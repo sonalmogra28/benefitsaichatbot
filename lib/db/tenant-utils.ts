@@ -9,18 +9,19 @@ import { db } from './index';
  * Set tenant context for the current database session
  * This must be called before any queries to ensure RLS works properly
  */
-export async function setTenantContext(stackUserId: string, companyId?: string) {
+export async function setTenantContext(
+  stackUserId: string,
+  companyId?: string,
+) {
   try {
     if (companyId) {
       // Set both user and company context
       await db.execute(
-        sql`SELECT set_tenant_context(${stackUserId}, ${companyId}::uuid)`
+        sql`SELECT set_tenant_context(${stackUserId}, ${companyId}::uuid)`,
       );
     } else {
       // Set user context and derive company from user record
-      await db.execute(
-        sql`SELECT set_tenant_context(${stackUserId})`
-      );
+      await db.execute(sql`SELECT set_tenant_context(${stackUserId})`);
     }
   } catch (error) {
     console.error('Failed to set tenant context:', error);
@@ -34,7 +35,7 @@ export async function setTenantContext(stackUserId: string, companyId?: string) 
 export async function getTenantContext() {
   try {
     const [result] = await db.execute(
-      sql`SELECT * FROM get_current_tenant_context()`
+      sql`SELECT * FROM get_current_tenant_context()`,
     );
     return {
       userId: result?.user_id as string,
@@ -65,7 +66,7 @@ export async function clearTenantContext() {
 export async function withTenantContext<T>(
   stackUserId: string,
   operation: () => Promise<T>,
-  companyId?: string
+  companyId?: string,
 ): Promise<T> {
   await setTenantContext(stackUserId, companyId);
   try {
@@ -81,11 +82,13 @@ export async function withTenantContext<T>(
  * Use with extreme caution - only for platform admin operations
  */
 export async function withPlatformAdminContext<T>(
-  operation: () => Promise<T>
+  operation: () => Promise<T>,
 ): Promise<T> {
   // Platform admins bypass RLS through policy conditions
   // Set a platform admin user context
-  await db.execute(sql`SELECT set_config('app.current_user_id', 'platform_admin', true)`);
+  await db.execute(
+    sql`SELECT set_config('app.current_user_id', 'platform_admin', true)`,
+  );
   try {
     return await operation();
   } finally {
@@ -99,19 +102,20 @@ export async function withPlatformAdminContext<T>(
  */
 export async function validateRLSConfiguration() {
   console.log('🔍 Validating RLS configuration...');
-  
+
   const tables = [
     'companies',
-    'users', 
+    'users',
     'chats',
     'messages',
     'knowledge_base_documents',
     'benefit_plans',
     'benefit_enrollments',
-    'analytics_events'
+    'analytics_events',
   ];
 
-  const results: { table: string; rlsEnabled: boolean; policies: number }[] = [];
+  const results: { table: string; rlsEnabled: boolean; policies: number }[] =
+    [];
 
   for (const table of tables) {
     try {
@@ -147,14 +151,19 @@ export async function validateRLSConfiguration() {
   console.log('RLS Configuration Status:');
   console.table(results);
 
-  const allTablesSecured = results.every(r => r.rlsEnabled && r.policies >= 2);
-  
+  const allTablesSecured = results.every(
+    (r) => r.rlsEnabled && r.policies >= 2,
+  );
+
   if (allTablesSecured) {
     console.log('✅ All tables properly secured with RLS');
   } else {
     console.log('❌ Some tables are not properly secured');
-    const unsecured = results.filter(r => !r.rlsEnabled || r.policies < 2);
-    console.log('Unsecured tables:', unsecured.map(r => r.table));
+    const unsecured = results.filter((r) => !r.rlsEnabled || r.policies < 2);
+    console.log(
+      'Unsecured tables:',
+      unsecured.map((r) => r.table),
+    );
   }
 
   return { results, allTablesSecured };

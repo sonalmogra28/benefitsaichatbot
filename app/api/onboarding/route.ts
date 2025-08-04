@@ -29,23 +29,25 @@ export async function POST(request: NextRequest) {
         .where(
           or(
             eq(users.stackUserId, data.stackUserId),
-            eq(users.email, data.email)
-          )
+            eq(users.email, data.email),
+          ),
         );
 
       // If user exists with same Stack ID, return success (idempotent)
-      const userByStackId = existingUsers.find(u => u.stackUserId === data.stackUserId);
+      const userByStackId = existingUsers.find(
+        (u) => u.stackUserId === data.stackUserId,
+      );
       if (userByStackId) {
-        return NextResponse.json({ 
-          success: true, 
+        return NextResponse.json({
+          success: true,
           message: 'User already onboarded',
-          user: userByStackId 
+          user: userByStackId,
         });
       }
 
       // Determine target company ID
       let targetCompanyId: string;
-      
+
       if (data.userType === 'platform_admin') {
         // Find or create platform company
         const platformCompany = await tx
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
               name: 'Platform Administration',
               domain: 'platform',
               subscriptionTier: 'platform',
-              settings: { isPlatformCompany: true }
+              settings: { isPlatformCompany: true },
             })
             .returning();
           targetCompanyId = newCompany.id;
@@ -72,7 +74,10 @@ export async function POST(request: NextRequest) {
       } else {
         // For other users, validate company info and find/create company
         if (!data.companyName || !data.companyDomain) {
-          return NextResponse.json({ error: 'Company information required' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Company information required' },
+            { status: 400 },
+          );
         }
 
         const existingCompany = await tx
@@ -94,8 +99,12 @@ export async function POST(request: NextRequest) {
               subscriptionTier: 'trial',
               settings: {
                 branding: { primaryColor: '#0066CC', logo: null },
-                features: { documentAnalysis: true, aiRecommendations: true, analytics: true }
-              }
+                features: {
+                  documentAnalysis: true,
+                  aiRecommendations: true,
+                  analytics: true,
+                },
+              },
             })
             .returning();
           targetCompanyId = newCompany.id;
@@ -103,15 +112,18 @@ export async function POST(request: NextRequest) {
       }
 
       // Check for email conflicts in the target company
-      const emailConflict = existingUsers.find(u => 
-        u.email === data.email && u.companyId === targetCompanyId
+      const emailConflict = existingUsers.find(
+        (u) => u.email === data.email && u.companyId === targetCompanyId,
       );
-      
+
       if (emailConflict) {
-        return NextResponse.json({ 
-          error: `A user with email ${data.email} already exists in this company. If this is you, please sign in instead of creating a new account.`,
-          details: 'EMAIL_ALREADY_EXISTS'
-        }, { status: 409 });
+        return NextResponse.json(
+          {
+            error: `A user with email ${data.email} already exists in this company. If this is you, please sign in instead of creating a new account.`,
+            details: 'EMAIL_ALREADY_EXISTS',
+          },
+          { status: 409 },
+        );
       }
 
       // Map user types to roles
@@ -119,36 +131,44 @@ export async function POST(request: NextRequest) {
         platform_admin: 'platform_admin',
         company_admin: 'company_admin',
         hr_admin: 'hr_admin',
-        employee: 'employee'
+        employee: 'employee',
       };
 
       // Create user
-      const [newUser] = await tx.insert(users).values({
-        stackUserId: data.stackUserId,
-        companyId: targetCompanyId,
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        role: roleMap[data.userType],
-        department: data.department,
-        isActive: true
-      }).returning();
+      const [newUser] = await tx
+        .insert(users)
+        .values({
+          stackUserId: data.stackUserId,
+          companyId: targetCompanyId,
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          role: roleMap[data.userType],
+          department: data.department,
+          isActive: true,
+        })
+        .returning();
 
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: 'User onboarded successfully',
-        user: newUser 
+        user: newUser,
       });
     });
-
   } catch (error) {
     console.error('Onboarding error:', error);
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid data', details: error.errors }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid data', details: error.errors },
+        { status: 400 },
+      );
     }
-    return NextResponse.json({ 
-      error: 'Failed to complete onboarding',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Failed to complete onboarding',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 },
+    );
   }
 }

@@ -4,7 +4,12 @@ import { users, companies } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { setTenantContext } from '@/lib/db/tenant-utils';
 
-export type UserType = 'employee' | 'hr_admin' | 'company_admin' | 'platform_admin' | 'guest';
+export type UserType =
+  | 'employee'
+  | 'hr_admin'
+  | 'company_admin'
+  | 'platform_admin'
+  | 'guest';
 
 export interface AuthUser {
   id: string;
@@ -26,7 +31,7 @@ export interface AuthSession {
 export async function auth(): Promise<AuthSession | null> {
   try {
     const stackUser = await stackServerApp.getUser();
-    
+
     if (!stackUser) {
       return { user: null };
     }
@@ -51,7 +56,7 @@ export async function auth(): Promise<AuthSession | null> {
           name: stackUser.displayName || undefined,
           type: 'employee', // Default type
           stackUserId: stackUser.id,
-        }
+        },
       };
     }
 
@@ -61,11 +66,13 @@ export async function auth(): Promise<AuthSession | null> {
       user: {
         id: dbUser.id,
         email: dbUser.email,
-        name: `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim() || undefined,
+        name:
+          `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim() ||
+          undefined,
         type: (dbUser.role as UserType) || 'employee',
         companyId: dbUser.companyId,
         stackUserId: dbUser.stackUserId,
-      }
+      },
     };
   } catch (error) {
     console.error('Auth error:', error);
@@ -80,7 +87,9 @@ export async function auth(): Promise<AuthSession | null> {
 export async function signOut() {
   // Stack Auth signOut is only available client-side
   // Use the SignOutForm component for signing out
-  throw new Error('Sign out must be done client-side. Use the SignOutForm component.');
+  throw new Error(
+    'Sign out must be done client-side. Use the SignOutForm component.',
+  );
 }
 
 /**
@@ -89,7 +98,7 @@ export async function signOut() {
 export async function getUserCompany(userId: string) {
   const user = await db
     .select({
-      company: companies
+      company: companies,
     })
     .from(users)
     .innerJoin(companies, eq(users.companyId, companies.id))
@@ -102,7 +111,10 @@ export async function getUserCompany(userId: string) {
 /**
  * Check if user has required role
  */
-export function hasRole(user: AuthUser | null, requiredRoles: UserType[]): boolean {
+export function hasRole(
+  user: AuthUser | null,
+  requiredRoles: UserType[],
+): boolean {
   if (!user) return false;
   return requiredRoles.includes(user.type);
 }
@@ -121,7 +133,9 @@ export async function requireAuth(): Promise<AuthUser> {
 /**
  * Require specific role - throws if not authorized
  */
-export async function requireRole(requiredRoles: UserType[]): Promise<AuthUser> {
+export async function requireRole(
+  requiredRoles: UserType[],
+): Promise<AuthUser> {
   const user = await requireAuth();
   if (!hasRole(user, requiredRoles)) {
     throw new Error('Insufficient permissions');

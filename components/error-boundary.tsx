@@ -16,7 +16,10 @@ interface ErrorBoundaryProps {
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
 }
 
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
@@ -31,7 +34,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Error Boundary caught an error:', error, errorInfo);
-    
+
     this.setState({
       error,
       errorInfo,
@@ -98,19 +101,22 @@ export function DefaultErrorFallback({ error, reset }: ErrorFallbackProps) {
         <div className="mx-auto size-16 rounded-full bg-red-100 p-4 text-red-600">
           <AlertTriangle className="size-8" />
         </div>
-        
+
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-gray-900">
             Something went wrong
           </h1>
           <p className="text-gray-600">
-            We encountered an unexpected error. Please try again or contact support if the problem persists.
+            We encountered an unexpected error. Please try again or contact
+            support if the problem persists.
           </p>
         </div>
 
         {isDevelopment && (
           <div className="rounded-lg bg-red-50 p-4 text-left">
-            <h3 className="font-medium text-red-800">Error Details (Development Mode):</h3>
+            <h3 className="font-medium text-red-800">
+              Error Details (Development Mode):
+            </h3>
             <pre className="mt-2 text-sm text-red-700 overflow-auto max-h-40">
               {error.message}
               {error.stack && `\n\nStack trace:\n${error.stack}`}
@@ -127,7 +133,7 @@ export function DefaultErrorFallback({ error, reset }: ErrorFallbackProps) {
             <RefreshCw className="mr-2 size-4" />
             Try Again
           </Button>
-          
+
           <Button
             onClick={() => {
               window.location.href = '/';
@@ -177,14 +183,18 @@ export function ChatErrorBoundary({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DashboardErrorBoundary({ children }: { children: React.ReactNode }) {
+export function DashboardErrorBoundary({
+  children,
+}: { children: React.ReactNode }) {
   return (
     <ErrorBoundary
       fallback={({ error, reset }) => (
         <div className="flex min-h-96 items-center justify-center rounded-lg border border-red-200 bg-red-50 p-8">
           <div className="text-center">
             <AlertTriangle className="mx-auto h-12 w-12 text-red-600" />
-            <h3 className="mt-4 text-lg font-medium text-red-800">Dashboard Error</h3>
+            <h3 className="mt-4 text-lg font-medium text-red-800">
+              Dashboard Error
+            </h3>
             <p className="mt-2 text-red-600">
               Unable to load dashboard components
             </p>
@@ -192,7 +202,11 @@ export function DashboardErrorBoundary({ children }: { children: React.ReactNode
               <Button onClick={reset} size="sm">
                 Retry
               </Button>
-              <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+                size="sm"
+              >
                 Refresh Page
               </Button>
             </div>
@@ -209,7 +223,9 @@ export function DashboardErrorBoundary({ children }: { children: React.ReactNode
   );
 }
 
-export function DocumentErrorBoundary({ children }: { children: React.ReactNode }) {
+export function DocumentErrorBoundary({
+  children,
+}: { children: React.ReactNode }) {
   return (
     <ErrorBoundary
       fallback={({ error, reset }) => (
@@ -217,9 +233,7 @@ export function DocumentErrorBoundary({ children }: { children: React.ReactNode 
           <div className="text-center">
             <AlertTriangle className="mx-auto h-8 w-8 text-red-600" />
             <h3 className="mt-2 font-medium text-red-800">Document Error</h3>
-            <p className="mt-1 text-sm text-red-600">
-              Failed to load document
-            </p>
+            <p className="mt-1 text-sm text-red-600">Failed to load document</p>
             <Button onClick={reset} size="sm" className="mt-3">
               Retry
             </Button>
