@@ -11,7 +11,7 @@ export const stackServerApp = new StackServerApp({
     signIn: '/login',
     signUp: '/register',
     afterSignIn: '/',
-    afterSignUp: '/onboarding',
+    afterSignUp: '/', // Neon Auth handles user creation
     afterSignOut: '/',
   },
 });

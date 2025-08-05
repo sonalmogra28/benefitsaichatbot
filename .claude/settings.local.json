@@ -45,7 +45,8 @@
       "Bash(vercel env:*)",
       "Bash(pnpm update:*)",
       "Bash(psql:*)",
-      "Bash(npm run fix-auth:*)"
+      "Bash(npm run fix-auth:*)",
+      "Bash(npm run tsx:*)"
     ],
     "deny": []
   }

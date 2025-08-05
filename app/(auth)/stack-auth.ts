@@ -1,7 +1,7 @@
 import { stackServerApp } from '@/stack';
 import { db } from '@/lib/db';
 import { users, companies } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { setTenantContext } from '@/lib/db/tenant-utils';
 
 export type UserType =
@@ -37,42 +37,49 @@ export async function auth(): Promise<AuthSession | null> {
     }
 
     // First, look up user in our database by Stack user ID without tenant context
-    // We need to bypass RLS temporarily to check if user exists
-    const dbUsers = await db
-      .select()
-      .from(users)
-      .where(eq(users.stackUserId, stackUser.id))
-      .limit(1);
+    // Use Neon Auth sync table
+    const neonUsers = await db.execute(sql`
+      SELECT id, name, email, created_at, raw_json
+      FROM neon_auth.users_sync
+      WHERE id = ${stackUser.id}
+      LIMIT 1
+    `);
 
-    if (dbUsers.length === 0) {
-      // User exists in Stack but not in our DB - create them
-      // This would typically happen during onboarding
+    if (!neonUsers || neonUsers.length === 0) {
+      // User should exist in Neon Auth if they're signed in
+      // Return basic info while Neon Auth syncs
       return {
         user: {
           id: stackUser.id,
           email: stackUser.primaryEmail || '',
           name: stackUser.displayName || undefined,
-          type: 'employee', // Default type
+          type: 'employee' as UserType,
           stackUserId: stackUser.id,
         },
       };
     }
 
-    const [dbUser] = dbUsers;
+    const neonUser = neonUsers[0];
+    
+    // Extract metadata from raw_json
+    const rawJson = neonUser.raw_json as any;
+    const metadata = rawJson?.clientMetadata || {};
+    const userType = metadata.userType || 'employee';
+    const companyId = metadata.companyId || null;
 
-    // Now that we've confirmed the user exists, set tenant context for secure queries
-    await setTenantContext(stackUser.id, dbUser.companyId);
+    // Set tenant context if user has a company
+    if (companyId) {
+      await setTenantContext(stackUser.id, companyId);
+    }
 
     return {
       user: {
-        id: dbUser.id,
-        email: dbUser.email,
-        name:
-          `${dbUser.firstName || ''} ${dbUser.lastName || ''}`.trim() ||
-          undefined,
-        type: (dbUser.role as UserType) || 'employee',
-        companyId: dbUser.companyId,
-        stackUserId: dbUser.stackUserId,
+        id: neonUser.id as string,
+        email: neonUser.email as string,
+        name: (neonUser.name || neonUser.email) as string,
+        type: userType as UserType,
+        companyId: companyId,
+        stackUserId: neonUser.id as string,
       },
     };
   } catch (error) {

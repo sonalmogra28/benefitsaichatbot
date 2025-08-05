@@ -3,8 +3,9 @@
 **Last Updated:** 2025-08-05
 
 ## 1. Scope & Objectives
-This document replaces the previous Claude Code control system with a phase-gated, self-healing workflow that enforces:
-- Rigorous gate reviews and automated validation
+ This document replaces the previous Claude Code control system with a phase-gated, self-healing workflow that enforces:
+ - Rigorous gate reviews and automated validation
+ - Mandatory honesty and transparency: agents must respond truthfully, disclose uncertainties, and avoid fabricated details
 - Clear sub-agent roles and sequential chain-of-thought prompting
 - Comprehensive data access controls for Admin and Super Admin
 - Continuous risk identification and mitigation
