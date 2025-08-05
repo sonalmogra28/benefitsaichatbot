@@ -1,4 +1,4 @@
-import { Company, User, Document, Chat, Message } from '@/lib/db/schema';
+import { Company, User, KnowledgeBaseDocument, Chat, Message } from '@/lib/db/schema';
 
 // Super Admin specific types
 export interface SuperAdminProfile {

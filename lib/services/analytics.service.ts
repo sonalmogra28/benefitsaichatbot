@@ -222,7 +222,7 @@ export async function getTopQuestions(
   
   questions.forEach(q => {
     // Extract text from parts structure
-    const text = q.content?.[0]?.text || '';
+    const text = Array.isArray(q.content) && q.content[0]?.text || '';
     if (text && text.length > 10) { // Filter out very short messages
       const normalized = text.toLowerCase().trim();
       questionCounts.set(normalized, (questionCounts.get(normalized) || 0) + 1);

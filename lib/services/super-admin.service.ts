@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { companies, users, knowledgeBaseDocuments, chats, messages, votes } from '@/lib/db/schema';
-import { eq, sql, desc, and, gte, lte, count, sum } from 'drizzle-orm';
+import { eq, sql, desc, and, gte, lte, count, countDistinct, sum } from 'drizzle-orm';
 import type {
   CompanyCreateInput,
   CompanyUpdateInput,
@@ -16,12 +16,13 @@ import type {
 
 export class SuperAdminService {
   // Company Management
-  async createCompany(input: CompanyCreateInput): Promise<CompanyWithStats> {
+  async createCompany(input: Omit<CompanyCreateInput, 'features'> & { features: string[] }): Promise<CompanyWithStats> {
     const [company] = await db
       .insert(companies)
       .values({
         name: input.name,
         domain: input.domain,
+        stackOrgId: `temp-org-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID until Stack Auth creates real one
         createdAt: new Date(),
         updatedAt: new Date(),
       })
@@ -30,9 +31,11 @@ export class SuperAdminService {
     // Create admin user for the company
     if (input.adminEmail) {
       await db.insert(users).values({
+        stackUserId: `temp-user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID until Stack Auth creates real one
         email: input.adminEmail,
-        name: input.adminEmail.split('@')[0],
-        type: 'company_admin',
+        firstName: input.adminEmail.split('@')[0],
+        lastName: '',
+        role: 'company_admin',
         companyId: company.id,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -48,7 +51,7 @@ export class SuperAdminService {
     return this.getCompanyWithStats(company.id);
   }
 
-  async updateCompany(id: string, input: CompanyUpdateInput): Promise<CompanyWithStats> {
+  async updateCompany(id: string, input: Omit<CompanyUpdateInput, 'features'> & { features?: string[] }): Promise<CompanyWithStats> {
     const [updated] = await db
       .update(companies)
       .set({
@@ -68,7 +71,7 @@ export class SuperAdminService {
     await db
       .update(companies)
       .set({ 
-        deletedAt: new Date(),
+        isActive: false,
         updatedAt: new Date(),
       })
       .where(eq(companies.id, id));
@@ -100,7 +103,7 @@ export class SuperAdminService {
 
     const whereClause = includeDeleted
       ? undefined
-      : sql`${companies.deletedAt} IS NULL`;
+      : eq(companies.isActive, true);
 
     const companiesList = await db
       .select()
@@ -117,10 +120,10 @@ export class SuperAdminService {
       })
     );
 
-    const [{ total }] = await db
-      .select({ total: count() })
-      .from(companies)
-      .where(whereClause);
+    const totalQuery = whereClause
+      ? await db.select({ total: count() }).from(companies).where(whereClause)
+      : await db.select({ total: count() }).from(companies);
+    const [{ total }] = totalQuery;
 
     return { companies: companiesWithStats, total };
   }
@@ -139,7 +142,8 @@ export class SuperAdminService {
     const [chatStats] = await db
       .select({ count: count() })
       .from(chats)
-      .where(eq(chats.userId, companyId)); // Note: Need to join through users
+      .innerJoin(users, eq(chats.userId, users.id))
+      .where(eq(users.companyId, companyId));
 
     // Calculate storage (simplified - would need actual file sizes)
     const storageUsed = docStats.count * 1024 * 1024; // Assume 1MB per doc
@@ -171,19 +175,23 @@ export class SuperAdminService {
       userCount: userStats.count,
       documentCount: docStats.count,
       chatCount: chatStats.count,
-      lastActivity: lastActivity?.lastActive,
+      lastActivity: lastActivity?.lastActive ? new Date(lastActivity.lastActive as any) : undefined,
       storageUsed,
       monthlyActiveUsers: mauStats.count,
     };
   }
 
   // User Management
-  async createBulkUsers(input: BulkUserCreateInput): Promise<User[]> {
+  async createBulkUsers(input: BulkUserCreateInput): Promise<typeof users.$inferSelect[]> {
     const newUsers = await db
       .insert(users)
       .values(
         input.users.map((user) => ({
-          ...user,
+          stackUserId: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID until Stack Auth creates real one
+          email: user.email,
+          firstName: user.name.split(' ')[0] || '',
+          lastName: user.name.split(' ').slice(1).join(' ') || '',
+          role: user.type,
           companyId: input.companyId,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -235,10 +243,10 @@ export class SuperAdminService {
 
         return {
           ...row.user,
-          company: row.company,
+          company: row.company ?? undefined,
           chatCount: chatCount.count,
           documentCount: 0, // TODO: Implement document ownership
-        };
+        } as UserWithCompany;
       })
     );
 
@@ -250,7 +258,7 @@ export class SuperAdminService {
     return { users: usersWithStats, total };
   }
 
-  async updateUserRole(userId: string, newType: User['type']): Promise<void> {
+  async updateUserRole(userId: string, newType: string): Promise<void> {
     const [oldUser] = await db
       .select()
       .from(users)
@@ -259,11 +267,11 @@ export class SuperAdminService {
 
     await db
       .update(users)
-      .set({ type: newType, updatedAt: new Date() })
+      .set({ role: newType, updatedAt: new Date() })
       .where(eq(users.id, userId));
 
     await this.logAudit('user.role_changed', 'user', userId, {
-      oldRole: oldUser.type,
+      oldRole: oldUser.role,
       newRole: newType,
     });
   }
@@ -272,7 +280,7 @@ export class SuperAdminService {
     await db
       .update(users)
       .set({ 
-        deletedAt: new Date(),
+        isActive: false,
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId));
@@ -286,7 +294,7 @@ export class SuperAdminService {
     const [companyStats] = await db
       .select({
         total: count(),
-        active: sum(sql`CASE WHEN ${companies.deletedAt} IS NULL THEN 1 ELSE 0 END`),
+        active: sum(sql`CASE WHEN ${companies.isActive} = true THEN 1 ELSE 0 END`),
       })
       .from(companies);
 
@@ -324,7 +332,7 @@ export class SuperAdminService {
       .select({
         totalChats: count(chats.id),
         totalMessages: count(messages.id),
-        totalDocuments: count(documents.id),
+        totalDocuments: count(knowledgeBaseDocuments.id),
       })
       .from(chats)
       .leftJoin(messages, eq(chats.id, messages.chatId))
@@ -340,7 +348,7 @@ export class SuperAdminService {
       .from(companies)
       .leftJoin(knowledgeBaseDocuments, eq(companies.id, knowledgeBaseDocuments.companyId))
       .groupBy(companies.id, companies.name)
-      .orderBy(desc(count(documents.id)))
+      .orderBy(desc(count(knowledgeBaseDocuments.id)))
       .limit(10);
 
     return {

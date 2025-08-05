@@ -49,7 +49,9 @@
       "Bash(npm run tsx:*)",
       "Bash(npm test:*)",
       "Bash(touch:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": []
   }

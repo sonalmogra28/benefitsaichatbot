@@ -42,14 +42,14 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = (file: File): string | undefined => {
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       return 'File type not supported. Please upload PDF, DOC, DOCX, or TXT files.';
     }
     if (file.size > MAX_FILE_SIZE) {
       return 'File size exceeds 10MB limit.';
     }
-    return null;
+    return undefined;
   };
 
   const handleFileSelect = (selectedFiles: FileList | null) => {
@@ -209,7 +209,7 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
       <CardHeader>
         <CardTitle>Upload Knowledge Base Documents</CardTitle>
         <CardDescription>
-          Upload PDF, Word, or text documents to enhance the AI's knowledge about your benefits.
+          Upload PDF, Word, or text documents to enhance the AI&apos;s knowledge about your benefits.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">

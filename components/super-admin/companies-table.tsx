@@ -118,8 +118,8 @@ export function CompaniesTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={company.deletedAt ? 'destructive' : 'default'}>
-                    {company.deletedAt ? 'Deleted' : 'Active'}
+                  <Badge variant={company.isActive ? 'default' : 'secondary'}>
+                    {company.isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </TableCell>
                 <TableCell>

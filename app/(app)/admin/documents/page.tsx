@@ -68,7 +68,7 @@ export default async function DocumentsPage() {
             <CardHeader>
               <CardTitle>Document Library</CardTitle>
               <CardDescription>
-                All documents in your company's knowledge base. The AI uses these to answer employee questions.
+                All documents in your company&apos;s knowledge base. The AI uses these to answer employee questions.
               </CardDescription>
             </CardHeader>
             <CardContent>

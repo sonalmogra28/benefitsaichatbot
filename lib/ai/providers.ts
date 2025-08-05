@@ -38,13 +38,14 @@ const providersMap: Record<string, ReturnType<typeof customProvider>> = {
   // Anthropic-based provider
   anthropic: customProvider({
     languageModels: {
-      'claude-3.5-sonnet': async ({ prompt, system }) => {
-        const messages = [];
-        if (system) messages.push({ role: 'system', content: system });
+      'claude-3.5-sonnet': async ({ prompt, system }: { prompt: string; system?: string }) => {
+        const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+        if (system) messages.push({ role: 'assistant', content: system }); // Anthropic doesn't have system role
         messages.push({ role: 'user', content: prompt });
         const res = await anthropicClient.messages.create({
-          model: 'claude-3.5-sonnet',
+          model: 'claude-3-5-sonnet-20241022',
           messages,
+          max_tokens: 4096,
         });
         return res.content;
       },

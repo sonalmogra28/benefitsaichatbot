@@ -39,6 +39,17 @@ Security & Compliance Audit            :p6.2, after p6.1, 5d
 section Phase 7: Optional RAG Refactoring
 RAG Engine Prototype                   :crit, p7.1, after p6.2, 10d
 Templating Engine for Cloning           :p7.2, after p7.1, 7d
+
+section Phase 8: HRIS Integration
+HRIS Connect API & UI MVP          :crit, p8.1, after p7.2, 7d
+HRIS Data Sync Job                 :p8.2, after p8.1, 5d
+HRIS Error Handling & Monitoring   :p8.3, after p8.2, 3d
+
+section Phase 9: Super Admin AI Enhancements
+Natural Language Data Insights     :crit, p9.1, after p8.3, 10d
+Automated Risk Detection           :p9.2, after p9.1, 8d
+AI Document Generation             :p9.3, after p9.2, 7d
+AI-Assisted User Support           :p9.4, after p9.3, 5d
 ``` 
 
 **Owners:**

@@ -227,7 +227,7 @@ export default async function TestImplementationPage() {
         <CardContent>
           <ol className="list-decimal list-inside space-y-2 text-sm">
             <li>Configure all environment variables in .env.local</li>
-            <li>Create Pinecone index named 'benefits-ai' with 1536 dimensions</li>
+            <li>Create Pinecone index named &apos;benefits-ai&apos; with 1536 dimensions</li>
             <li>Run database migrations: <code className="bg-gray-100 px-2 py-1 rounded">npm run db:push</code></li>
             <li>Upload test documents through the admin interface</li>
             <li>Test the chat interface with benefits questions</li>

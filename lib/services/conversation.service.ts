@@ -101,7 +101,7 @@ export async function updateConversationTitle(chatId: string, userId: string, ti
     .set({ title })
     .where(and(eq(chats.id, chatId), eq(chats.userId, userId)));
 
-  return result.rowCount > 0;
+  return result.length > 0;
 }
 
 /**
@@ -112,7 +112,7 @@ export async function deleteConversation(chatId: string, userId: string): Promis
     .delete(chats)
     .where(and(eq(chats.id, chatId), eq(chats.userId, userId)));
 
-  return result.rowCount > 0;
+  return result.length > 0;
 }
 
 /**
