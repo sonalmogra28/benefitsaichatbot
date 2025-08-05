@@ -198,7 +198,7 @@ export default async function AuthDebugPage() {
             Test Sign Up
           </Link>
           <Link
-            href="/handler/sign-out"
+            href="/api/auth/sign-out"
             className="inline-block px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Test Sign Out

@@ -12,16 +12,10 @@ export async function middleware(request: NextRequest) {
     return new Response('pong', { status: 200 });
   }
 
-  // Allow Stack Auth handler routes
-  if (pathname.startsWith('/handler')) {
-    return NextResponse.next();
-  }
-
   // Skip middleware for API routes, static files, and auth handlers
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
-    pathname.startsWith('/handler/') ||
     pathname.includes('.')
   ) {
     return NextResponse.next();
@@ -29,7 +23,9 @@ export async function middleware(request: NextRequest) {
 
   // Protected routes that require authentication
   const protectedPaths = ['/admin', '/company-admin', '/chat', '/debug/auth'];
-  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
+  const isProtectedPath = protectedPaths.some((path) =>
+    pathname.startsWith(path),
+  );
 
   if (isProtectedPath) {
     try {
@@ -58,6 +54,6 @@ export const config = {
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      * - public files with extensions
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*|handler).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*).*)',
   ],
 };

@@ -36,10 +36,8 @@ export async function auth(): Promise<AuthSession | null> {
       return { user: null };
     }
 
-    // Set tenant context for secure queries
-    await setTenantContext(stackUser.id);
-
-    // Look up user in our database by Stack user ID
+    // First, look up user in our database by Stack user ID without tenant context
+    // We need to bypass RLS temporarily to check if user exists
     const dbUsers = await db
       .select()
       .from(users)
@@ -61,6 +59,9 @@ export async function auth(): Promise<AuthSession | null> {
     }
 
     const [dbUser] = dbUsers;
+
+    // Now that we've confirmed the user exists, set tenant context for secure queries
+    await setTenantContext(stackUser.id, dbUser.companyId);
 
     return {
       user: {
