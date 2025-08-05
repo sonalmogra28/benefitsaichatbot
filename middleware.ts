@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { logAccess } from './lib/utils/audit';
 import { stackServerApp } from './stack';
 
 export async function middleware(request: NextRequest) {
@@ -35,6 +36,15 @@ export async function middleware(request: NextRequest) {
         // Redirect to login if not authenticated
         return NextResponse.redirect(new URL('/login', request.url));
       }
+      // Audit access: derive role based on path
+      const role: 'user' | 'admin' | 'super-admin' = pathname.startsWith(
+        '/company-admin',
+      )
+        ? 'admin'
+        : pathname.startsWith('/admin')
+          ? 'super-admin'
+          : 'user';
+      logAccess(user.id, pathname, role);
     } catch (error) {
       // If there's an error checking auth, redirect to login
       console.error('Auth check error in middleware:', error);

@@ -1,0 +1,99 @@
+{
+  // Prompt templates for each development phase using sequential chain-of-thought prompting
+  "phases": {
+    "Phase0": {
+      "title": "Discovery & Audit",
+      "prompt": [
+        "You are DataAgent. Follow these steps:",
+        "1. Inventory all dependencies from package.json; identify outdated or vulnerable packages.",
+        "2. Generate an npm audit report (npm audit --json) and parse critical issues.",
+        "3. Extract API routes and map data flows for User, Admin, and Super Admin journeys.",
+        "4. Document each data exchange event in JSON.",
+        "5. Provide a summary of findings with high-level risks and recommendations."
+      ],
+      "chainOfThought": true
+    },
+    "Phase1": {
+      "title": "Core Platform Stabilization",
+      "prompt": [
+        "You are AuthAgent. Execute these tasks:",
+        "1. Validate the Stack Auth route handler implementation in app/handler/[...stack]/route.ts.",
+        "2. Write Playwright test scenarios for sign-in, sign-out flows.",
+        "3. Ensure middleware.ts invokes stackServerApp.getUser() on protected routes.",
+        "4. Audit logAccess calls for Admin and Super-Admin paths.",
+        "5. Summarize code validation results and update claude.md Gate 1 status."
+      ],
+      "chainOfThought": true
+    },
+    "Phase2": {
+      "title": "Automation & Sub-Agent Integration",
+      "prompt": [
+        "You are QAAgent. Follow these steps:",
+        "1. Generate Vitest unit tests for each function in lib/ai/tools using chain-of-thought.",
+        "2. Create integration tests for API endpoints with Supertest.",
+        "3. Write a script to run pnpm validate (lint, test, validate-pow) in CI context.",
+        "4. Produce a report of coverage metrics and test failures.",
+        "5. Update claude.md Gate 2 status."
+      ],
+      "chainOfThought": false
+    },
+    "Phase3": {
+      "title": "Admin & Super Admin Profile Completion",
+      "prompt": [
+        "You are DataAgent. Proceed sequentially:",
+        "1. Define TypeScript types for AdminUser and SuperAdminSummary.",
+        "2. Implement GET /api/admin/profile endpoint with pagination.",
+        "3. Implement GET /api/super-admin/profile endpoint aggregating all tenants.",
+        "4. Write RBAC tests under tests/rbac/.",
+        "5. Document API contracts in docs/openapi.json."
+      ],
+      "chainOfThought": true
+    },
+    "Phase4": {
+      "title": "Self-Healing & Continuous Validation",
+      "prompt": [
+        "You are DeploymentAgent. Perform these tasks:",
+        "1. Enhance validate-pow.js to verify Deliverables list in claude.md.",
+        "2. Create scripts/check-pipeline-metrics.ts for CI anomaly detection.",
+        "3. Implement automatic rollback logic on PoW failures.",
+        "4. Write tests to simulate rollback scenarios.",
+        "5. Mark Gate 4 status in claude.md."
+      ],
+      "chainOfThought": false
+    },
+    "Phase5": {
+      "title": "Final Roadmap & Monetization Blueprint",
+      "prompt": [
+        "You are DataAgent. Execute:",
+        "1. Compile a spreadsheet of feature ROI and subscription tiers.",
+        "2. Draft monetization proposal in docs/monetization-analysis.xlsx.",
+        "3. Summarize business sign-off action items.",
+        "4. Update claude.md Gate 5 status."
+      ],
+      "chainOfThought": false
+    },
+    "Phase6": {
+      "title": "Go-To-Market & Documentation",
+      "prompt": [
+        "You are QAAgent. Follow:",
+        "1. Generate docs/user-guide.md and docs/api-reference.md from code comments.",
+        "2. Run Snyk to produce docs/security-report.md.",
+        "3. Create markdown TOC for user guides.",
+        "4. Update claude.md Gate 6 status."
+      ],
+      "chainOfThought": false
+    },
+    "Phase7": {
+      "title": "Optional RAG Refactoring",
+      "prompt": [
+        "You are AuthAgent. Steps:",
+        "1. Strip benefit-specific functions from lib/ai/tools.",
+        "2. Scaffold templates/rag-chatbot boilerplate.",
+        "3. Write generator CLI in lib/templates/generator.ts.",
+        "4. Test example in examples/simple-chatbot/.",
+        "5. Update claude.md Gate 7 status."
+      ],
+      "chainOfThought": true
+    }
+  }
+}
