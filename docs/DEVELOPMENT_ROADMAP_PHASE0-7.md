@@ -1,0 +1,51 @@
+# Development Roadmap: Phases 0–7
+
+This roadmap outlines each phase, tasks, owners, and estimated timelines for the Benefits Chatbot project.
+
+```mermaid
+gantt
+title Benefits Chatbot Roadmap (Phase 0–7)
+dateFormat  YYYY-MM-DD
+axisFormat  %m/%d
+
+section Phase 0: Discovery & Audit
+Codebase & Dependency Audit         :crit, p0.1, 2025-08-05, 5d
+Data Flow Mapping (User/Admin/Super) :p0.2, after p0.1, 4d
+
+section Phase 1: Core Platform Stabilization
+Stack Auth Handler Integration       :crit, p1.1, after p0.2, 7d
+Debug & Health-Check Pages           :p1.2, after p1.1, 5d
+
+section Phase 2: Automation & Sub-Agent Integration
+Define Sub-Agents & Roles             :crit, p2.1, after p1.2, 3d
+Implement Validation Pipelines        :p2.2, after p2.1, 10d
+
+section Phase 3: Admin & Super Admin Profiles
+Admin Profile API & UI                :crit, p3.1, after p2.2, 8d
+Super Admin Profile API & UI          :p3.2, after p3.1, 8d
+
+section Phase 4: Self-Healing & Continuous Validation
+Implement PoW Hooks                   :crit, p4.1, after p3.2, 5d
+Anomaly Detection & Rollback Logic    :p4.2, after p4.1, 7d
+
+section Phase 5: Final Roadmap & Monetization Blueprint
+Milestone Schedule & Owner Assignments :crit, p5.1, after p4.2, 4d
+Monetization Plan & ROI Analysis       :p5.2, after p5.1, 6d
+
+section Phase 6: Go-To-Market & Documentation
+User Guides & API References           :crit, p6.1, after p5.2, 7d
+Security & Compliance Audit            :p6.2, after p6.1, 5d
+
+section Phase 7: Optional RAG Refactoring
+RAG Engine Prototype                   :crit, p7.1, after p6.2, 10d
+Templating Engine for Cloning           :p7.2, after p7.1, 7d
+``` 
+
+**Owners:**
+- **Team Lead:** @spencerpro
+- **DataAgent:** @data-engineer
+- **AuthAgent:** @auth-specialist
+- **QAAgent:** @qa-engineer
+- **DeploymentAgent:** @devops-engineer
+
+**Gate Criteria:** Refer to `claude.md` Phase Gating Strategy section for each gate approval requirements.

@@ -1,0 +1,51 @@
+{
+  // Custom Claude Code instructions for sub-agent and gate orchestration
+  "subAgents": {
+    "DataAgent": {
+      "description": "Manages data schema, migrations, ETL validity",
+      "prompts": [
+        "Step 1: Identify affected tables and fields",
+        "Step 2: Validate current schema against expected models",
+        "Step 3: Generate migration scripts with SQL and Drizzle ORM",
+        "Step 4: Create anomaly detection tests for new schema"
+      ]
+    },
+    "AuthAgent": {
+      "description": "Orchestrates Stack Auth flows and session management",
+      "prompts": [
+        "Step 1: Validate route parameters and session tokens",
+        "Step 2: Ensure proper cookie handling and security flags",
+        "Step 3: Generate comprehensive integration tests for sign-in, sign-out",
+        "Step 4: Implement circuit-breaker patterns for fallback"
+      ]
+    },
+    "QAAgent": {
+      "description": "Automates test generation with sequential chain of thought",
+      "prompts": [
+        "Step 1: Outline test cases based on feature specification",
+        "Step 2: Write unit and integration tests using Vitest",
+        "Step 3: Execute tests and capture PoW evidence",
+        "Step 4: Update claude.md with test fingerprints"
+      ]
+    },
+    "DeploymentAgent": {
+      "description": "Manages CI/CD, self-healing rollbacks, and health-check triggers",
+      "prompts": [
+        "Step 1: Configure GitHub Actions workflows",
+        "Step 2: Implement build and deployment pipelines in Vercel",
+        "Step 3: Create health-check endpoints and rollback logic",
+        "Step 4: Generate monitoring alerts for failures"
+      ]
+    }
+  },
+  "gateCriteria": {
+    "Phase0": ["Audit report generated","Data flow map approved"],
+    "Phase1": ["Auth tests pass","Routing tests pass"],
+    "Phase2": ["CI pass","Coverage ≥ 90%"],
+    "Phase3": ["RBAC tests pass","Security audit complete"],
+    "Phase4": ["Self-healing validated","Automated alerts configured"],
+    "Phase5": ["Stakeholder sign-off","Monetization plan approved"],
+    "Phase6": ["All docs published","Compliance audit passed"],
+    "Phase7": ["Demo of RAG engine","Templating validated"]
+  }
+}
