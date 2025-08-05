@@ -4,7 +4,7 @@ This roadmap outlines each phase, tasks, owners, and estimated timelines for the
 
 ```mermaid
 gantt
-title Benefits Chatbot Roadmap (Phase 0–7)
+title Benefits Chatbot Development Roadmap
 dateFormat  YYYY-MM-DD
 axisFormat  %m/%d
 
@@ -49,8 +49,27 @@ section Phase 9: Super Admin AI Enhancements
 Natural Language Data Insights     :crit, p9.1, after p8.3, 10d
 Automated Risk Detection           :p9.2, after p9.1, 8d
 AI Document Generation             :p9.3, after p9.2, 7d
-AI-Assisted User Support           :p9.4, after p9.3, 5d
-``` 
+
+section Phase 10: Foundational Systems Remediation
+Full Email System Implementation   :crit, p10.1, after p9.3, 7d
+Complete Stack Auth Integration    :p10.2, after p10.1, 7d
+
+section Phase 11: Core Feature Implementation
+Document Processing Pipeline       :crit, p11.1, after p10.2, 10d
+Benefits-Specific Tools            :p11.2, after p11.1, 8d
+
+section Phase 12: User & Admin Feature Completion
+User Profile & Onboarding Flow     :crit, p12.1, after p11.2, 7d
+Company Admin Portal Features    :p12.2, after p12.1, 9d
+
+section Phase 13: API & Production Hardening
+Implement Stubbed API Endpoints    :crit, p13.1, after p12.2, 10d
+Implement Production Features      :p13.2, after p13.1, 8d
+
+section Phase 14: Analytics & AI/RAG Refinement
+Complete Analytics & Cost Tracking :crit, p14.1, after p13.2, 6d
+Enhance Search & RAG Quality       :p14.2, after p14.1, 9d
+```
 
 **Owners:**
 - **Team Lead:** @spencerpro

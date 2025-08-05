@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { companies, users, knowledgeBaseDocuments, chats, messages, votes } from '@/lib/db/schema';
 import { eq, sql, desc, and, gte, lte, count, countDistinct, sum } from 'drizzle-orm';
+import { emailService } from '@/lib/services/email.service';
 import type {
   CompanyCreateInput,
   CompanyUpdateInput,
@@ -183,6 +184,17 @@ export class SuperAdminService {
 
   // User Management
   async createBulkUsers(input: BulkUserCreateInput): Promise<typeof users.$inferSelect[]> {
+    // Get company details for email invitations
+    const [company] = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.id, input.companyId))
+      .limit(1);
+
+    if (!company) {
+      throw new Error('Company not found');
+    }
+
     const newUsers = await db
       .insert(users)
       .values(
@@ -204,8 +216,39 @@ export class SuperAdminService {
       companyId: input.companyId,
     });
 
+    // Send invitation emails if requested
     if (input.sendInvites) {
-      // TODO: Send invitation emails
+      const emailPromises = newUsers.map(async (user) => {
+        // Generate invite link (this would typically include a secure token)
+        const inviteLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/auth/setup?token=${user.id}&email=${encodeURIComponent(user.email)}`;
+        
+        const result = await emailService.sendUserInvite({
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`.trim(),
+          companyName: company.name,
+          inviteLink,
+          role: user.role,
+        });
+
+        if (!result.success) {
+          console.error(`Failed to send invite email to ${user.email}:`, result.error);
+          // Log the failure but don't fail the entire operation
+          await this.logAudit('email.failed', 'user', user.id, {
+            email: user.email,
+            error: result.error,
+          });
+        } else {
+          await this.logAudit('email.sent', 'user', user.id, {
+            email: user.email,
+            type: 'invitation',
+          });
+        }
+
+        return result;
+      });
+
+      // Wait for all emails to be sent
+      await Promise.all(emailPromises);
     }
 
     return newUsers;

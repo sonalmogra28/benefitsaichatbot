@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { knowledgeBaseDocuments } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { upsertDocumentChunks, type DocumentChunk } from '@/lib/vectors/pinecone';
+import { notificationService } from '@/lib/services/notification.service';
 
 /**
  * Process a document: extract text, chunk it, generate embeddings, and store in Pinecone
@@ -99,6 +100,23 @@ export async function processDocument(documentId: string) {
     
     console.log(`✅ Document processed: ${vectorsUpserted} vectors stored`);
     
+    // Update document status to processed
+    await db
+      .update(knowledgeBaseDocuments)
+      .set({ 
+        processedAt: new Date(),
+      })
+      .where(eq(knowledgeBaseDocuments.id, documentId));
+
+    // Send success notification if the document has an associated user
+    if (document.createdBy) {
+      await notificationService.sendDocumentProcessedNotification({
+        userId: document.createdBy,
+        documentName: document.title,
+        status: 'processed',
+      });
+    }
+    
     return {
       success: true,
       chunksProcessed: chunks.length,
@@ -116,6 +134,16 @@ export async function processDocument(documentId: string) {
         // You might want to add an error field to the schema
       })
       .where(eq(knowledgeBaseDocuments.id, documentId));
+
+    // Send failure notification if the document has an associated user
+    if (document.createdBy) {
+      await notificationService.sendDocumentProcessedNotification({
+        userId: document.createdBy,
+        documentName: document.title,
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
     
     throw error;
   }
