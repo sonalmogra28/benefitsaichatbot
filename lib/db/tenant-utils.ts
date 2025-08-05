@@ -17,11 +17,11 @@ export async function setTenantContext(
     if (companyId) {
       // Set both user and company context
       await db.execute(
-        sql`SELECT set_tenant_context(${stackUserId}, ${companyId}::uuid)`,
+        sql`SELECT set_tenant_context(${stackUserId}::text, ${companyId}::uuid)`,
       );
     } else {
       // Set user context and derive company from user record
-      await db.execute(sql`SELECT set_tenant_context(${stackUserId})`);
+      await db.execute(sql`SELECT set_tenant_context(${stackUserId}::text)`);
     }
   } catch (error) {
     console.error('Failed to set tenant context:', error);

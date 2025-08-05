@@ -12,5 +12,10 @@ export const stackServerApp = new StackServerApp({
     afterSignIn: '/',
     afterSignUp: '/onboarding',
     afterSignOut: '/',
+    // Password reset flow
+    forgotPassword: '/handler/forgot-password',
+    resetPassword: '/handler/reset-password',
+    // Account management
+    accountSettings: '/handler/account-settings',
   },
 });
