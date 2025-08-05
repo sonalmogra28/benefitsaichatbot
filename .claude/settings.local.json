@@ -36,7 +36,8 @@
       "WebFetch(domain:www.npmjs.com)",
       "Bash(cat:*)",
       "Bash(chmod:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(pnpm tsx:*)"
     ],
     "deny": []
   }
