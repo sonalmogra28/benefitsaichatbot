@@ -7,8 +7,17 @@
   "functions": {
     "app/(chat)/api/chat/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/cron/process-documents/route.ts": {
+      "maxDuration": 300
     }
   },
+  "crons": [
+    {
+      "path": "/api/cron/process-documents",
+      "schedule": "*/15 * * * *"
+    }
+  ],
   "env": {
     "NODE_ENV": "production"
   },

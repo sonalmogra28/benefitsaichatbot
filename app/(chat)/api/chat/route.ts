@@ -41,6 +41,8 @@ import type { ChatMessage } from '@/lib/types';
 import type { ChatModel } from '@/lib/ai/models';
 import type { VisibilityType } from '@/components/visibility-selector';
 import type { Session } from 'next-auth';
+import { trackChatEvent } from '@/lib/services/conversation.service';
+import { trackEvent } from '@/lib/services/analytics.service';
 
 export const maxDuration = 60;
 
@@ -212,7 +214,10 @@ export async function POST(request: Request) {
         );
       },
       generateId: generateUUID,
-      onFinish: async ({ messages }: { messages: any[] /* TODO: Define Message type */ }) => {
+      onFinish: async ({ messages, usage }: { messages: any[] /* TODO: Define Message type */; usage?: any }) => {
+        const startTime = Date.now();
+        
+        // Save messages
         await saveMessages({
           messages: messages.map((message: any /* TODO: Define Message type */) => ({
             chatId: id,
@@ -223,6 +228,45 @@ export async function POST(request: Request) {
             createdAt: new Date(),
           })),
         });
+        
+        // Track analytics for the assistant's response
+        const assistantMessage = messages.find((m: any) => m.role === 'assistant');
+        if (assistantMessage && session?.user) {
+          const responseTime = Date.now() - startTime;
+          
+          // Track chat event
+          await trackChatEvent({
+            companyId: session.user.companyId || '',
+            userId: session.user.id,
+            chatId: id,
+            messageId: assistantMessage.id,
+            eventType: 'message_sent',
+            responseTime,
+            tokensUsed: usage?.totalTokens,
+            cost: usage?.totalTokens ? (usage.totalTokens * 0.00002) : undefined, // Rough estimate
+            metadata: {
+              model: selectedChatModel,
+              toolsUsed: assistantMessage.toolInvocations?.length || 0,
+            },
+          });
+          
+          // Track tool usage
+          if (assistantMessage.toolInvocations?.length > 0) {
+            for (const tool of assistantMessage.toolInvocations) {
+              await trackChatEvent({
+                companyId: session.user.companyId || '',
+                userId: session.user.id,
+                chatId: id,
+                messageId: assistantMessage.id,
+                eventType: 'tool_used',
+                toolName: tool.toolName,
+                metadata: {
+                  toolArgs: tool.args,
+                },
+              });
+            }
+          }
+        }
       },
     });
 

@@ -1,9 +1,33 @@
 'use client';
 
 import { useState } from 'react';
+import { FileText, Download, Trash2, Eye, Clock, CheckCircle, AlertCircle, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Download, Trash2, Clock, CheckCircle, ExternalLink } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,182 +37,281 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { formatDistanceToNow } from 'date-fns';
 
-interface Document {
+export interface Document {
   id: string;
   title: string;
   documentType: string;
-  category: string | null;
-  tags: unknown;
-  fileUrl: string;
-  fileType: string;
-  processedAt: Date | null;
+  category?: string;
+  tags?: string[];
+  fileUrl?: string;
+  fileType?: string;
+  processedAt?: Date;
   createdAt: Date;
-  companyId: string;
-  companyName?: string | null;
-  companyDomain?: string | null;
+  status: 'pending_processing' | 'processed' | 'error';
 }
 
 interface DocumentListProps {
   documents: Document[];
-  showCompany?: boolean;
+  onDocumentDeleted?: (documentId: string) => void;
+  onDocumentView?: (document: Document) => void;
 }
 
-export default function DocumentList({ documents, showCompany = true }: DocumentListProps) {
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+export function DocumentList({ documents, onDocumentDeleted, onDocumentView }: DocumentListProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  const handleDelete = async (documentId: string, documentUrl: string) => {
-    setDeletingId(documentId);
+  // Filter documents
+  const filteredDocuments = documents.filter(doc => {
+    const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         doc.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         doc.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesType = filterType === 'all' || doc.documentType === filterType;
+    const matchesStatus = filterStatus === 'all' || doc.status === filterStatus;
+    
+    return matchesSearch && matchesType && matchesStatus;
+  });
+
+  const handleDelete = async (documentId: string) => {
     try {
-      // Delete from database and blob storage
-      const response = await fetch(`/api/admin/documents/${documentId}`, {
+      const response = await fetch(`/api/documents/${documentId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: documentUrl })
       });
 
       if (!response.ok) {
         throw new Error('Failed to delete document');
       }
 
-      // Refresh the page to update the list
-      window.location.reload();
+      toast({
+        title: 'Document deleted',
+        description: 'The document has been removed from the knowledge base.',
+      });
+
+      if (onDocumentDeleted) {
+        onDocumentDeleted(documentId);
+      }
     } catch (error) {
-      console.error('Delete error:', error);
-      alert('Failed to delete document');
+      toast({
+        title: 'Delete failed',
+        description: 'Failed to delete the document. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
-      setDeletingId(null);
+      setDeleteConfirmId(null);
     }
   };
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.includes('pdf')) return '📄';
-    if (fileType.includes('word')) return '📝';
-    return '📎';
-  };
-
-  const getDocumentTypeBadgeColor = (type: string) => {
-    switch (type) {
-      case 'policy': return 'bg-blue-100 text-blue-800';
-      case 'guide': return 'bg-green-100 text-green-800';
-      case 'faq': return 'bg-purple-100 text-purple-800';
-      case 'form': return 'bg-orange-100 text-orange-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const handleDownload = (document: Document) => {
+    if (document.fileUrl) {
+      window.open(document.fileUrl, '_blank');
     }
   };
 
-  if (documents.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        No documents uploaded yet.
-      </div>
-    );
-  }
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'processed':
+        return (
+          <Badge variant="default" className="bg-green-500">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Processed
+          </Badge>
+        );
+      case 'pending_processing':
+        return (
+          <Badge variant="secondary">
+            <Clock className="h-3 w-3 mr-1" />
+            Processing
+          </Badge>
+        );
+      case 'error':
+        return (
+          <Badge variant="destructive">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Error
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getFileTypeIcon = (fileType?: string) => {
+    // You could add different icons for different file types
+    return <FileText className="h-4 w-4" />;
+  };
 
   return (
-    <div className="space-y-2">
-      {documents.map((doc) => (
-        <div
-          key={doc.id}
-          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-        >
-          <div className="flex items-start space-x-3 flex-1">
-            <span className="text-2xl mt-1">{getFileIcon(doc.fileType)}</span>
-            <div className="flex-1">
-              <h4 className="font-medium">{doc.title}</h4>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge className={getDocumentTypeBadgeColor(doc.documentType)}>
-                  {doc.documentType}
-                </Badge>
-                {doc.category && (
-                  <Badge variant="outline">{doc.category}</Badge>
-                )}
-                {doc.processedAt ? (
-                  <Badge variant="secondary" className="gap-1">
-                    <CheckCircle className="size-3" />
-                    Processed
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="gap-1">
-                    <Clock className="size-3" />
-                    Processing
-                  </Badge>
-                )}
-              </div>
-              {Array.isArray(doc.tags) && doc.tags.length > 0 && (
-                <div className="flex gap-1 mt-2">
-                  {doc.tags.map((tag: any, index: number) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Uploaded {new Date(doc.createdAt).toLocaleDateString()}
-                {showCompany && doc.companyName && ` • ${doc.companyName}`}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => window.open(doc.fileUrl, '_blank')}
-              title="View document"
-            >
-              <ExternalLink className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                // Download file
-                const a = document.createElement('a');
-                a.href = doc.fileUrl;
-                a.download = doc.title;
-                a.click();
-              }}
-              title="Download document"
-            >
-              <Download className="size-4" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={deletingId === doc.id}
-                  title="Delete document"
-                >
-                  <Trash2 className="size-4 text-destructive" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Document?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete &quot;{doc.title}&quot; and remove it from the knowledge base.
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => handleDelete(doc.id, doc.fileUrl)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search documents..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
           </div>
         </div>
-      ))}
+        <Select value={filterType} onValueChange={setFilterType}>
+          <SelectTrigger className="w-[180px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter by type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="policy">Policy</SelectItem>
+            <SelectItem value="guide">Guide</SelectItem>
+            <SelectItem value="faq">FAQ</SelectItem>
+            <SelectItem value="form">Form</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="processed">Processed</SelectItem>
+            <SelectItem value="pending_processing">Processing</SelectItem>
+            <SelectItem value="error">Error</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Documents table */}
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Document</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Uploaded</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredDocuments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  {documents.length === 0 
+                    ? 'No documents uploaded yet' 
+                    : 'No documents match your search criteria'}
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredDocuments.map((document) => (
+                <TableRow key={document.id}>
+                  <TableCell>
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5">
+                        {getFileTypeIcon(document.fileType)}
+                      </div>
+                      <div>
+                        <p className="font-medium">{document.title}</p>
+                        {document.tags && document.tags.length > 0 && (
+                          <div className="flex gap-1 mt-1 flex-wrap">
+                            {document.tags.map((tag, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {document.documentType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {document.category || '-'}
+                  </TableCell>
+                  <TableCell>
+                    {getStatusBadge(document.status)}
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">
+                      {formatDistanceToNow(new Date(document.createdAt), { addSuffix: true })}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          Actions
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => onDocumentView && onDocumentView(document)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                        {document.fileUrl && (
+                          <DropdownMenuItem
+                            onClick={() => handleDownload(document)}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => setDeleteConfirmId(document.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this document? This will remove it from the knowledge base 
+              and delete all associated vector embeddings. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

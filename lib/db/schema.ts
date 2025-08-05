@@ -202,6 +202,30 @@ export const analyticsEvents = pgTable('analytics_events', {
   createdAtIdx: index('analytics_events_created_at_idx').on(table.createdAt),
 }));
 
+// Chat-specific analytics
+export const chatAnalytics = pgTable('chat_analytics', {
+  id: uuid('id').primaryKey().notNull().defaultRandom(),
+  companyId: uuid('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  chatId: uuid('chat_id').references(() => chats.id, { onDelete: 'cascade' }),
+  messageId: uuid('message_id').references(() => messages.id, { onDelete: 'cascade' }),
+  eventType: varchar('event_type', { length: 50 }).notNull(), // message_sent, tool_used, feedback_given
+  toolName: varchar('tool_name', { length: 100 }), // if tool was used
+  responseTime: integer('response_time'), // milliseconds
+  tokensUsed: integer('tokens_used'),
+  cost: decimal('cost', { precision: 10, scale: 4 }),
+  feedback: varchar('feedback', { length: 20 }), // positive, negative, neutral
+  errorOccurred: boolean('error_occurred').default(false),
+  metadata: json('metadata').default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  companyIdIdx: index('chat_analytics_company_id_idx').on(table.companyId),
+  userIdIdx: index('chat_analytics_user_id_idx').on(table.userId),
+  chatIdIdx: index('chat_analytics_chat_id_idx').on(table.chatId),
+  eventTypeIdx: index('chat_analytics_event_type_idx').on(table.eventType),
+  createdAtIdx: index('chat_analytics_created_at_idx').on(table.createdAt),
+}));
+
 // ============================================================================
 // RELATIONS
 // ============================================================================
@@ -327,6 +351,9 @@ export type NewVote = InferInsertModel<typeof votes>;
 
 export type AnalyticsEvent = InferSelectModel<typeof analyticsEvents>;
 export type NewAnalyticsEvent = InferInsertModel<typeof analyticsEvents>;
+
+export type ChatAnalytics = InferSelectModel<typeof chatAnalytics>;
+export type NewChatAnalytics = InferInsertModel<typeof chatAnalytics>;
 
 // ============================================================================
 // LEGACY SCHEMA COMPATIBILITY (for migration)
