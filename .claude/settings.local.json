@@ -46,7 +46,8 @@
       "Bash(pnpm update:*)",
       "Bash(psql:*)",
       "Bash(npm run fix-auth:*)",
-      "Bash(npm run tsx:*)"
+      "Bash(npm run tsx:*)",
+      "Bash(npm test:*)"
     ],
     "deny": []
   }
