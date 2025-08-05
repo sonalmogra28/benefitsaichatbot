@@ -164,14 +164,15 @@ export function Chat({
             </motion.div>
             <BenefitsQuickActions 
               onActionClick={(prompt) => {
+                // Set the input to show what's being sent
                 setInput(prompt);
-                // Auto-send the message
-                setTimeout(() => {
-                  const form = document.querySelector('form[data-chat-form]') as HTMLFormElement;
-                  if (form) {
-                    form.requestSubmit();
-                  }
-                }, 100);
+                // Send the message directly without form submission
+                sendMessage({
+                  role: 'user' as const,
+                  parts: [{ type: 'text', text: prompt }],
+                });
+                // Clear the input after sending
+                setTimeout(() => setInput(''), 100);
               }}
               isVisible={true}
             />

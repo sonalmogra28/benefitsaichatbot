@@ -74,7 +74,7 @@ export function BenefitsQuickActions({ onActionClick, isVisible = true }: Benefi
       <div className="text-sm text-muted-foreground mb-3 text-center">
         Quick actions to get started
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
         {quickActions.map((action, index) => (
           <motion.div
             key={action.label}
@@ -96,7 +96,7 @@ export function BenefitsQuickActions({ onActionClick, isVisible = true }: Benefi
               className={`w-full h-auto ${action.color} transition-all duration-200 shadow-sm hover:shadow-lg border-2`}
               onClick={() => onActionClick(action.prompt)}
             >
-              <div className="flex flex-col items-center gap-2 py-2 px-4">
+              <div className="flex flex-col items-center gap-2 py-4 px-3">
                 <motion.div
                   whileHover={{ rotate: [0, -10, 10, -10, 0] }}
                   transition={{ duration: 0.5 }}
