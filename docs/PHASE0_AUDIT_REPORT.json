@@ -1,0 +1,183 @@
+{
+  "phase": "Phase 0: Discovery & Audit",
+  "timestamp": "2025-08-05T07:30:00Z",
+  "summary": {
+    "total_dependencies": 901,
+    "outdated_packages": 49,
+    "security_vulnerabilities": {
+      "critical": 0,
+      "high": 0,
+      "moderate": 2,
+      "low": 4,
+      "total": 6
+    },
+    "api_endpoints_discovered": 14,
+    "critical_security_gaps": 3
+  },
+  "dependency_audit": {
+    "outdated_major_versions": [
+      {"package": "react", "current": "19.0.0-rc", "latest": "19.1.1"},
+      {"package": "react-dom", "current": "19.0.0-rc", "latest": "19.1.1"},
+      {"package": "tailwindcss", "current": "3.4.17", "latest": "4.1.11"},
+      {"package": "zod", "current": "3.25.68", "latest": "4.0.14"},
+      {"package": "@biomejs/biome", "current": "1.9.4", "latest": "2.1.3"}
+    ],
+    "security_vulnerabilities": [
+      {
+        "severity": "moderate",
+        "package": "undici",
+        "path": "@vercel/blob>undici",
+        "vulnerability": "CVE reference not provided",
+        "recommendation": "Update to 5.29.0"
+      },
+      {
+        "severity": "moderate",
+        "package": "esbuild",
+        "paths": ["drizzle-kit>esbuild@0.19.12", "drizzle-kit>@esbuild-kit/esm-loader>@esbuild-kit/core-utils>esbuild@0.18.20"],
+        "vulnerability": "CORS misconfiguration allows cross-origin access to dev server",
+        "impact": "Attackers can read compiled JS and source maps from dev server",
+        "recommendation": "Review required"
+      },
+      {
+        "severity": "low",
+        "package": "cookie",
+        "path": "@stackframe/stack>cookie",
+        "vulnerability": "Security advisory pending",
+        "recommendation": "Review required"
+      },
+      {
+        "severity": "low",
+        "package": "brace-expansion",
+        "vulnerability": "CVE-2025-5889 - ReDoS vulnerability",
+        "paths": ["Multiple eslint and tailwind dependencies"],
+        "recommendation": "Update to 2.0.2"
+      }
+    ]
+  },
+  "api_data_flows": {
+    "authentication": {
+      "provider": "Stack Auth",
+      "handler": "/api/auth/[...stack]",
+      "roles": ["guest", "employee", "hr_admin", "company_admin", "platform_admin"],
+      "session_management": "Cookie-based with Stack Auth SDK"
+    },
+    "user_journeys": {
+      "employee": {
+        "endpoints": [
+          {"path": "/api/onboarding", "method": "POST", "auth": "public", "purpose": "Initial user setup"},
+          {"path": "/api/chat", "method": "POST", "auth": "required", "purpose": "AI chat interactions"},
+          {"path": "/api/history", "method": "GET", "auth": "required", "purpose": "Chat history retrieval"},
+          {"path": "/api/document", "method": "GET/POST/DELETE", "auth": "required", "purpose": "Personal documents"}
+        ],
+        "data_access": "Company-scoped, own data only",
+        "rate_limits": "20 messages/day"
+      },
+      "admin": {
+        "endpoints": [
+          {"path": "/api/admin/companies/[id]/documents/upload", "method": "POST", "auth": "admin_required", "purpose": "Company document management"},
+          {"path": "/api/admin/documents/[id]", "method": "DELETE", "auth": "admin_required", "purpose": "Document deletion"}
+        ],
+        "data_access": "Company-scoped, all users in company",
+        "rate_limits": "200 messages/day"
+      },
+      "super_admin": {
+        "endpoints": [
+          {"path": "/api/admin/cleanup-database", "method": "GET", "auth": "MISSING", "purpose": "Database maintenance"},
+          {"path": "/api/admin/*", "method": "ALL", "auth": "platform_admin", "purpose": "Cross-tenant management"}
+        ],
+        "data_access": "All companies, all users",
+        "rate_limits": "1000 messages/day"
+      }
+    },
+    "data_exchange_events": [
+      {
+        "event": "user_onboarding",
+        "endpoint": "/api/onboarding",
+        "data_flow": "Client → API → Database (users, companies)",
+        "validation": "Zod schema",
+        "security": "Duplicate detection, email validation"
+      },
+      {
+        "event": "chat_message",
+        "endpoint": "/api/chat",
+        "data_flow": "Client → API → AI Service → Database → Pinecone",
+        "validation": "User ownership, rate limiting",
+        "security": "Company isolation, message limits"
+      },
+      {
+        "event": "document_upload",
+        "endpoint": "/api/admin/companies/[id]/documents/upload",
+        "data_flow": "Client → API → Blob Storage → Database → Pinecone",
+        "validation": "Role-based access, file validation",
+        "security": "Admin-only, company scoping"
+      },
+      {
+        "event": "document_processing",
+        "endpoint": "/api/cron/process-documents",
+        "data_flow": "Cron/Manual → API → Documents → Vectors → Pinecone",
+        "validation": "Cron secret (GET only)",
+        "security": "POST endpoint unprotected"
+      }
+    ]
+  },
+  "critical_findings": {
+    "security_gaps": [
+      {
+        "severity": "CRITICAL",
+        "endpoint": "/api/admin/cleanup-database",
+        "issue": "No authentication required",
+        "impact": "Exposes sensitive database information to public",
+        "recommendation": "Implement platform_admin authentication immediately"
+      },
+      {
+        "severity": "HIGH",
+        "endpoint": "/api/cron/process-documents POST",
+        "issue": "No authentication for manual triggers",
+        "impact": "Allows unauthorized document processing",
+        "recommendation": "Add authentication or remove POST method"
+      },
+      {
+        "severity": "MEDIUM",
+        "endpoint": "/api/user/check",
+        "issue": "Relies on client-provided headers",
+        "impact": "Potential header spoofing",
+        "recommendation": "Validate against server-side session"
+      }
+    ],
+    "architectural_risks": [
+      {
+        "area": "Development dependencies",
+        "risk": "esbuild CORS vulnerability in dev mode",
+        "impact": "Source code exposure during development",
+        "mitigation": "Review esbuild configuration or update"
+      },
+      {
+        "area": "Package versions",
+        "risk": "Using React 19 RC in production",
+        "impact": "Potential instability",
+        "mitigation": "Consider stable React 18 or wait for React 19 stable"
+      }
+    ]
+  },
+  "recommendations": {
+    "immediate_actions": [
+      "Add authentication to /api/admin/cleanup-database",
+      "Secure /api/cron/process-documents POST endpoint",
+      "Update vulnerable dependencies (undici, brace-expansion)",
+      "Review esbuild security advisory"
+    ],
+    "phase1_priorities": [
+      "Implement comprehensive API authentication tests",
+      "Add middleware validation for all admin routes",
+      "Create security audit logging for all data access",
+      "Establish dependency update policy"
+    ]
+  },
+  "gate_0_status": {
+    "audit_report_generated": true,
+    "data_flow_map_approved": "pending_review",
+    "critical_issues_identified": 3,
+    "ready_for_phase1": false,
+    "blocking_issues": ["Unauthenticated admin endpoints must be secured"]
+  }
+}

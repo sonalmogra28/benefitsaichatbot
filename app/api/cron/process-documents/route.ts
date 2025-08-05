@@ -3,15 +3,11 @@ import { db } from '@/lib/db';
 import { knowledgeBaseDocuments } from '@/lib/db/schema';
 import { isNull } from 'drizzle-orm';
 import { processDocument } from '@/lib/documents/processor';
+import { withCronAuth, withPlatformAdmin } from '@/lib/auth/api-middleware';
 
-// This can be called by Vercel Cron or manually
-export async function GET(request: NextRequest) {
+// This can be called by Vercel Cron or manually by platform admins
+export const GET = withCronAuth(async (request: NextRequest) => {
   try {
-    // Verify this is from Vercel Cron (in production)
-    const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
     
     // Find unprocessed documents (limit to prevent timeout)
     const unprocessedDocs = await db
@@ -48,49 +44,98 @@ export async function GET(request: NextRequest) {
     
     const successCount = results.filter(r => r.status === 'success').length;
     
+    // Log cron execution
+    console.log(JSON.stringify({
+      level: 'info',
+      action: 'cron_document_processing',
+      timestamp: new Date().toISOString(),
+      results: {
+        total: results.length,
+        success: successCount,
+        failed: results.length - successCount
+      }
+    }));
+
     return NextResponse.json({
-      message: `Processed ${successCount} of ${results.length} documents`,
-      processed: successCount,
-      failed: results.length - successCount,
-      results
+      success: true,
+      data: {
+        message: `Processed ${successCount} of ${results.length} documents`,
+        processed: successCount,
+        failed: results.length - successCount,
+        results
+      }
     });
     
   } catch (error) {
     console.error('Cron job error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        success: false,
+        error: {
+          code: 'CRON_ERROR',
+          message: 'Document processing failed',
+          details: process.env.NODE_ENV === 'development' ? error : undefined
+        }
+      },
       { status: 500 }
     );
   }
-}
+});
 
-// Manual trigger for specific document
-export async function POST(request: NextRequest) {
+// Manual trigger for specific document - now requires platform admin
+export const POST = withPlatformAdmin(async (request: NextRequest, { session }) => {
   try {
     const { documentId } = await request.json();
     
     if (!documentId) {
       return NextResponse.json(
-        { error: 'Document ID required' },
+        { 
+          success: false,
+          error: {
+            code: 'INVALID_REQUEST',
+            message: 'Document ID required'
+          }
+        },
         { status: 400 }
       );
     }
     
     const result = await processDocument(documentId);
     
+    // Log manual document processing
+    console.log(JSON.stringify({
+      level: 'audit',
+      action: 'manual_document_processing',
+      userId: session.user.id,
+      userRole: session.user.type,
+      documentId,
+      timestamp: new Date().toISOString()
+    }));
+    
     return NextResponse.json({
       success: true,
-      result
+      data: {
+        message: 'Document processed successfully',
+        result
+      },
+      metadata: {
+        processedBy: session.user.id,
+        timestamp: new Date().toISOString()
+      }
     });
     
   } catch (error) {
     console.error('Document processing error:', error);
     return NextResponse.json(
       { 
-        error: 'Failed to process document',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        success: false,
+        error: {
+          code: 'PROCESSING_ERROR',
+          message: 'Failed to process document',
+          details: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : 'Unknown error' : undefined
+        }
       },
       { status: 500 }
     );
   }
-}
+});

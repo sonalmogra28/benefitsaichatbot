@@ -49,6 +49,36 @@
     "Phase7": ["Demo of RAG engine","Templating validated"]
   }
   ,
+  // Additional sub-agents for comprehensive coverage
+  "additionalSubAgents": {
+    "SecurityAgent": {
+      "description": "Manages security audits, vulnerability scanning, and compliance",
+      "prompts": [
+        "Step 1: Run automated security scans (OWASP, dependency check)",
+        "Step 2: Review authentication and authorization patterns",
+        "Step 3: Verify data encryption at rest and in transit",
+        "Step 4: Generate security compliance report"
+      ]
+    },
+    "PerformanceAgent": {
+      "description": "Optimizes system performance and monitors metrics",
+      "prompts": [
+        "Step 1: Profile application performance bottlenecks",
+        "Step 2: Implement caching strategies",
+        "Step 3: Optimize database queries and indexes",
+        "Step 4: Set up performance monitoring dashboards"
+      ]
+    },
+    "IntegrationAgent": {
+      "description": "Manages external service integrations and APIs",
+      "prompts": [
+        "Step 1: Document all external API dependencies",
+        "Step 2: Implement webhook handlers with validation",
+        "Step 3: Create integration test suites",
+        "Step 4: Set up monitoring for external services"
+      ]
+    }
+  },
   // Prompt templates for each development phase
   "phasePrompts": {
     "Phase0": {
@@ -144,6 +174,101 @@
         "5. Update claude.md Gate 7 status."
       ],
       "chainOfThought": true
+    },
+    "Phase1_Security": {
+      "title": "Security & Auth Stabilization",
+      "prompt": [
+        "You are SecurityAgent. Critical tasks:",
+        "1. Fix all unauthenticated endpoints immediately",
+        "2. Add withAuth middleware to all admin routes",
+        "3. Verify Stack Auth environment configuration matches across all environments",
+        "4. Update all vulnerable dependencies to latest secure versions",
+        "5. Run security audit and verify zero critical vulnerabilities"
+      ],
+      "chainOfThought": true
+    },
+    "Phase2_RAG": {
+      "title": "RAG System Implementation",
+      "prompt": [
+        "You are DataAgent with IntegrationAgent. Execute:",
+        "1. Implement complete document processing pipeline with chunking",
+        "2. Integrate Pinecone vector database with proper namespacing",
+        "3. Create searchKnowledge AI tool with citation support",
+        "4. Test RAG accuracy with sample documents",
+        "5. Ensure multi-tenant document isolation"
+      ],
+      "chainOfThought": true
+    },
+    "Phase3_Testing": {
+      "title": "Comprehensive Testing Implementation",
+      "prompt": [
+        "You are QAAgent. Implement testing strategy:",
+        "1. Create unit tests for all critical functions (80% coverage minimum)",
+        "2. Write integration tests for all API endpoints",
+        "3. Implement E2E tests for user journeys with Playwright",
+        "4. Add performance tests with k6 for load testing",
+        "5. Create test data factories and fixtures"
+      ],
+      "chainOfThought": true
+    },
+    "Phase5_Performance": {
+      "title": "Performance Optimization",
+      "prompt": [
+        "You are PerformanceAgent. Optimize system:",
+        "1. Implement Redis caching for session and query cache",
+        "2. Optimize all database queries with proper indexes",
+        "3. Configure CDN for static assets",
+        "4. Implement response streaming for AI chat",
+        "5. Achieve < 200ms API response time (p95)"
+      ],
+      "chainOfThought": true
+    },
+    "Phase6_Compliance": {
+      "title": "Compliance & Security Audit",
+      "prompt": [
+        "You are SecurityAgent. Ensure compliance:",
+        "1. Verify HIPAA compliance with encryption and access controls",
+        "2. Implement SOC 2 controls and documentation",
+        "3. Add GDPR/CCPA privacy controls and consent management",
+        "4. Conduct penetration testing and fix vulnerabilities",
+        "5. Create compliance documentation and policies"
+      ],
+      "chainOfThought": true
+    }
+  },
+  // Validation rules for phase completion
+  "phaseValidation": {
+    "Phase0": {
+      "required": ["audit_report", "vulnerability_list", "technical_debt_doc"],
+      "blockers": ["unauthenticated_endpoints", "critical_vulnerabilities"]
+    },
+    "Phase1": {
+      "required": ["auth_tests_passing", "no_vulnerabilities", "api_protection"],
+      "blockers": ["auth_failures", "security_gaps"]
+    },
+    "Phase2": {
+      "required": ["rag_functional", "benefits_complete", "test_coverage_60"],
+      "blockers": ["ai_search_broken", "enrollment_failures"]
+    },
+    "Phase3": {
+      "required": ["test_coverage_80", "e2e_tests", "performance_tests"],
+      "blockers": ["failing_tests", "coverage_below_80"]
+    },
+    "Phase4": {
+      "required": ["enterprise_features", "billing_system", "white_label"],
+      "blockers": ["integration_failures", "billing_errors"]
+    },
+    "Phase5": {
+      "required": ["performance_targets_met", "monitoring_active", "caching_implemented"],
+      "blockers": ["slow_response_times", "no_monitoring"]
+    },
+    "Phase6": {
+      "required": ["security_audit_passed", "compliance_verified", "policies_documented"],
+      "blockers": ["security_vulnerabilities", "compliance_gaps"]
+    },
+    "Phase7": {
+      "required": ["production_deployed", "documentation_complete", "support_ready"],
+      "blockers": ["deployment_failures", "missing_docs"]
     }
   }
 }

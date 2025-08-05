@@ -7,15 +7,11 @@ export const stackServerApp = new StackServerApp({
   
   // Configure custom URLs for authentication flow
   urls: {
+    home: process.env.NEXT_PUBLIC_STACK_URL || 'http://localhost:3000',
     signIn: '/login',
     signUp: '/register',
     afterSignIn: '/',
     afterSignUp: '/onboarding',
     afterSignOut: '/',
-    // Password reset flow
-    forgotPassword: '/handler/forgot-password',
-    resetPassword: '/handler/reset-password',
-    // Account management
-    accountSettings: '/handler/account-settings',
   },
 });

@@ -38,7 +38,12 @@
       "Bash(chmod:*)",
       "Bash(mkdir:*)",
       "Bash(pnpm tsx:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm outdated:*)",
+      "Bash(pnpm audit:*)",
+      "Bash(vercel env:*)",
+      "Bash(pnpm update:*)"
     ],
     "deny": []
   }

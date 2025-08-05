@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
+import { withPlatformAdmin } from '@/lib/auth/api-middleware';
 
 /**
  * Database cleanup API endpoint to resolve authentication issues
  * GET /api/admin/cleanup-database
+ * 
+ * SECURITY: This endpoint is now protected and requires platform_admin role
  */
 
-export async function GET(request: NextRequest) {
+export const GET = withPlatformAdmin(async (request: NextRequest, { session }) => {
   try {
     console.log('🔧 Starting database cleanup...');
 
@@ -72,18 +75,42 @@ export async function GET(request: NextRequest) {
 
     console.log('🔧 Database cleanup completed');
 
-    return NextResponse.json(report);
+    // Log admin action for audit trail
+    console.log(JSON.stringify({
+      level: 'audit',
+      action: 'database_cleanup_report',
+      userId: session.user.id,
+      userRole: session.user.type,
+      timestamp: new Date().toISOString(),
+      report: {
+        totalUsers: report.totalUsers,
+        issues: report.duplicateEmails + report.invalidStackUsers + report.orphanedUsers
+      }
+    }));
+
+    return NextResponse.json({
+      success: true,
+      data: report,
+      metadata: {
+        timestamp: new Date().toISOString(),
+        performedBy: session.user.id
+      }
+    });
   } catch (error) {
     console.error('❌ Database cleanup failed:', error);
     return NextResponse.json(
       {
-        error: 'Database cleanup failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        success: false,
+        error: {
+          code: 'DATABASE_CLEANUP_ERROR',
+          message: 'Database cleanup failed',
+          details: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : 'Unknown error' : undefined
+        }
       },
       { status: 500 },
     );
   }
-}
+});
 
 function generateRecommendations(
   duplicateCount: number,
