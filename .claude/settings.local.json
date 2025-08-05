@@ -43,7 +43,9 @@
       "Bash(npm outdated:*)",
       "Bash(pnpm audit:*)",
       "Bash(vercel env:*)",
-      "Bash(pnpm update:*)"
+      "Bash(pnpm update:*)",
+      "Bash(psql:*)",
+      "Bash(npm run fix-auth:*)"
     ],
     "deny": []
   }

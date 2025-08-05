@@ -21,7 +21,8 @@
     "test:document-upload": "npx tsx scripts/test-document-upload.ts",
     "prepare": "husky install",
     "validate-pow": "node scripts/validate-pow.js",
-    "claude:custom": "claude -p \"$(cat toolsets/claude_custom_instructions.jsonc)\""
+    "claude:custom": "claude -p \"$(cat toolsets/claude_custom_instructions.jsonc)\"",
+    "fix-auth": "tsx -r dotenv/config scripts/fix-auth-emergency.ts dotenv_config_path=.env.local"
   },
   "dependencies": {
     "@ai-sdk/openai": "2.0.2",
