@@ -8,10 +8,7 @@ export async function POST(request: NextRequest) {
     // Check if user is authenticated and is an admin
     const user = await stackServerApp.getUser();
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // For testing purposes, we'll allow any authenticated user
@@ -25,8 +22,10 @@ export async function POST(request: NextRequest) {
       case 'user-invite':
         if (!params.email || !params.name || !params.inviteLink) {
           return NextResponse.json(
-            { error: 'Email, name, and inviteLink are required for user invite' },
-            { status: 400 }
+            {
+              error: 'Email, name, and inviteLink are required for user invite',
+            },
+            { status: 400 },
           );
         }
         result = await emailService.sendUserInvite({
@@ -41,8 +40,11 @@ export async function POST(request: NextRequest) {
       case 'password-reset':
         if (!params.email || !params.name || !params.resetLink) {
           return NextResponse.json(
-            { error: 'Email, name, and resetLink are required for password reset' },
-            { status: 400 }
+            {
+              error:
+                'Email, name, and resetLink are required for password reset',
+            },
+            { status: 400 },
           );
         }
         result = await emailService.sendPasswordReset({
@@ -55,8 +57,11 @@ export async function POST(request: NextRequest) {
       case 'notification':
         if (!params.email || !params.name || !params.title || !params.message) {
           return NextResponse.json(
-            { error: 'Email, name, title, and message are required for notification' },
-            { status: 400 }
+            {
+              error:
+                'Email, name, title, and message are required for notification',
+            },
+            { status: 400 },
           );
         }
         result = await emailService.sendNotification({
@@ -70,8 +75,11 @@ export async function POST(request: NextRequest) {
 
       default:
         return NextResponse.json(
-          { error: 'Invalid email type. Supported types: user-invite, password-reset, notification' },
-          { status: 400 }
+          {
+            error:
+              'Invalid email type. Supported types: user-invite, password-reset, notification',
+          },
+          { status: 400 },
         );
     }
 
@@ -80,15 +88,14 @@ export async function POST(request: NextRequest) {
       message: `${type} email sent successfully`,
       result,
     });
-
   } catch (error) {
     console.error('Email test error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to send email',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -100,16 +107,16 @@ export async function GET() {
     supportedTypes: [
       {
         type: 'user-invite',
-        params: ['email', 'name', 'inviteLink', 'companyName?', 'role?']
+        params: ['email', 'name', 'inviteLink', 'companyName?', 'role?'],
       },
       {
         type: 'password-reset',
-        params: ['email', 'name', 'resetLink']
+        params: ['email', 'name', 'resetLink'],
       },
       {
         type: 'notification',
-        params: ['email', 'name', 'title', 'message', 'actionUrl?']
-      }
-    ]
+        params: ['email', 'name', 'title', 'message', 'actionUrl?'],
+      },
+    ],
   });
 }

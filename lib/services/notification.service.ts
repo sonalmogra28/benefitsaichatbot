@@ -20,7 +20,9 @@ export interface BenefitsEnrollmentNotificationData {
 }
 
 export class NotificationService {
-  async sendDocumentProcessedNotification(data: DocumentProcessedNotificationData): Promise<{ success: boolean; error?: string }> {
+  async sendDocumentProcessedNotification(
+    data: DocumentProcessedNotificationData,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       // Get user and company details
       const [userWithCompany] = await db
@@ -75,14 +77,16 @@ export class NotificationService {
       });
     } catch (error) {
       console.error('Failed to send document processed notification:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
-  async sendBenefitsEnrollmentNotification(data: BenefitsEnrollmentNotificationData): Promise<{ success: boolean; error?: string }> {
+  async sendBenefitsEnrollmentNotification(
+    data: BenefitsEnrollmentNotificationData,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       // Get user and company details
       const [userWithCompany] = await db
@@ -124,14 +128,18 @@ export class NotificationService {
       });
     } catch (error) {
       console.error('Failed to send benefits enrollment notification:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
-  async sendSystemMaintenanceNotification(userEmails: string[], scheduledTime: string, duration: string): Promise<{ success: boolean; error?: string }> {
+  async sendSystemMaintenanceNotification(
+    userEmails: string[],
+    scheduledTime: string,
+    duration: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const title = 'Scheduled System Maintenance';
       const message = `
@@ -145,32 +153,34 @@ export class NotificationService {
         <p>All services will be fully restored after the maintenance window.</p>
       `;
 
-      const emailPromises = userEmails.map(email =>
+      const emailPromises = userEmails.map((email) =>
         emailService.sendNotification({
           email,
           name: 'Valued User',
           title,
           message,
-        })
+        }),
       );
 
       const results = await Promise.all(emailPromises);
-      const failedEmails = results.filter(result => !result.success);
+      const failedEmails = results.filter((result) => !result.success);
 
       if (failedEmails.length > 0) {
-        console.error(`Failed to send maintenance notifications to ${failedEmails.length} users`);
-        return { 
-          success: false, 
-          error: `Failed to send notifications to ${failedEmails.length} users` 
+        console.error(
+          `Failed to send maintenance notifications to ${failedEmails.length} users`,
+        );
+        return {
+          success: false,
+          error: `Failed to send notifications to ${failedEmails.length} users`,
         };
       }
 
       return { success: true };
     } catch (error) {
       console.error('Failed to send system maintenance notifications:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }

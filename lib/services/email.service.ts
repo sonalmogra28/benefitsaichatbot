@@ -35,7 +35,9 @@ export interface NotificationData {
 export class EmailService {
   private fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
-  async sendEmail(options: EmailOptions): Promise<{ success: boolean; error?: string }> {
+  async sendEmail(
+    options: EmailOptions,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       if (!process.env.RESEND_API_KEY) {
         throw new Error('RESEND_API_KEY environment variable is not set');
@@ -57,14 +59,16 @@ export class EmailService {
       return { success: true };
     } catch (error) {
       console.error('Email sending failed:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
 
-  async sendUserInvite(data: UserInviteData): Promise<{ success: boolean; error?: string }> {
+  async sendUserInvite(
+    data: UserInviteData,
+  ): Promise<{ success: boolean; error?: string }> {
     const html = `
       <!DOCTYPE html>
       <html>
@@ -127,7 +131,9 @@ export class EmailService {
     });
   }
 
-  async sendPasswordReset(data: PasswordResetData): Promise<{ success: boolean; error?: string }> {
+  async sendPasswordReset(
+    data: PasswordResetData,
+  ): Promise<{ success: boolean; error?: string }> {
     const html = `
       <!DOCTYPE html>
       <html>
@@ -186,7 +192,9 @@ export class EmailService {
     });
   }
 
-  async sendNotification(data: NotificationData): Promise<{ success: boolean; error?: string }> {
+  async sendNotification(
+    data: NotificationData,
+  ): Promise<{ success: boolean; error?: string }> {
     const html = `
       <!DOCTYPE html>
       <html>
@@ -215,9 +223,13 @@ export class EmailService {
                 ${data.message}
               </div>
               
-              ${data.actionUrl ? `
+              ${
+                data.actionUrl
+                  ? `
                 <a href="${data.actionUrl}" class="button">View Details</a>
-              ` : ''}
+              `
+                  : ''
+              }
               
               <p>Best regards,<br>The Benefits Portal Team</p>
             </div>
@@ -237,24 +249,39 @@ export class EmailService {
   }
 
   // Helper methods for common notification types
-  async sendDocumentProcessedNotification(email: string, name: string, documentName: string, status: 'processed' | 'failed', errorMessage?: string): Promise<{ success: boolean; error?: string }> {
-    const title = status === 'processed' ? 'Document Processed Successfully' : 'Document Processing Failed';
-    const message = status === 'processed' 
-      ? `Your document "${documentName}" has been successfully processed and is now searchable in your benefits portal.`
-      : `There was an issue processing your document "${documentName}". ${errorMessage ? `Error: ${errorMessage}` : 'Please try uploading again.'}`;
+  async sendDocumentProcessedNotification(
+    email: string,
+    name: string,
+    documentName: string,
+    status: 'processed' | 'failed',
+    errorMessage?: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    const title =
+      status === 'processed'
+        ? 'Document Processed Successfully'
+        : 'Document Processing Failed';
+    const message =
+      status === 'processed'
+        ? `Your document "${documentName}" has been successfully processed and is now searchable in your benefits portal.`
+        : `There was an issue processing your document "${documentName}". ${errorMessage ? `Error: ${errorMessage}` : 'Please try uploading again.'}`;
 
     return this.sendNotification({
       email,
       name,
       title,
       message,
-      actionUrl: status === 'processed' 
-        ? `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/documents`
-        : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/documents/upload`
+      actionUrl:
+        status === 'processed'
+          ? `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/documents`
+          : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/documents/upload`,
     });
   }
 
-  async sendBenefitsReminderNotification(email: string, name: string, deadline: Date): Promise<{ success: boolean; error?: string }> {
+  async sendBenefitsReminderNotification(
+    email: string,
+    name: string,
+    deadline: Date,
+  ): Promise<{ success: boolean; error?: string }> {
     const title = 'Benefits Enrollment Reminder';
     const message = `Don't forget to complete your benefits enrollment! The deadline is ${deadline.toLocaleDateString()}. Make sure to review all your options and submit your selections on time.`;
 
@@ -263,11 +290,16 @@ export class EmailService {
       name,
       title,
       message,
-      actionUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/benefits`
+      actionUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/benefits`,
     });
   }
 
-  async sendMaintenanceNotification(email: string, name: string, maintenanceDate: Date, duration: string): Promise<{ success: boolean; error?: string }> {
+  async sendMaintenanceNotification(
+    email: string,
+    name: string,
+    maintenanceDate: Date,
+    duration: string,
+  ): Promise<{ success: boolean; error?: string }> {
     const title = 'Scheduled System Maintenance';
     const message = `We will be performing scheduled maintenance on ${maintenanceDate.toLocaleDateString()} at ${maintenanceDate.toLocaleTimeString()}. The system will be unavailable for approximately ${duration}. We apologize for any inconvenience.`;
 
@@ -286,7 +318,7 @@ export class EmailService {
     role: string;
   }): Promise<{ success: boolean; error?: string }> {
     const inviteLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/signup?company=${encodeURIComponent(data.companyName)}&email=${encodeURIComponent(data.email)}`;
-    
+
     return this.sendUserInvite({
       email: data.email,
       name: data.email.split('@')[0], // Use email prefix as temporary name

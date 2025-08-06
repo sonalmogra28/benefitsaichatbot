@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { knowledgeBaseDocuments } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { DocumentList } from '@/components/admin/document-list';
+import { DocumentUpload } from '@/components/admin/document-upload';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,6 @@ async function getCompanyDocuments(companyId: string) {
       title: knowledgeBaseDocuments.title,
       category: knowledgeBaseDocuments.category,
       fileType: knowledgeBaseDocuments.fileType,
-      fileSize: knowledgeBaseDocuments.fileSize,
       fileUrl: knowledgeBaseDocuments.fileUrl,
       tags: knowledgeBaseDocuments.tags,
       processedAt: knowledgeBaseDocuments.processedAt,
@@ -24,20 +24,22 @@ async function getCompanyDocuments(companyId: string) {
     .from(knowledgeBaseDocuments)
     .where(eq(knowledgeBaseDocuments.companyId, companyId))
     .orderBy(knowledgeBaseDocuments.createdAt);
-    
+
   return documents;
 }
 
 export default async function DocumentsPage() {
   const session = await auth();
-  
-  if (!session?.user?.companyId || 
-      (session.user.type !== 'company_admin' && session.user.type !== 'hr_admin')) {
+
+  if (
+    !session?.user?.companyId ||
+    (session.user.type !== 'company_admin' && session.user.type !== 'hr_admin')
+  ) {
     redirect('/login');
   }
-  
+
   const documents = await getCompanyDocuments(session.user.companyId);
-  
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -46,12 +48,18 @@ export default async function DocumentsPage() {
           Manage benefits documents and resources for your organization
         </p>
       </div>
-      
-      <DocumentList 
-        documents={documents} 
-        companyId={session.user.companyId}
-        isCompanyAdmin={true}
-      />
+
+      <div className="space-y-6">
+        <DocumentUpload 
+          companyId={session.user.companyId} 
+          onUploadComplete={() => window.location.reload()} 
+        />
+        <DocumentList
+          documents={documents}
+          companyId={session.user.companyId}
+          isCompanyAdmin={true}
+        />
+      </div>
     </div>
   );
 }

@@ -32,8 +32,9 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       // Don't reveal if user exists or not for security
-      return NextResponse.json({ 
-        message: 'If an account with that email exists, you will receive a password reset link.' 
+      return NextResponse.json({
+        message:
+          'If an account with that email exists, you will receive a password reset link.',
       });
     }
 
@@ -52,28 +53,29 @@ export async function POST(request: NextRequest) {
       console.error('Failed to send password reset email:', result.error);
       return NextResponse.json(
         { error: 'Failed to send password reset email' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // TODO: Store reset token in database with expiration
     console.log(`Password reset token for ${email}: ${resetToken}`);
 
-    return NextResponse.json({ 
-      message: 'If an account with that email exists, you will receive a password reset link.' 
+    return NextResponse.json({
+      message:
+        'If an account with that email exists, you will receive a password reset link.',
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid request data', details: error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     console.error('Password reset request error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -95,7 +97,7 @@ export async function PUT(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid or expired reset token' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -103,21 +105,22 @@ export async function PUT(request: NextRequest) {
     // This would typically involve updating the user's password in the auth system
     console.log(`Password reset confirmed for ${email} with token ${token}`);
 
-    return NextResponse.json({ 
-      message: 'Password reset successfully. You can now log in with your new password.' 
+    return NextResponse.json({
+      message:
+        'Password reset successfully. You can now log in with your new password.',
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Invalid request data', details: error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     console.error('Password reset confirmation error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

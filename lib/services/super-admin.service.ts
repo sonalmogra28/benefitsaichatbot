@@ -1,6 +1,23 @@
 import { db } from '@/lib/db';
-import { companies, users, knowledgeBaseDocuments, chats, messages, votes } from '@/lib/db/schema';
-import { eq, sql, desc, and, gte, lte, count, countDistinct, sum } from 'drizzle-orm';
+import {
+  companies,
+  users,
+  knowledgeBaseDocuments,
+  chats,
+  messages,
+  votes,
+} from '@/lib/db/schema';
+import {
+  eq,
+  sql,
+  desc,
+  and,
+  gte,
+  lte,
+  count,
+  countDistinct,
+  sum,
+} from 'drizzle-orm';
 import { emailService } from '@/lib/services/email.service';
 import type {
   CompanyCreateInput,
@@ -17,7 +34,9 @@ import type {
 
 export class SuperAdminService {
   // Company Management
-  async createCompany(input: Omit<CompanyCreateInput, 'features'> & { features: string[] }): Promise<CompanyWithStats> {
+  async createCompany(
+    input: Omit<CompanyCreateInput, 'features'> & { features: string[] },
+  ): Promise<CompanyWithStats> {
     const [company] = await db
       .insert(companies)
       .values({
@@ -52,7 +71,10 @@ export class SuperAdminService {
     return this.getCompanyWithStats(company.id);
   }
 
-  async updateCompany(id: string, input: Omit<CompanyUpdateInput, 'features'> & { features?: string[] }): Promise<CompanyWithStats> {
+  async updateCompany(
+    id: string,
+    input: Omit<CompanyUpdateInput, 'features'> & { features?: string[] },
+  ): Promise<CompanyWithStats> {
     const [updated] = await db
       .update(companies)
       .set({
@@ -71,7 +93,7 @@ export class SuperAdminService {
     // Soft delete - mark as inactive
     await db
       .update(companies)
-      .set({ 
+      .set({
         isActive: false,
         updatedAt: new Date(),
       })
@@ -98,7 +120,7 @@ export class SuperAdminService {
   async listCompanies(
     page = 1,
     limit = 20,
-    includeDeleted = false
+    includeDeleted = false,
   ): Promise<{ companies: CompanyWithStats[]; total: number }> {
     const offset = (page - 1) * limit;
 
@@ -118,7 +140,7 @@ export class SuperAdminService {
       companiesList.map(async (company) => {
         const stats = await this.getCompanyStats(company.id);
         return { ...company, ...stats };
-      })
+      }),
     );
 
     const totalQuery = whereClause
@@ -168,22 +190,26 @@ export class SuperAdminService {
       .where(
         and(
           eq(users.companyId, companyId),
-          gte(chats.createdAt, thirtyDaysAgo)
-        )
+          gte(chats.createdAt, thirtyDaysAgo),
+        ),
       );
 
     return {
       userCount: userStats.count,
       documentCount: docStats.count,
       chatCount: chatStats.count,
-      lastActivity: lastActivity?.lastActive ? new Date(lastActivity.lastActive as any) : undefined,
+      lastActivity: lastActivity?.lastActive
+        ? new Date(lastActivity.lastActive as any)
+        : undefined,
       storageUsed,
       monthlyActiveUsers: mauStats.count,
     };
   }
 
   // User Management
-  async createBulkUsers(input: BulkUserCreateInput): Promise<typeof users.$inferSelect[]> {
+  async createBulkUsers(
+    input: BulkUserCreateInput,
+  ): Promise<(typeof users.$inferSelect)[]> {
     // Get company details for email invitations
     const [company] = await db
       .select()
@@ -207,7 +233,7 @@ export class SuperAdminService {
           companyId: input.companyId,
           createdAt: new Date(),
           updatedAt: new Date(),
-        }))
+        })),
       )
       .returning();
 
@@ -221,7 +247,7 @@ export class SuperAdminService {
       const emailPromises = newUsers.map(async (user) => {
         // Generate invite link (this would typically include a secure token)
         const inviteLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/auth/setup?token=${user.id}&email=${encodeURIComponent(user.email)}`;
-        
+
         const result = await emailService.sendUserInvite({
           email: user.email,
           name: `${user.firstName} ${user.lastName}`.trim(),
@@ -231,7 +257,10 @@ export class SuperAdminService {
         });
 
         if (!result.success) {
-          console.error(`Failed to send invite email to ${user.email}:`, result.error);
+          console.error(
+            `Failed to send invite email to ${user.email}:`,
+            result.error,
+          );
           // Log the failure but don't fail the entire operation
           await this.logAudit('email.failed', 'user', user.id, {
             email: user.email,
@@ -257,13 +286,11 @@ export class SuperAdminService {
   async listAllUsers(
     page = 1,
     limit = 50,
-    companyId?: string
+    companyId?: string,
   ): Promise<{ users: UserWithCompany[]; total: number }> {
     const offset = (page - 1) * limit;
 
-    const whereClause = companyId
-      ? eq(users.companyId, companyId)
-      : undefined;
+    const whereClause = companyId ? eq(users.companyId, companyId) : undefined;
 
     const usersList = await db
       .select({
@@ -290,7 +317,7 @@ export class SuperAdminService {
           chatCount: chatCount.count,
           documentCount: 0, // TODO: Implement document ownership
         } as UserWithCompany;
-      })
+      }),
     );
 
     const [{ total }] = await db
@@ -322,7 +349,7 @@ export class SuperAdminService {
   async suspendUser(userId: string): Promise<void> {
     await db
       .update(users)
-      .set({ 
+      .set({
         isActive: false,
         updatedAt: new Date(),
       })
@@ -337,14 +364,14 @@ export class SuperAdminService {
     const [companyStats] = await db
       .select({
         total: count(),
-        active: sum(sql`CASE WHEN ${companies.isActive} = true THEN 1 ELSE 0 END`),
+        active: sum(
+          sql`CASE WHEN ${companies.isActive} = true THEN 1 ELSE 0 END`,
+        ),
       })
       .from(companies);
 
     // User metrics
-    const [userStats] = await db
-      .select({ total: count() })
-      .from(users);
+    const [userStats] = await db.select({ total: count() }).from(users);
 
     const now = new Date();
     const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -389,7 +416,10 @@ export class SuperAdminService {
         docCount: count(knowledgeBaseDocuments.id),
       })
       .from(companies)
-      .leftJoin(knowledgeBaseDocuments, eq(companies.id, knowledgeBaseDocuments.companyId))
+      .leftJoin(
+        knowledgeBaseDocuments,
+        eq(companies.id, knowledgeBaseDocuments.companyId),
+      )
       .groupBy(companies.id, companies.name)
       .orderBy(desc(count(knowledgeBaseDocuments.id)))
       .limit(10);
@@ -405,7 +435,10 @@ export class SuperAdminService {
       },
       storage: {
         total: 100 * 1024 * 1024 * 1024, // 100GB total
-        used: storageByCompany.reduce((acc, c) => acc + c.docCount * 1024 * 1024, 0),
+        used: storageByCompany.reduce(
+          (acc, c) => acc + c.docCount * 1024 * 1024,
+          0,
+        ),
         byCompany: storageByCompany.map((c) => ({
           companyId: c.companyId,
           name: c.name,
@@ -416,9 +449,10 @@ export class SuperAdminService {
         totalChats: usageStats.totalChats,
         totalMessages: usageStats.totalMessages,
         totalDocuments: usageStats.totalDocuments,
-        averageChatsPerUser: userStats.total > 0 
-          ? Math.round(usageStats.totalChats / userStats.total * 10) / 10 
-          : 0,
+        averageChatsPerUser:
+          userStats.total > 0
+            ? Math.round((usageStats.totalChats / userStats.total) * 10) / 10
+            : 0,
         peakHours: [], // TODO: Implement hourly usage tracking
       },
       revenue: {
@@ -435,7 +469,7 @@ export class SuperAdminService {
     action: AuditAction,
     resourceType: AuditLog['resourceType'],
     resourceId: string,
-    details: Record<string, any>
+    details: Record<string, any>,
   ): Promise<void> {
     // TODO: Get current user from context
     const userId = 'system';
@@ -474,7 +508,7 @@ export class SuperAdminService {
         .where(
           request.companyId
             ? eq(knowledgeBaseDocuments.companyId, request.companyId)
-            : undefined
+            : undefined,
         );
       exports.documents = docs;
     }

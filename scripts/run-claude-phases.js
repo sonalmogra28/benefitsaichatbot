@@ -7,8 +7,14 @@ const path = require('node:path');
 const { execSync } = require('node:child_process');
 
 // Load the custom instructions
-const instructionsPath = path.resolve(__dirname, '../toolsets/claude_custom_instructions.jsonc');
-const phasesPath = path.resolve(__dirname, '../toolsets/claude_phase_prompts.jsonc');
+const instructionsPath = path.resolve(
+  __dirname,
+  '../toolsets/claude_custom_instructions.jsonc',
+);
+const phasesPath = path.resolve(
+  __dirname,
+  '../toolsets/claude_phase_prompts.jsonc',
+);
 
 // Parse JSONC (JSON with comments)
 function parseJSONC(content) {
@@ -21,7 +27,9 @@ function parseJSONC(content) {
   return JSON.parse(content);
 }
 
-const customInstructions = parseJSONC(fs.readFileSync(instructionsPath, 'utf8'));
+const customInstructions = parseJSONC(
+  fs.readFileSync(instructionsPath, 'utf8'),
+);
 const phasePrompts = parseJSONC(fs.readFileSync(phasesPath, 'utf8'));
 
 // Sub-agent implementations
@@ -34,7 +42,7 @@ class DataAgent {
   async executePhase0() {
     console.log(`\n📊 ${this.name} - Phase 0: Discovery & Audit`);
     console.log('----------------------------------------');
-    
+
     const tasks = phasePrompts.phases.Phase0.prompt;
     for (const task of tasks) {
       console.log(`\n${task}`);
@@ -42,10 +50,12 @@ class DataAgent {
 
     // Step 1: Inventory dependencies
     console.log('\n🔍 Step 1: Analyzing package.json dependencies...');
-    const packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'));
+    const packageJson = JSON.parse(
+      fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8'),
+    );
     const dependencies = {
       ...packageJson.dependencies,
-      ...packageJson.devDependencies
+      ...packageJson.devDependencies,
     };
     console.log(`Found ${Object.keys(dependencies).length} total dependencies`);
 
@@ -54,12 +64,18 @@ class DataAgent {
     try {
       const auditResult = execSync('npm audit --json', { encoding: 'utf8' });
       const audit = JSON.parse(auditResult);
-      console.log(`Vulnerabilities found: ${audit.metadata.vulnerabilities.total}`);
+      console.log(
+        `Vulnerabilities found: ${audit.metadata.vulnerabilities.total}`,
+      );
       if (audit.metadata.vulnerabilities.critical > 0) {
-        console.log(`⚠️  Critical vulnerabilities: ${audit.metadata.vulnerabilities.critical}`);
+        console.log(
+          `⚠️  Critical vulnerabilities: ${audit.metadata.vulnerabilities.critical}`,
+        );
       }
     } catch (error) {
-      console.log('✅ No vulnerabilities found or audit completed with findings');
+      console.log(
+        '✅ No vulnerabilities found or audit completed with findings',
+      );
     }
 
     // Step 3: Extract API routes
@@ -67,23 +83,38 @@ class DataAgent {
     const apiRoutes = {
       user: ['/api/chat', '/api/benefits/check-eligibility'],
       admin: ['/api/admin/profile', '/api/admin/users'],
-      superAdmin: ['/api/super-admin/profile', '/api/super-admin/tenants']
+      superAdmin: ['/api/super-admin/profile', '/api/super-admin/tenants'],
     };
-    console.log('API routes mapped by role:', JSON.stringify(apiRoutes, null, 2));
+    console.log(
+      'API routes mapped by role:',
+      JSON.stringify(apiRoutes, null, 2),
+    );
 
     // Step 4: Document data exchange
     console.log('\n🔍 Step 4: Documenting data exchange events...');
     const dataExchange = {
       user: {
-        chat: { method: 'POST', data: ['message', 'context'], response: ['reply', 'sources'] },
-        eligibility: { method: 'POST', data: ['userInfo'], response: ['eligible', 'benefits'] }
+        chat: {
+          method: 'POST',
+          data: ['message', 'context'],
+          response: ['reply', 'sources'],
+        },
+        eligibility: {
+          method: 'POST',
+          data: ['userInfo'],
+          response: ['eligible', 'benefits'],
+        },
       },
       admin: {
         profile: { method: 'GET', data: [], response: ['users', 'metrics'] },
-        users: { method: 'GET', data: ['filters'], response: ['userList', 'pagination'] }
-      }
+        users: {
+          method: 'GET',
+          data: ['filters'],
+          response: ['userList', 'pagination'],
+        },
+      },
     };
-    
+
     // Save audit report
     const auditReport = {
       timestamp: new Date().toISOString(),
@@ -94,16 +125,18 @@ class DataAgent {
         'Update critical dependencies',
         'Implement rate limiting on all API endpoints',
         'Add request validation middleware',
-        'Enable CORS with strict origins'
-      ]
+        'Enable CORS with strict origins',
+      ],
     };
-    
+
     fs.writeFileSync(
       path.resolve(__dirname, '../docs/phase0-audit-report.json'),
-      JSON.stringify(auditReport, null, 2)
+      JSON.stringify(auditReport, null, 2),
     );
-    
-    console.log('\n✅ Phase 0 Audit Report saved to docs/phase0-audit-report.json');
+
+    console.log(
+      '\n✅ Phase 0 Audit Report saved to docs/phase0-audit-report.json',
+    );
     return auditReport;
   }
 }
@@ -117,7 +150,7 @@ class AuthAgent {
   async executePhase1() {
     console.log(`\n🔐 ${this.name} - Phase 1: Core Platform Stabilization`);
     console.log('----------------------------------------');
-    
+
     const tasks = phasePrompts.phases.Phase1.prompt;
     for (const task of tasks) {
       console.log(`\n${task}`);
@@ -125,7 +158,10 @@ class AuthAgent {
 
     // Step 1: Validate Stack Auth handler
     console.log('\n🔍 Step 1: Validating Stack Auth route handler...');
-    const handlerPath = path.resolve(__dirname, '../app/handler/[...stack]/route.ts');
+    const handlerPath = path.resolve(
+      __dirname,
+      '../app/handler/[...stack]/route.ts',
+    );
     if (fs.existsSync(handlerPath)) {
       console.log('✅ Stack Auth handler found at:', handlerPath);
     } else {
@@ -140,7 +176,7 @@ class AuthAgent {
       'User sign-out flow',
       'Session persistence check',
       'Protected route access without auth',
-      'Admin role authorization check'
+      'Admin role authorization check',
     ];
     console.log('Test scenarios defined:', testScenarios);
 
@@ -150,7 +186,11 @@ class AuthAgent {
     if (fs.existsSync(middlewarePath)) {
       const middlewareContent = fs.readFileSync(middlewarePath, 'utf8');
       const hasStackAuth = middlewareContent.includes('stackServerApp.getUser');
-      console.log(hasStackAuth ? '✅ Middleware uses Stack Auth' : '⚠️  Middleware needs Stack Auth integration');
+      console.log(
+        hasStackAuth
+          ? '✅ Middleware uses Stack Auth'
+          : '⚠️  Middleware needs Stack Auth integration',
+      );
     }
 
     // Step 4: Audit access logging
@@ -158,7 +198,7 @@ class AuthAgent {
     const accessLogChecks = {
       adminPaths: ['/admin', '/api/admin'],
       superAdminPaths: ['/super-admin', '/api/super-admin'],
-      loggingEnabled: true
+      loggingEnabled: true,
     };
     console.log('Access logging configuration:', accessLogChecks);
 
@@ -169,15 +209,17 @@ class AuthAgent {
       testScenarios: testScenarios.length,
       middlewareStatus: 'needs-review',
       accessLogging: 'configured',
-      gate1Status: 'pending-tests'
+      gate1Status: 'pending-tests',
     };
 
     fs.writeFileSync(
       path.resolve(__dirname, '../docs/phase1-validation.json'),
-      JSON.stringify(phase1Results, null, 2)
+      JSON.stringify(phase1Results, null, 2),
     );
 
-    console.log('\n✅ Phase 1 validation results saved to docs/phase1-validation.json');
+    console.log(
+      '\n✅ Phase 1 validation results saved to docs/phase1-validation.json',
+    );
     return phase1Results;
   }
 }
@@ -189,9 +231,11 @@ class QAAgent {
   }
 
   async executePhase2() {
-    console.log(`\n🧪 ${this.name} - Phase 2: Automation & Sub-Agent Integration`);
+    console.log(
+      `\n🧪 ${this.name} - Phase 2: Automation & Sub-Agent Integration`,
+    );
     console.log('----------------------------------------');
-    
+
     const tasks = phasePrompts.phases.Phase2.prompt;
     for (const task of tasks) {
       console.log(`\n${task}`);
@@ -201,9 +245,11 @@ class QAAgent {
     console.log('\n🔍 Step 1: Analyzing lib/ai/tools for test generation...');
     const toolsPath = path.resolve(__dirname, '../lib/ai/tools');
     const testTargets = [];
-    
+
     if (fs.existsSync(toolsPath)) {
-      const files = fs.readdirSync(toolsPath).filter(f => f.endsWith('.ts') || f.endsWith('.js'));
+      const files = fs
+        .readdirSync(toolsPath)
+        .filter((f) => f.endsWith('.ts') || f.endsWith('.js'));
       console.log(`Found ${files.length} files to test in lib/ai/tools`);
       testTargets.push(...files);
     }
@@ -214,7 +260,7 @@ class QAAgent {
       'POST /api/chat - message handling',
       'GET /api/admin/profile - admin access',
       'GET /api/super-admin/profile - super admin access',
-      'POST /api/benefits/check-eligibility - eligibility check'
+      'POST /api/benefits/check-eligibility - eligibility check',
     ];
     console.log('Integration tests planned:', integrationTests);
 
@@ -244,7 +290,7 @@ echo "CI validation complete!"
     fs.writeFileSync(
       path.resolve(__dirname, '../scripts/ci-validate.sh'),
       ciScript,
-      { mode: 0o755 }
+      { mode: 0o755 },
     );
 
     // Step 4: Coverage report
@@ -255,12 +301,12 @@ echo "CI validation complete!"
       integrationTests: integrationTests.length,
       targetCoverage: 90,
       currentCoverage: 'pending',
-      gate2Status: 'awaiting-test-execution'
+      gate2Status: 'awaiting-test-execution',
     };
 
     fs.writeFileSync(
       path.resolve(__dirname, '../docs/phase2-coverage.json'),
-      JSON.stringify(coverageReport, null, 2)
+      JSON.stringify(coverageReport, null, 2),
     );
 
     console.log('\n✅ Phase 2 automation setup complete');
@@ -275,9 +321,11 @@ class DeploymentAgent {
   }
 
   async executePhase4() {
-    console.log(`\n🚀 ${this.name} - Phase 4: Self-Healing & Continuous Validation`);
+    console.log(
+      `\n🚀 ${this.name} - Phase 4: Self-Healing & Continuous Validation`,
+    );
     console.log('----------------------------------------');
-    
+
     const tasks = phasePrompts.phases.Phase4.prompt;
     for (const task of tasks) {
       console.log(`\n${task}`);
@@ -328,7 +376,7 @@ export function checkPipelineMetrics() {
 
     fs.writeFileSync(
       path.resolve(__dirname, '../scripts/check-pipeline-metrics.ts'),
-      metricsScript
+      metricsScript,
     );
 
     // Step 3: Rollback logic
@@ -336,7 +384,7 @@ export function checkPipelineMetrics() {
     const rollbackConfig = {
       triggers: ['pow-failure', 'test-failure', 'build-failure'],
       actions: ['revert-commit', 'notify-team', 'block-deploy'],
-      enabled: true
+      enabled: true,
     };
 
     // Step 4: Test scenarios
@@ -345,7 +393,7 @@ export function checkPipelineMetrics() {
       'Simulate PoW validation failure',
       'Simulate test suite failure',
       'Simulate build failure',
-      'Verify automatic rollback execution'
+      'Verify automatic rollback execution',
     ];
 
     const phase4Results = {
@@ -354,12 +402,12 @@ export function checkPipelineMetrics() {
       metricsScript: 'created',
       rollbackConfig,
       rollbackTests: rollbackTests.length,
-      gate4Status: 'ready-for-validation'
+      gate4Status: 'ready-for-validation',
     };
 
     fs.writeFileSync(
       path.resolve(__dirname, '../docs/phase4-self-healing.json'),
-      JSON.stringify(phase4Results, null, 2)
+      JSON.stringify(phase4Results, null, 2),
     );
 
     console.log('\n✅ Phase 4 self-healing setup complete');
@@ -415,7 +463,9 @@ async function runPhases() {
         console.log('  0 - Discovery & Audit (DataAgent)');
         console.log('  1 - Core Platform Stabilization (AuthAgent)');
         console.log('  2 - Automation & Sub-Agent Integration (QAAgent)');
-        console.log('  4 - Self-Healing & Continuous Validation (DeploymentAgent)');
+        console.log(
+          '  4 - Self-Healing & Continuous Validation (DeploymentAgent)',
+        );
         process.exit(1);
     }
 
@@ -436,5 +486,5 @@ module.exports = {
   AuthAgent,
   QAAgent,
   DeploymentAgent,
-  runPhases
+  runPhases,
 };

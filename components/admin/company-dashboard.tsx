@@ -1,7 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,6 +31,9 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { EmployeeList } from './employee-list';
+import { DocumentUpload } from './document-upload';
+import { DocumentList } from './document-list';
+import { BenefitsManagement } from './benefits-management';
 
 interface CompanyDashboardProps {
   stats: {
@@ -46,11 +55,17 @@ interface CompanyDashboardProps {
   companyId?: string;
 }
 
-export function CompanyDashboard({ stats, recentActivity, companyName, companyId }: CompanyDashboardProps) {
+export function CompanyDashboard({
+  stats,
+  recentActivity,
+  companyName,
+  companyId,
+}: CompanyDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
 
-  const utilizationPercentage = (stats.utilisationRate * 100);
-  const enrollmentRate = stats.employees > 0 ? (stats.activeEnrollments / stats.employees) * 100 : 0;
+  const utilizationPercentage = stats.utilisationRate * 100;
+  const enrollmentRate =
+    stats.employees > 0 ? (stats.activeEnrollments / stats.employees) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -81,7 +96,9 @@ export function CompanyDashboard({ stats, recentActivity, companyName, companyId
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Employees
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -94,11 +111,15 @@ export function CompanyDashboard({ stats, recentActivity, companyName, companyId
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Enrollment Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Enrollment Rate
+            </CardTitle>
             <Heart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{enrollmentRate.toFixed(1)}%</div>
+            <div className="text-2xl font-bold">
+              {enrollmentRate.toFixed(1)}%
+            </div>
             <Progress value={enrollmentRate} className="h-2 mt-2" />
           </CardContent>
         </Card>
@@ -122,7 +143,9 @@ export function CompanyDashboard({ stats, recentActivity, companyName, companyId
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${stats.totalCost.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              ${stats.totalCost.toLocaleString()}
+            </div>
             <p className="text-xs text-muted-foreground">
               Total benefits spend
             </p>
@@ -131,7 +154,11 @@ export function CompanyDashboard({ stats, recentActivity, companyName, companyId
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="employees">Employees</TabsTrigger>
@@ -178,7 +205,9 @@ export function CompanyDashboard({ stats, recentActivity, companyName, companyId
                   <Clock className="h-5 w-5" />
                   Recent Activity
                 </CardTitle>
-                <CardDescription>Latest updates in your organization</CardDescription>
+                <CardDescription>
+                  Latest updates in your organization
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -196,9 +225,13 @@ export function CompanyDashboard({ stats, recentActivity, companyName, companyId
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{activity.description}</p>
+                        <p className="text-sm font-medium">
+                          {activity.description}
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(activity.timestamp, { addSuffix: true })}
+                          {formatDistanceToNow(activity.timestamp, {
+                            addSuffix: true,
+                          })}
                         </p>
                       </div>
                     </div>
@@ -215,38 +248,48 @@ export function CompanyDashboard({ stats, recentActivity, companyName, companyId
                 <TrendingUp className="h-5 w-5" />
                 Benefits Utilization
               </CardTitle>
-              <CardDescription>How your employees are using their benefits</CardDescription>
+              <CardDescription>
+                How your employees are using their benefits
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Overall Utilization</span>
+                    <span className="text-sm font-medium">
+                      Overall Utilization
+                    </span>
                     <span className="text-sm text-muted-foreground">
                       {utilizationPercentage.toFixed(1)}%
                     </span>
                   </div>
                   <Progress value={utilizationPercentage} className="h-3" />
                 </div>
-                
+
                 <div className="grid gap-4 md:grid-cols-3 mt-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-600">
                       {Math.round(stats.activeEnrollments * 0.7)}
                     </div>
-                    <p className="text-xs text-muted-foreground">Health Insurance</p>
+                    <p className="text-xs text-muted-foreground">
+                      Health Insurance
+                    </p>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
                       {Math.round(stats.activeEnrollments * 0.4)}
                     </div>
-                    <p className="text-xs text-muted-foreground">Dental Coverage</p>
+                    <p className="text-xs text-muted-foreground">
+                      Dental Coverage
+                    </p>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-purple-600">
                       {Math.round(stats.activeEnrollments * 0.2)}
                     </div>
-                    <p className="text-xs text-muted-foreground">Vision Coverage</p>
+                    <p className="text-xs text-muted-foreground">
+                      Vision Coverage
+                    </p>
                   </div>
                 </div>
               </div>
@@ -260,68 +303,62 @@ export function CompanyDashboard({ stats, recentActivity, companyName, companyId
           ) : (
             <Card>
               <CardContent className="flex items-center justify-center h-64">
-                <p className="text-muted-foreground">Company ID not available</p>
+                <p className="text-muted-foreground">
+                  Company ID not available
+                </p>
               </CardContent>
             </Card>
           )}
         </TabsContent>
 
         <TabsContent value="benefits" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Benefits Administration</CardTitle>
-              <CardDescription>Manage benefit plans and enrollments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Benefits Management Coming Soon</h3>
-                <p className="text-muted-foreground mb-4">
-                  Create and manage benefit plans, track enrollments, and analyze costs.
+          {companyId ? (
+            <BenefitsManagement companyId={companyId} companyName={companyName} />
+          ) : (
+            <Card>
+              <CardContent className="flex items-center justify-center h-64">
+                <p className="text-muted-foreground">
+                  Company ID not available
                 </p>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Plan
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Document Library</CardTitle>
-              <CardDescription>Manage benefits documents and resources</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Document Management Coming Soon</h3>
-                <p className="text-muted-foreground mb-4">
-                  Upload, organize, and share benefits documents with your employees.
+          {companyId ? (
+            <div className="space-y-4">
+              <DocumentUpload companyId={companyId} />
+              <DocumentList companyId={companyId} />
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex items-center justify-center h-64">
+                <p className="text-muted-foreground">
+                  Company ID not available
                 </p>
-                <Button>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Document
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Analytics & Reporting</CardTitle>
-              <CardDescription>Insights into benefits usage and costs</CardDescription>
+              <CardDescription>
+                Insights into benefits usage and costs
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-8">
                 <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Analytics Dashboard Coming Soon</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  Analytics Dashboard Coming Soon
+                </h3>
                 <p className="text-muted-foreground mb-4">
-                  Detailed reports on enrollment trends, cost analysis, and employee engagement.
+                  Detailed reports on enrollment trends, cost analysis, and
+                  employee engagement.
                 </p>
                 <Button>
                   <BarChart3 className="h-4 w-4 mr-2" />
