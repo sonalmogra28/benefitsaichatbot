@@ -1,9 +1,9 @@
 import { auth } from '@/app/(auth)/stack-auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
-import { users, benefitPlans, benefitEnrollments } from '@/lib/db/schema';
+import { users, benefitPlans, benefitEnrollments, knowledgeBaseDocuments } from '@/lib/db/schema';
 import { eq, and, count } from 'drizzle-orm';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CompanyDashboard } from '@/components/admin/company-dashboard';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,12 +26,48 @@ async function getCompanyStats(companyId: string) {
       eq(users.companyId, companyId),
       eq(benefitEnrollments.status, 'active')
     ));
+
+  const [documentCount] = await db
+    .select({ count: count() })
+    .from(knowledgeBaseDocuments)
+    .where(eq(knowledgeBaseDocuments.companyId, companyId));
     
   return {
     employees: employeeCount?.count || 0,
     activePlans: planCount?.count || 0,
     activeEnrollments: enrollmentCount?.count || 0,
+    documentCount: documentCount?.count || 0,
+    totalCost: 25000, // TODO: Calculate from actual enrollment data
+    utilisationRate: 0.75, // TODO: Calculate from actual usage data
   };
+}
+
+async function getRecentActivity(companyId: string) {
+  // TODO: Implement actual activity tracking
+  // For now, return mock data
+  return [
+    {
+      id: '1',
+      type: 'enrollment' as const,
+      description: 'New employee enrolled in health insurance',
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+      status: 'success' as const,
+    },
+    {
+      id: '2',
+      type: 'document' as const,
+      description: 'Benefits handbook uploaded',
+      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
+      status: 'success' as const,
+    },
+    {
+      id: '3',
+      type: 'employee' as const,
+      description: 'Employee added to system',
+      timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
+      status: 'success' as const,
+    },
+  ];
 }
 
 export default async function CompanyAdminDashboard() {
@@ -40,77 +76,23 @@ export default async function CompanyAdminDashboard() {
   if (!session?.user?.companyId) {
     redirect('/login');
   }
+
+  // Get company name from the user's company data
+  const companyName = session.user.company?.name || 'Your Company';
   
-  const stats = await getCompanyStats(session.user.companyId);
+  const [stats, recentActivity] = await Promise.all([
+    getCompanyStats(session.user.companyId),
+    getRecentActivity(session.user.companyId),
+  ]);
   
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Company Dashboard</h1>
-        <p className="text-muted-foreground">Manage your company&apos;s benefits and employees</p>
-      </div>
-      
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.employees}</div>
-            <p className="text-xs text-muted-foreground">Active users in your organization</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Active Benefit Plans</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activePlans}</div>
-            <p className="text-xs text-muted-foreground">Plans available for enrollment</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Active Enrollments</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeEnrollments}</div>
-            <p className="text-xs text-muted-foreground">Employees enrolled in benefits</p>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common administrative tasks</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <a href="/company-admin/employees/new" className="block p-4 border rounded-lg hover:bg-muted">
-              Add New Employee
-            </a>
-            <a href="/company-admin/benefits/new" className="block p-4 border rounded-lg hover:bg-muted">
-              Create Benefit Plan
-            </a>
-            <a href="/company-admin/enrollments" className="block p-4 border rounded-lg hover:bg-muted">
-              Manage Enrollments
-            </a>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest updates in your organization</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">Activity tracking coming soon...</p>
-          </CardContent>
-        </Card>
-      </div>
+      <CompanyDashboard 
+        stats={stats}
+        recentActivity={recentActivity}
+        companyName={companyName}
+        companyId={session.user.companyId}
+      />
     </div>
   );
 }
