@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
-import { getChatAnalytics, getTopQuestions, getUserActivity, getCostBreakdown } from '@/lib/services/analytics.service';
+import { getChatAnalytics, getTopQuestions, getCostBreakdown } from '@/lib/services/analytics.service';
 import { z } from 'zod';
 
 // Schema for query parameters
@@ -45,9 +45,10 @@ export async function GET(request: NextRequest) {
 
     // Get the requested analytics data
     switch (params.metric) {
-      case 'questions':
+      case 'questions': {
         const questions = await getTopQuestions(companyId, 20, dateRange);
         return NextResponse.json({ questions });
+      }
 
       case 'users':
         // For user analytics, we'd need to implement a getUsersActivity function
@@ -57,14 +58,16 @@ export async function GET(request: NextRequest) {
           message: 'User analytics endpoint coming soon' 
         });
 
-      case 'costs':
+      case 'costs': {
         const costs = await getCostBreakdown(companyId, dateRange);
         return NextResponse.json({ costs });
+      }
 
       case 'overview':
-      default:
+      default: {
         const analytics = await getChatAnalytics(companyId, dateRange);
         return NextResponse.json({ analytics });
+      }
     }
 
   } catch (error) {

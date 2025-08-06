@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { chats, messages, chatAnalytics, type NewChat, type NewMessage, type Chat, type Message } from '@/lib/db/schema';
+import { chats, messages, chatAnalytics, type Chat, type Message } from '@/lib/db/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 
 /**

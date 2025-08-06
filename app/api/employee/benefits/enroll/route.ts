@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
 import { benefitPlans, benefitEnrollments } from '@/lib/db/schema';
@@ -81,8 +81,8 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         benefitPlanId: validated.benefitPlanId,
         coverageType: validated.coverageType,
-        enrollmentDate: new Date(),
-        effectiveDate: new Date(validated.effectiveDate),
+        enrollmentDate: new Date().toISOString().split('T')[0], // format as YYYY-MM-DD
+        effectiveDate: validated.effectiveDate,
         monthlyCost: monthlyCost.toString(),
         employerContribution: employerContribution.toString(),
         employeeContribution: employeeContribution.toString(),
@@ -160,7 +160,7 @@ export async function DELETE(request: NextRequest) {
       .update(benefitEnrollments)
       .set({
         status: 'cancelled',
-        endDate: new Date(),
+        endDate: new Date().toISOString().split('T')[0], // format as YYYY-MM-DD
         updatedAt: new Date(),
       })
       .where(eq(benefitEnrollments.id, enrollmentId));

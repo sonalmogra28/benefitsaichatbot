@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
-import { benefitPlans, benefitEnrollments, users } from '@/lib/db/schema';
+import { benefitPlans, benefitEnrollments, } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 // GET /api/employee/benefits - Get available benefit plans and current enrollments

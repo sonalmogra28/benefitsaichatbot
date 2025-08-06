@@ -42,7 +42,6 @@ import type { ChatModel } from '@/lib/ai/models';
 import type { VisibilityType } from '@/components/visibility-selector';
 import type { Session } from 'next-auth';
 import { trackChatEvent } from '@/lib/services/conversation.service';
-import { trackEvent } from '@/lib/services/analytics.service';
 
 export const maxDuration = 60;
 

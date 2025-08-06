@@ -26,7 +26,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
@@ -40,20 +39,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import {
   Search,
-  Plus,
   MoreHorizontal,
   Mail,
   Download,
   Upload,
   UserPlus,
   Users,
-  Shield,
-  Building2,
   Activity,
   AlertCircle,
   CheckCircle2,
   XCircle,
-  Filter,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -458,7 +453,7 @@ export function EmployeeList({
                   <th className="text-left p-4 font-medium">Benefits</th>
                   <th className="text-left p-4 font-medium">Status</th>
                   <th className="text-left p-4 font-medium">Last Active</th>
-                  <th className="text-left p-4"></th>
+                  <th className="text-left p-4" />
                 </tr>
               </thead>
               <tbody>

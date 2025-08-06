@@ -14,15 +14,12 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  Legend,
   ResponsiveContainer,
   Area,
   AreaChart
 } from 'recharts';
 import { format } from 'date-fns';
 import { 
-  TrendingUp, 
-  TrendingDown, 
   DollarSign, 
   MessageSquare, 
   Users, 

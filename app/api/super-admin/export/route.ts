@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withPlatformAdmin } from '@/lib/auth/api-middleware';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
 import { z } from 'zod';

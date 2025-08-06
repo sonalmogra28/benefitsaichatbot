@@ -5,12 +5,6 @@ import {
 } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { Anthropic } from '@anthropic-ai/sdk';
-import {
-  artifactModel,
-  chatModel,
-  reasoningModel,
-  titleModel,
-} from './models.test';
 import { isTestEnvironment } from '../constants';
 
 // Instantiate Anthropic client

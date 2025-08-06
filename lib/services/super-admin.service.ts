@@ -5,7 +5,6 @@ import {
   knowledgeBaseDocuments,
   chats,
   messages,
-  votes,
 } from '@/lib/db/schema';
 import {
   eq,
@@ -13,9 +12,7 @@ import {
   desc,
   and,
   gte,
-  lte,
   count,
-  countDistinct,
   sum,
 } from 'drizzle-orm';
 import { emailService } from '@/lib/services/email.service';

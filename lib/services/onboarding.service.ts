@@ -48,15 +48,13 @@ export class OnboardingService {
         .update(users)
         .set({
           department: data.department,
-          location: data.location,
-          hireDate: data.hireDate ? new Date(data.hireDate) : null,
-          onboardingCompleted: true,
+          hireDate: data.hireDate || null,
           updatedAt: new Date(),
         })
         .where(eq(users.stackUserId, userId));
 
       // Sync with Stack Auth
-      await userSyncService.syncUser(userId);
+      await userSyncService.syncCurrentUserToDb(stackUser);
 
       // Send welcome email
       await this.sendWelcomeEmail(stackUser.primaryEmail || '', stackUser.displayName || '');
@@ -181,11 +179,11 @@ export class OnboardingService {
 
       // Clear onboarding metadata
       const metadata = { ...stackUser.clientMetadata };
-      delete metadata.onboardingCompleted;
-      delete metadata.onboardingCompletedAt;
-      delete metadata.onboardingProgress;
-      delete metadata.lastOnboardingStep;
-      delete metadata.benefitsInterests;
+      metadata.onboardingCompleted = undefined;
+      metadata.onboardingCompletedAt = undefined;
+      metadata.onboardingProgress = undefined;
+      metadata.lastOnboardingStep = undefined;
+      metadata.benefitsInterests = undefined;
 
       await stackUser.update({
         clientMetadata: metadata,
@@ -195,7 +193,6 @@ export class OnboardingService {
       await db
         .update(users)
         .set({
-          onboardingCompleted: false,
           updatedAt: new Date(),
         })
         .where(eq(users.stackUserId, userId));

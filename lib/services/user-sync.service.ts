@@ -1,7 +1,6 @@
 import { db } from '@/lib/db';
 import { users, companies } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
-import { stackServerApp } from '@/stack';
 import type { CurrentServerUser } from '@stackframe/stack';
 
 export interface UserMetadata {

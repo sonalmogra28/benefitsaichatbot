@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
@@ -16,8 +16,9 @@ const updateEmployeeSchema = z.object({
 // GET /api/company-admin/employees/[id] - Get specific employee
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await auth();
     
@@ -29,7 +30,7 @@ export async function GET(
       .select()
       .from(users)
       .where(and(
-        eq(users.id, params.id),
+        eq(users.id, id),
         eq(users.companyId, session.user.companyId)
       ))
       .limit(1);
@@ -51,8 +52,9 @@ export async function GET(
 // PATCH /api/company-admin/employees/[id] - Update employee
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await auth();
     
@@ -73,7 +75,7 @@ export async function PATCH(
       .select()
       .from(users)
       .where(and(
-        eq(users.id, params.id),
+        eq(users.id, id),
         eq(users.companyId, session.user.companyId)
       ))
       .limit(1);
@@ -83,7 +85,7 @@ export async function PATCH(
     }
 
     // Prevent downgrading own permissions
-    if (params.id === session.user.id && validated.role && validated.role !== session.user.type) {
+    if (id === session.user.id && validated.role && validated.role !== session.user.type) {
       return NextResponse.json(
         { error: 'Cannot change your own role' },
         { status: 400 }
@@ -98,7 +100,7 @@ export async function PATCH(
         updatedAt: new Date(),
       })
       .where(and(
-        eq(users.id, params.id),
+        eq(users.id, id),
         eq(users.companyId, session.user.companyId)
       ))
       .returning();
@@ -123,8 +125,9 @@ export async function PATCH(
 // DELETE /api/company-admin/employees/[id] - Deactivate employee
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await auth();
     
@@ -138,7 +141,7 @@ export async function DELETE(
     }
 
     // Prevent self-deactivation
-    if (params.id === session.user.id) {
+    if (id === session.user.id) {
       return NextResponse.json(
         { error: 'Cannot deactivate your own account' },
         { status: 400 }
@@ -150,7 +153,7 @@ export async function DELETE(
       .select()
       .from(users)
       .where(and(
-        eq(users.id, params.id),
+        eq(users.id, id),
         eq(users.companyId, session.user.companyId)
       ))
       .limit(1);
@@ -167,7 +170,7 @@ export async function DELETE(
         updatedAt: new Date(),
       })
       .where(and(
-        eq(users.id, params.id),
+        eq(users.id, id),
         eq(users.companyId, session.user.companyId)
       ));
 

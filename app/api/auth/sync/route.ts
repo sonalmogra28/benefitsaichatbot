@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { userSyncService } from '@/lib/services/user-sync.service';
-import { stackServerApp } from '@/stack';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 // Stack Auth webhook event types
 interface StackWebhookEvent {

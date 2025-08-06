@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { auth, requireAuth, requireRole, hasRole } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
-import { sql } from 'drizzle-orm';
 
 // Mock the database and Stack Auth
 vi.mock('@/lib/db', () => ({

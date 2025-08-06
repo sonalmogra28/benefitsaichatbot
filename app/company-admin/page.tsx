@@ -3,11 +3,12 @@ import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import {
   users,
+  companies,
   benefitPlans,
   benefitEnrollments,
   knowledgeBaseDocuments,
 } from '@/lib/db/schema';
-import { eq, and, count } from 'drizzle-orm';
+import { eq, and, count, sql } from 'drizzle-orm';
 import { CompanyDashboard } from '@/components/admin/company-dashboard';
 
 export const dynamic = 'force-dynamic';
@@ -110,8 +111,17 @@ export default async function CompanyAdminDashboard() {
     redirect('/login');
   }
 
-  // Get company name from the user's company data
-  const companyName = session.user.company?.name || 'Your Company';
+  // Get company name
+  let companyName = 'Your Company';
+  const [company] = await db
+    .select()
+    .from(companies)
+    .where(eq(companies.id, session.user.companyId))
+    .limit(1);
+  
+  if (company) {
+    companyName = company.name;
+  }
 
   const [stats, recentActivity] = await Promise.all([
     getCompanyStats(session.user.companyId),

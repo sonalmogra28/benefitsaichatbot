@@ -260,7 +260,7 @@ export function DocumentList({ documents, onDocumentDeleted, onDocumentView }: D
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          onClick={() => onDocumentView && onDocumentView(document)}
+                          onClick={() => onDocumentView?.(document)}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           View Details

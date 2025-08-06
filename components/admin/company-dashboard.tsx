@@ -13,7 +13,6 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Users,
-  FileText,
   DollarSign,
   TrendingUp,
   AlertCircle,
@@ -32,7 +31,6 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { EmployeeList } from './employee-list';
 import { DocumentUpload } from './document-upload';
-import { DocumentList } from './document-list';
 import { BenefitsManagement } from './benefits-management';
 
 interface CompanyDashboardProps {
@@ -329,7 +327,9 @@ export function CompanyDashboard({
           {companyId ? (
             <div className="space-y-4">
               <DocumentUpload companyId={companyId} />
-              <DocumentList companyId={companyId} />
+              <div className="text-muted-foreground text-sm">
+                Visit the Documents page to view and manage all documents.
+              </div>
             </div>
           ) : (
             <Card>

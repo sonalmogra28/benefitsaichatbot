@@ -20,6 +20,7 @@
     "test": "vitest run --coverage",
     "test:document-upload": "npx tsx scripts/test-document-upload.ts",
     "typecheck": "tsc --noEmit",
+    "pre-deploy": "tsx scripts/pre-deploy-check.ts",
     "prepare": "husky install",
     "validate-pow": "node scripts/validate-pow.js",
     "claude:custom": "claude -p \"$(cat toolsets/claude_custom_instructions.jsonc)\"",

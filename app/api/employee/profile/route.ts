@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
@@ -8,20 +8,9 @@ import { z } from 'zod';
 const updateProfileSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  phoneNumber: z.string().optional(),
-  dateOfBirth: z.string().optional(),
-  address: z.object({
-    street: z.string(),
-    city: z.string(),
-    state: z.string(),
-    zipCode: z.string(),
-    country: z.string(),
-  }).optional(),
-  emergencyContact: z.object({
-    name: z.string(),
-    relationship: z.string(),
-    phoneNumber: z.string(),
-  }).optional(),
+  department: z.string().optional(),
+  employeeId: z.string().optional(),
+  hireDate: z.string().optional(), // YYYY-MM-DD format
 });
 
 // GET /api/employee/profile - Get employee profile
@@ -52,13 +41,11 @@ export async function GET(request: NextRequest) {
       department: user.department,
       role: user.role,
       companyId: user.companyId,
-      phoneNumber: user.phoneNumber,
-      dateOfBirth: user.dateOfBirth,
-      address: user.address,
-      emergencyContact: user.emergencyContact,
+      employeeId: user.employeeId,
+      hireDate: user.hireDate,
       isActive: user.isActive,
       createdAt: user.createdAt,
-      lastActive: user.lastActive,
+      updatedAt: user.updatedAt,
     });
   } catch (error) {
     console.error('Error fetching profile:', error);
@@ -98,10 +85,9 @@ export async function PATCH(request: NextRequest) {
         email: updatedUser.email,
         firstName: updatedUser.firstName,
         lastName: updatedUser.lastName,
-        phoneNumber: updatedUser.phoneNumber,
-        dateOfBirth: updatedUser.dateOfBirth,
-        address: updatedUser.address,
-        emergencyContact: updatedUser.emergencyContact,
+        department: updatedUser.department,
+        employeeId: updatedUser.employeeId,
+        hireDate: updatedUser.hireDate,
       }
     });
   } catch (error) {

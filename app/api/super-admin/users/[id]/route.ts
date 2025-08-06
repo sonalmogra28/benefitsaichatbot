@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withPlatformAdmin } from '@/lib/auth/api-middleware';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
 import { z } from 'zod';
@@ -13,20 +13,20 @@ const superAdminService = new SuperAdminService();
 // PATCH /api/super-admin/users/[id] - Update user role or suspend
 export const PATCH = withPlatformAdmin(async (
   request: NextRequest,
-  context
+  { params }: { params: Promise<{ id: string }> }
 ) => {
-  const params = await (context as any).params;
+  const { id } = await params;
   try {
     const body = await request.json();
     const validated = updateUserSchema.parse(body);
     
     if (validated.suspend) {
-      await superAdminService.suspendUser(params.id);
+      await superAdminService.suspendUser(id);
       return NextResponse.json({ success: true, action: 'suspended' });
     }
     
     if (validated.type) {
-      await superAdminService.updateUserRole(params.id, validated.type);
+      await superAdminService.updateUserRole(id, validated.type);
       return NextResponse.json({ success: true, action: 'role_updated' });
     }
     
@@ -53,11 +53,11 @@ export const PATCH = withPlatformAdmin(async (
 // DELETE /api/super-admin/users/[id] - Permanently delete user
 export const DELETE = withPlatformAdmin(async (
   request: NextRequest,
-  context
+  { params }: { params: Promise<{ id: string }> }
 ) => {
-  const params = await (context as any).params;
+  const { id } = await params;
   try {
-    await superAdminService.suspendUser(params.id); // Using suspend for soft delete
+    await superAdminService.suspendUser(id); // Using suspend for soft delete
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting user:', error);

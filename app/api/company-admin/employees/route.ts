@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
-import { users, benefitEnrollments } from '@/lib/db/schema';
+import { users, benefitEnrollments, companies } from '@/lib/db/schema';
 import { eq, and, count, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { EmailService } from '@/lib/services/email.service';
@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const role = searchParams.get('role') || 'all';
     const status = searchParams.get('status') || 'all';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const page = Number.parseInt(searchParams.get('page') || '1');
+    const limit = Number.parseInt(searchParams.get('limit') || '50');
     const offset = (page - 1) * limit;
 
     // Build where conditions
@@ -159,12 +159,25 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    // Get company details for the email
+    let companyName = 'Your Company';
+    if (session.user.companyId) {
+      const [company] = await db
+        .select()
+        .from(companies)
+        .where(eq(companies.id, session.user.companyId))
+        .limit(1);
+      if (company) {
+        companyName = company.name;
+      }
+    }
+
     // Send invitation email
     try {
       await emailService.sendEmployeeInvitation({
         email: validated.email,
-        companyName: session.user.company?.name || 'Your Company',
-        inviterName: `${session.user.firstName || ''} ${session.user.lastName || ''}`.trim() || session.user.email,
+        companyName,
+        inviterName: session.user.name || session.user.email,
         role: validated.role,
       });
     } catch (emailError) {

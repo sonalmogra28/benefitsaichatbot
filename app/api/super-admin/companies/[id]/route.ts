@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withPlatformAdmin } from '@/lib/auth/api-middleware';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
 import { z } from 'zod';
@@ -17,11 +17,11 @@ const superAdminService = new SuperAdminService();
 // GET /api/super-admin/companies/[id] - Get company details with stats
 export const GET = withPlatformAdmin(async (
   request: NextRequest,
-  context
+  { params }: { params: Promise<{ id: string }> }
 ) => {
-  const params = await (context as any).params;
+  const { id } = await params;
   try {
-    const company = await superAdminService.getCompanyWithStats(params.id);
+    const company = await superAdminService.getCompanyWithStats(id);
     return NextResponse.json(company);
   } catch (error) {
     console.error('Error fetching company:', error);
@@ -35,14 +35,14 @@ export const GET = withPlatformAdmin(async (
 // PATCH /api/super-admin/companies/[id] - Update company
 export const PATCH = withPlatformAdmin(async (
   request: NextRequest,
-  context
+  { params }: { params: Promise<{ id: string }> }
 ) => {
-  const params = await (context as any).params;
+  const { id } = await params;
   try {
     const body = await request.json();
     const validated = updateCompanySchema.parse(body);
     
-    const company = await superAdminService.updateCompany(params.id, validated);
+    const company = await superAdminService.updateCompany(id, validated);
     
     return NextResponse.json(company);
   } catch (error) {
@@ -64,11 +64,11 @@ export const PATCH = withPlatformAdmin(async (
 // DELETE /api/super-admin/companies/[id] - Delete company
 export const DELETE = withPlatformAdmin(async (
   request: NextRequest,
-  context
+  { params }: { params: Promise<{ id: string }> }
 ) => {
-  const params = await (context as any).params;
+  const { id } = await params;
   try {
-    await superAdminService.deleteCompany(params.id);
+    await superAdminService.deleteCompany(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting company:', error);

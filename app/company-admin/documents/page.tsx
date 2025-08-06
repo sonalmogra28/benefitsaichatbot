@@ -13,6 +13,7 @@ async function getCompanyDocuments(companyId: string) {
     .select({
       id: knowledgeBaseDocuments.id,
       title: knowledgeBaseDocuments.title,
+      documentType: knowledgeBaseDocuments.documentType,
       category: knowledgeBaseDocuments.category,
       fileType: knowledgeBaseDocuments.fileType,
       fileUrl: knowledgeBaseDocuments.fileUrl,
@@ -25,7 +26,15 @@ async function getCompanyDocuments(companyId: string) {
     .where(eq(knowledgeBaseDocuments.companyId, companyId))
     .orderBy(knowledgeBaseDocuments.createdAt);
 
-  return documents;
+  return documents.map(doc => ({
+    ...doc,
+    category: doc.category || undefined,
+    fileType: doc.fileType || undefined,
+    fileUrl: doc.fileUrl || undefined,
+    tags: doc.tags || undefined,
+    processedAt: doc.processedAt || undefined,
+    status: doc.processedAt ? 'processed' as const : 'pending_processing' as const,
+  }));
 }
 
 export default async function DocumentsPage() {
@@ -56,8 +65,6 @@ export default async function DocumentsPage() {
         />
         <DocumentList
           documents={documents}
-          companyId={session.user.companyId}
-          isCompanyAdmin={true}
         />
       </div>
     </div>

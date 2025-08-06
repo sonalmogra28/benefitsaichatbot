@@ -7,6 +7,11 @@ export type AuthenticatedHandler<T = any> = (
   context: T & { session: NonNullable<Awaited<ReturnType<typeof auth>>> }
 ) => Promise<Response> | Response;
 
+export type RouteHandler = (
+  request: NextRequest,
+  context?: any
+) => Promise<Response> | Response;
+
 /**
  * Middleware wrapper for API route authentication and authorization
  * @param handler - The route handler function
@@ -16,7 +21,7 @@ export type AuthenticatedHandler<T = any> = (
 export function withAuth<T = any>(
   handler: AuthenticatedHandler<T>,
   requiredRoles: UserType[] = []
-) {
+): RouteHandler {
   return async (request: NextRequest, context?: T): Promise<Response> => {
     try {
       // Get the authenticated session
@@ -73,7 +78,8 @@ export function withAuth<T = any>(
       }));
       
       // Call the handler with authenticated context
-      return await handler(request, { ...context, session } as T & { session: NonNullable<typeof session> });
+      const enhancedContext = context ? { ...context, session } : { session };
+      return await handler(request, enhancedContext as T & { session: NonNullable<typeof session> });
       
     } catch (error) {
       console.error('Auth middleware error:', error);
@@ -95,21 +101,21 @@ export function withAuth<T = any>(
 /**
  * Middleware wrapper specifically for platform admin endpoints
  */
-export function withPlatformAdmin<T = any>(handler: AuthenticatedHandler<T>) {
+export function withPlatformAdmin<T = any>(handler: AuthenticatedHandler<T>): RouteHandler {
   return withAuth(handler, ['platform_admin']);
 }
 
 /**
  * Middleware wrapper for company admin endpoints (includes HR admin and platform admin)
  */
-export function withCompanyAdmin<T = any>(handler: AuthenticatedHandler<T>) {
+export function withCompanyAdmin<T = any>(handler: AuthenticatedHandler<T>): RouteHandler {
   return withAuth(handler, ['company_admin', 'hr_admin', 'platform_admin']);
 }
 
 /**
  * Middleware wrapper for any admin role
  */
-export function withAnyAdmin<T = any>(handler: AuthenticatedHandler<T>) {
+export function withAnyAdmin<T = any>(handler: AuthenticatedHandler<T>): RouteHandler {
   return withAuth(handler, ['hr_admin', 'company_admin', 'platform_admin']);
 }
 

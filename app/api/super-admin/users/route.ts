@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { withPlatformAdmin } from '@/lib/auth/api-middleware';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
 import { z } from 'zod';
@@ -18,8 +18,8 @@ const superAdminService = new SuperAdminService();
 // GET /api/super-admin/users - List all users across all companies
 export const GET = withPlatformAdmin(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '50');
+  const page = Number.parseInt(searchParams.get('page') || '1');
+  const limit = Number.parseInt(searchParams.get('limit') || '50');
   const companyId = searchParams.get('companyId') || undefined;
 
   try {
