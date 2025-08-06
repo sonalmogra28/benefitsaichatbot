@@ -77,7 +77,7 @@ export function CompanyDashboard({
             {companyName} Dashboard
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage your company's benefits, employees, and analytics
+            Manage your company&apos;s benefits, employees, and analytics
           </p>
         </div>
         <div className="flex gap-2">

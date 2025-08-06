@@ -22,7 +22,7 @@ import {
 
 export const companies = pgTable('companies', {
   id: uuid('id').primaryKey().notNull().defaultRandom(),
-  stackOrgId: text('stack_org_id').unique().notNull(), // Stack Auth organization ID
+  stackOrgId: text('stack_org_id').unique().notNull().default(''), // Stack Auth organization ID
   name: text('name').notNull(),
   domain: text('domain').unique(), // for subdomain routing (optional)
   settings: json('settings').default({}),

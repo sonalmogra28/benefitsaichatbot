@@ -51,7 +51,8 @@
       "Bash(touch:*)",
       "Bash(npm run:*)",
       "Bash(npm install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(pnpm typecheck:*)"
     ],
     "deny": []
   }

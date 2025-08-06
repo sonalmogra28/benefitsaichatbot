@@ -138,7 +138,9 @@ export type AuditAction =
   | 'data.exported'
   | 'data.imported'
   | 'settings.updated'
-  | 'billing.updated';
+  | 'billing.updated'
+  | 'email.sent'
+  | 'email.failed';
 
 // Data export types
 export interface DataExportRequest {

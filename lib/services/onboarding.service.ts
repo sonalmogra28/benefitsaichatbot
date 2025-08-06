@@ -23,9 +23,9 @@ export class OnboardingService {
   ): Promise<void> {
     try {
       // Get Stack user
-      const stackUser = await stackServerApp.getUser({ userId });
-      if (!stackUser) {
-        throw new Error(`Stack user ${userId} not found`);
+      const stackUser = await stackServerApp.getUser({ or: 'throw' });
+      if (stackUser.id !== userId) {
+        throw new Error(`User ID mismatch - expected ${userId}, got ${stackUser.id}`);
       }
 
       // Update user metadata with onboarding selections
@@ -78,9 +78,9 @@ export class OnboardingService {
     completedAt?: string;
   }> {
     try {
-      const stackUser = await stackServerApp.getUser({ userId });
-      if (!stackUser) {
-        throw new Error(`Stack user ${userId} not found`);
+      const stackUser = await stackServerApp.getUser({ or: 'throw' });
+      if (stackUser.id !== userId) {
+        throw new Error(`User ID mismatch - expected ${userId}, got ${stackUser.id}`);
       }
 
       const metadata = stackUser.clientMetadata || {};
@@ -116,9 +116,9 @@ export class OnboardingService {
     data: any
   ): Promise<void> {
     try {
-      const stackUser = await stackServerApp.getUser({ userId });
-      if (!stackUser) {
-        throw new Error(`Stack user ${userId} not found`);
+      const stackUser = await stackServerApp.getUser({ or: 'throw' });
+      if (stackUser.id !== userId) {
+        throw new Error(`User ID mismatch - expected ${userId}, got ${stackUser.id}`);
       }
 
       // Save progress in metadata
@@ -174,9 +174,9 @@ export class OnboardingService {
    */
   async resetOnboarding(userId: string): Promise<void> {
     try {
-      const stackUser = await stackServerApp.getUser({ userId });
-      if (!stackUser) {
-        throw new Error(`Stack user ${userId} not found`);
+      const stackUser = await stackServerApp.getUser({ or: 'throw' });
+      if (stackUser.id !== userId) {
+        throw new Error(`User ID mismatch - expected ${userId}, got ${stackUser.id}`);
       }
 
       // Clear onboarding metadata

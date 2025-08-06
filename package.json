@@ -19,6 +19,7 @@
     "db:seed": "npx tsx scripts/seed-companies.ts",
     "test": "vitest run --coverage",
     "test:document-upload": "npx tsx scripts/test-document-upload.ts",
+    "typecheck": "tsc --noEmit",
     "prepare": "husky install",
     "validate-pow": "node scripts/validate-pow.js",
     "claude:custom": "claude -p \"$(cat toolsets/claude_custom_instructions.jsonc)\"",

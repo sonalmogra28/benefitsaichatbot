@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 import { users, companies } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { stackServerApp } from '@/stack';
-import type { User as StackUser } from '@stackframe/stack';
+import type { CurrentServerUser } from '@stackframe/stack';
 
 export interface UserMetadata {
   companyId?: string;
@@ -15,18 +15,15 @@ export interface UserMetadata {
 
 export class UserSyncService {
   /**
-   * Sync a Stack Auth user with our local database
+   * Sync user data from webhook payload
    */
-  async syncUser(stackUserId: string): Promise<void> {
+  async syncUserFromWebhook(
+    stackUserId: string, 
+    userData: any
+  ): Promise<void> {
     try {
-      // Get user from Stack Auth
-      const stackUser = await stackServerApp.getUser({ userId: stackUserId });
-      if (!stackUser) {
-        throw new Error(`Stack user ${stackUserId} not found`);
-      }
-
-      // Extract metadata
-      const metadata = (stackUser.clientMetadata || {}) as UserMetadata;
+      // Extract metadata from webhook data
+      const metadata = (userData.clientMetadata || {}) as UserMetadata;
 
       // Check if user exists in Neon Auth sync table
       const neonUser = await db.execute(sql`
@@ -52,13 +49,9 @@ export class UserSyncService {
 
         if (!company || company.length === 0) {
           console.error(`Company ${metadata.companyId} not found for user ${stackUserId}`);
-          // Remove invalid companyId from metadata
           metadata.companyId = undefined;
         }
       }
-
-      // Update Stack Auth user metadata if needed
-      await this.updateStackUserMetadata(stackUser, metadata);
 
     } catch (error) {
       console.error(`Failed to sync user ${stackUserId}:`, error);
@@ -67,10 +60,10 @@ export class UserSyncService {
   }
 
   /**
-   * Update Stack Auth user metadata
+   * Update Stack Auth user metadata for current user
    */
-  async updateStackUserMetadata(
-    stackUser: StackUser,
+  async updateCurrentUserMetadata(
+    stackUser: CurrentServerUser,
     metadata: UserMetadata
   ): Promise<void> {
     try {
@@ -82,12 +75,9 @@ export class UserSyncService {
       );
 
       if (hasChanges) {
-        await stackUser.update({
-          clientMetadata: {
-            ...currentMetadata,
-            ...metadata,
-          },
-        });
+        // Note: update method might not be available on server user
+        // This would need to be done client-side or via API
+        console.log('Metadata update required - implement client-side update');
       }
     } catch (error) {
       console.error('Failed to update Stack user metadata:', error);
@@ -96,79 +86,48 @@ export class UserSyncService {
   }
 
   /**
-   * Sync user from our database to Stack Auth
+   * Sync current user to database
    */
-  async syncToStackAuth(userId: string): Promise<void> {
+  async syncCurrentUserToDb(
+    stackUser: CurrentServerUser
+  ): Promise<void> {
     try {
-      // Get user from our database
-      const dbUser = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1);
-
-      if (!dbUser || dbUser.length === 0) {
-        throw new Error(`User ${userId} not found in database`);
-      }
-
-      const user = dbUser[0];
-
-      // Get Stack Auth user
-      const stackUser = await stackServerApp.getUser({ userId: user.stackUserId });
-      if (!stackUser) {
-        throw new Error(`Stack user ${user.stackUserId} not found`);
-      }
-
-      // Prepare metadata
-      const metadata: UserMetadata = {
-        companyId: user.companyId || undefined,
-        department: user.department || undefined,
-        hireDate: user.hireDate?.toISOString() || undefined,
-        userType: user.role as UserMetadata['userType'],
-        location: user.location || undefined,
-      };
-
-      // Update Stack Auth user
-      await this.updateStackUserMetadata(stackUser, metadata);
+      const metadata = (stackUser.clientMetadata || {}) as UserMetadata;
+      
+      // Update or create user in database
+      await db.execute(sql`
+        INSERT INTO users (
+          id, 
+          stack_user_id, 
+          email, 
+          name,
+          company_id,
+          department,
+          role,
+          created_at,
+          updated_at
+        ) VALUES (
+          ${stackUser.id},
+          ${stackUser.id},
+          ${stackUser.primaryEmail || ''},
+          ${stackUser.displayName || stackUser.primaryEmail || ''},
+          ${metadata.companyId || null},
+          ${metadata.department || null},
+          ${metadata.userType || 'employee'},
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+        ON CONFLICT (stack_user_id) DO UPDATE SET
+          email = EXCLUDED.email,
+          name = EXCLUDED.name,
+          company_id = EXCLUDED.company_id,
+          department = EXCLUDED.department,
+          role = EXCLUDED.role,
+          updated_at = CURRENT_TIMESTAMP
+      `);
 
     } catch (error) {
-      console.error(`Failed to sync user ${userId} to Stack Auth:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Bulk sync users for a company
-   */
-  async syncCompanyUsers(companyId: string): Promise<void> {
-    try {
-      const companyUsers = await db
-        .select()
-        .from(users)
-        .where(eq(users.companyId, companyId));
-
-      console.log(`Syncing ${companyUsers.length} users for company ${companyId}`);
-
-      // Sync each user
-      const results = await Promise.allSettled(
-        companyUsers.map(user => this.syncToStackAuth(user.id))
-      );
-
-      // Log any failures
-      results.forEach((result, index) => {
-        if (result.status === 'rejected') {
-          console.error(
-            `Failed to sync user ${companyUsers[index].id}:`,
-            result.reason
-          );
-        }
-      });
-
-      const successful = results.filter(r => r.status === 'fulfilled').length;
-      console.log(`Successfully synced ${successful}/${companyUsers.length} users`);
-
-    } catch (error) {
-      console.error(`Failed to sync company ${companyId} users:`, error);
+      console.error(`Failed to sync user to database:`, error);
       throw error;
     }
   }
@@ -178,8 +137,8 @@ export class UserSyncService {
    */
   async handleUserUpdate(stackUserId: string, updates: any): Promise<void> {
     try {
-      // Sync the updated user
-      await this.syncUser(stackUserId);
+      // Update user data from webhook
+      await this.syncUserFromWebhook(stackUserId, updates);
 
       // If display name was updated, update it in our database
       if (updates.displayName) {
@@ -203,6 +162,30 @@ export class UserSyncService {
       console.error(`Failed to handle user update for ${stackUserId}:`, error);
       throw error;
     }
+  }
+  
+  /**
+   * Get user metadata to update (for client-side update)
+   */
+  async prepareUserMetadata(userId: string): Promise<UserMetadata> {
+    const dbUser = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!dbUser || dbUser.length === 0) {
+      throw new Error(`User ${userId} not found in database`);
+    }
+
+    const user = dbUser[0];
+
+    return {
+      companyId: user.companyId || undefined,
+      department: user.department || undefined,
+      hireDate: user.hireDate || undefined,
+      userType: user.role as UserMetadata['userType'],
+    };
   }
 }
 

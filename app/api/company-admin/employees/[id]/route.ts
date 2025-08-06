@@ -61,7 +61,7 @@ export async function PATCH(
     }
 
     // Check if user has permission to update employees
-    if (session.user.role !== 'company_admin' && session.user.role !== 'admin') {
+    if (session.user.type !== 'company_admin' && session.user.type !== 'hr_admin') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -83,7 +83,7 @@ export async function PATCH(
     }
 
     // Prevent downgrading own permissions
-    if (params.id === session.user.id && validated.role && validated.role !== session.user.role) {
+    if (params.id === session.user.id && validated.role && validated.role !== session.user.type) {
       return NextResponse.json(
         { error: 'Cannot change your own role' },
         { status: 400 }
@@ -133,7 +133,7 @@ export async function DELETE(
     }
 
     // Check if user has permission to deactivate employees
-    if (session.user.role !== 'company_admin' && session.user.role !== 'admin') {
+    if (session.user.type !== 'company_admin' && session.user.type !== 'hr_admin') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 

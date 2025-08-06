@@ -79,8 +79,8 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case 'user.created':
         if (event.userId) {
-          // Sync new user
-          await userSyncService.syncUser(event.userId);
+          // Sync new user from webhook data
+          await userSyncService.syncUserFromWebhook(event.userId, event.data);
           
           // Check if user needs to be added to an organization
           if (event.data.organizationId) {
@@ -137,17 +137,10 @@ async function handleUserOrganizationAssignment(
   organizationId: string
 ): Promise<void> {
   try {
-    // Get Stack user
-    const stackUser = await stackServerApp.getUser({ userId });
-    if (!stackUser) {
-      console.error(`Stack user ${userId} not found`);
-      return;
-    }
-
     // Get organization details from our database
     const { db } = await import('@/lib/db');
-    const { companies } = await import('@/lib/db/schema');
-    const { eq } = await import('drizzle-orm');
+    const { companies, users } = await import('@/lib/db/schema');
+    const { eq, sql } = await import('drizzle-orm');
 
     const company = await db
       .select()
@@ -156,10 +149,14 @@ async function handleUserOrganizationAssignment(
       .limit(1);
 
     if (company && company.length > 0) {
-      // Update user metadata with company ID
-      await userSyncService.updateStackUserMetadata(stackUser, {
-        companyId: company[0].id,
-      });
+      // Update user's company assignment in database
+      await db.execute(sql`
+        UPDATE users 
+        SET 
+          company_id = ${company[0].id},
+          updated_at = CURRENT_TIMESTAMP
+        WHERE stack_user_id = ${userId}
+      `);
     }
   } catch (error) {
     console.error('Failed to handle user organization assignment:', error);

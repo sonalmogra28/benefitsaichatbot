@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         role: users.role,
         department: users.department,
         isActive: users.isActive,
-        lastActive: users.lastActive,
+        lastActive: users.updatedAt,
         createdAt: users.createdAt,
         enrollmentCount: sql<number>`(
           SELECT COUNT(*) 
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has permission to invite employees
-    if (session.user.role !== 'company_admin' && session.user.role !== 'admin') {
+    if (session.user.type !== 'company_admin' && session.user.type !== 'hr_admin') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -149,6 +149,7 @@ export async function POST(request: NextRequest) {
       .insert(users)
       .values({
         email: validated.email,
+        stackUserId: `pending_${Date.now()}_${validated.email}`, // Temporary ID until user signs up
         companyId: session.user.companyId,
         role: validated.role,
         department: validated.department,

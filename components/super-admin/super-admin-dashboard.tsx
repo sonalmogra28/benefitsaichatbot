@@ -23,7 +23,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { AnalyticsDashboard } from '@/components/admin/analytics-dashboard';
+import AnalyticsDashboard from '@/components/admin/analytics-dashboard';
 
 interface SuperAdminDashboardProps {
   stats: {
@@ -34,8 +34,8 @@ interface SuperAdminDashboardProps {
     recentCompanies: Array<{
       id: string;
       name: string;
-      domain: string;
-      subscriptionTier: string;
+      domain: string | null;
+      subscriptionTier: string | null;
       createdAt: Date;
     }>;
   };

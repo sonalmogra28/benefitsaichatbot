@@ -29,6 +29,7 @@
 - **Objective:** Address critical gaps in foundational systems, core features, and production readiness.
 - **Plan:** See `docs/TECHNICAL_DEBT_REMEDIATION_PLAN.md` for detailed tasks, deliverables, and prompts.
 - **Gate:** Each sub-task requires live testing and verification before proceeding to the next.
+- **Quality Gate:** TypeScript type checking (`pnpm typecheck`) must pass after all implementations.
 
 ## 4. Sub-Agent & Automation Model
 | Sub-Agent       | Responsibility                                          |
@@ -69,3 +70,11 @@ The current focus is on completing the Technical Debt Remediation Plan (Phases 1
 
 ## 10. Appendix: Custom Claude Code Instructions
 See `toolsets/claude_custom_instructions.jsonc` for prompt templates, sub-agent definitions, and gate criteria.
+
+## 11. Important Implementation Reminders
+- Do what has been asked; nothing more, nothing less.
+- NEVER create files unless they're absolutely necessary for achieving your goal.
+- ALWAYS prefer editing an existing file to creating a new one.
+- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+- **ALWAYS run TypeScript type checking (`pnpm typecheck` or `npm run typecheck`) after implementing code changes to ensure type safety.**
+- **ALWAYS fix any TypeScript errors before considering the implementation complete.**
