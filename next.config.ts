@@ -11,6 +11,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Rewrite auth API routes to the Stack Auth handler
+  async rewrites() {
+    return [
+      {
+        source: '/api/auth/:path*',
+        destination: '/handler/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

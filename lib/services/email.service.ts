@@ -278,6 +278,23 @@ export class EmailService {
       message,
     });
   }
+
+  async sendEmployeeInvitation(data: {
+    email: string;
+    companyName: string;
+    inviterName: string;
+    role: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    const inviteLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/signup?company=${encodeURIComponent(data.companyName)}&email=${encodeURIComponent(data.email)}`;
+    
+    return this.sendUserInvite({
+      email: data.email,
+      name: data.email.split('@')[0], // Use email prefix as temporary name
+      companyName: data.companyName,
+      inviteLink,
+      role: data.role,
+    });
+  }
 }
 
 // Export a singleton instance

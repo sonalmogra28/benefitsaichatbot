@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { logAccess } from './lib/utils/audit';
-import { stackServerApp } from './stack';
+import { auth } from './app/(auth)/stack-auth';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -13,11 +13,14 @@ export async function middleware(request: NextRequest) {
     return new Response('pong', { status: 200 });
   }
 
-  // Skip middleware for API routes, static files, and auth handlers
+  // Skip middleware for API routes, static files, and auth pages/handlers
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/handler/') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/onboarding') ||
     pathname.includes('.')
   ) {
     return NextResponse.next();
@@ -31,19 +34,21 @@ export async function middleware(request: NextRequest) {
 
   if (isProtectedPath) {
     try {
-      const user = await stackServerApp.getUser();
+      const session = await auth();
+      const user = session?.user;
       if (!user) {
         // Redirect to login if not authenticated
         return NextResponse.redirect(new URL('/login', request.url));
       }
-      // Audit access: derive role based on path
-      const role: 'user' | 'admin' | 'super-admin' = pathname.startsWith(
-        '/company-admin',
-      )
-        ? 'admin'
-        : pathname.startsWith('/admin')
-          ? 'super-admin'
-          : 'user';
+      // Audit access: map user type to role
+      let role: 'user' | 'admin' | 'super-admin';
+      if (user.type === 'company_admin' || user.type === 'hr_admin') {
+        role = 'admin';
+      } else if (user.type === 'platform_admin') {
+        role = 'super-admin';
+      } else {
+        role = 'user';
+      }
       logAccess(user.id, pathname, role);
     } catch (error) {
       // If there's an error checking auth, redirect to login
