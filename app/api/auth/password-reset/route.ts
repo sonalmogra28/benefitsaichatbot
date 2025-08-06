@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { emailService } from '@/lib/services/email.service';
 import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';

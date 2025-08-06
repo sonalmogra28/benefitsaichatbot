@@ -235,6 +235,49 @@ export class EmailService {
       html,
     });
   }
+
+  // Helper methods for common notification types
+  async sendDocumentProcessedNotification(email: string, name: string, documentName: string, status: 'processed' | 'failed', errorMessage?: string): Promise<{ success: boolean; error?: string }> {
+    const title = status === 'processed' ? 'Document Processed Successfully' : 'Document Processing Failed';
+    const message = status === 'processed' 
+      ? `Your document "${documentName}" has been successfully processed and is now searchable in your benefits portal.`
+      : `There was an issue processing your document "${documentName}". ${errorMessage ? `Error: ${errorMessage}` : 'Please try uploading again.'}`;
+
+    return this.sendNotification({
+      email,
+      name,
+      title,
+      message,
+      actionUrl: status === 'processed' 
+        ? `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/documents`
+        : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/documents/upload`
+    });
+  }
+
+  async sendBenefitsReminderNotification(email: string, name: string, deadline: Date): Promise<{ success: boolean; error?: string }> {
+    const title = 'Benefits Enrollment Reminder';
+    const message = `Don't forget to complete your benefits enrollment! The deadline is ${deadline.toLocaleDateString()}. Make sure to review all your options and submit your selections on time.`;
+
+    return this.sendNotification({
+      email,
+      name,
+      title,
+      message,
+      actionUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/benefits`
+    });
+  }
+
+  async sendMaintenanceNotification(email: string, name: string, maintenanceDate: Date, duration: string): Promise<{ success: boolean; error?: string }> {
+    const title = 'Scheduled System Maintenance';
+    const message = `We will be performing scheduled maintenance on ${maintenanceDate.toLocaleDateString()} at ${maintenanceDate.toLocaleTimeString()}. The system will be unavailable for approximately ${duration}. We apologize for any inconvenience.`;
+
+    return this.sendNotification({
+      email,
+      name,
+      title,
+      message,
+    });
+  }
 }
 
 // Export a singleton instance
