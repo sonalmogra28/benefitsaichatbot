@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import {
   Heart,
   Shield,
@@ -55,7 +55,7 @@ interface BenefitsManagementProps {
 export function BenefitsManagement({ companyId, companyName = 'Your Company' }: BenefitsManagementProps) {
   const [plans, setPlans] = useState<BenefitPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateDialog, setShowCreateDialog peaceful/test setShowCreateDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingPlan, setEditingPlan] = useState<BenefitPlan | null>(null);
   const [activeTab, setActiveTab] = useState('active');
   const { toast } = useToast();
