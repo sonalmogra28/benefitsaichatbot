@@ -18,6 +18,7 @@ import {
   saveMessages,
 } from '@/lib/db/queries';
 import { convertToUIMessages, generateUUID } from '@/lib/utils';
+import { sanitizeChatMessage, sanitizePrompt } from '@/lib/utils/sanitize';
 import { generateTitleFromUserMessage } from '../../actions';
 import { createDocument } from '@/lib/ai/tools/create-document';
 import { updateDocument } from '@/lib/ai/tools/update-document';
@@ -96,6 +97,9 @@ export async function POST(request: Request) {
       selectedVisibilityType: VisibilityType;
     } = requestBody;
 
+    // Sanitize the incoming message to prevent injection attacks
+    const sanitizedMessage = sanitizeChatMessage(message);
+
     const session = await auth();
 
     if (!session?.user) {
@@ -117,7 +121,7 @@ export async function POST(request: Request) {
 
     if (!chat) {
       const title = await generateTitleFromUserMessage({
-        message,
+        message: sanitizedMessage,
       });
 
       await saveChat({
@@ -133,7 +137,7 @@ export async function POST(request: Request) {
     }
 
     const messagesFromDb = await getMessagesByChatId({ id });
-    const uiMessages = [message, ...convertToUIMessages(messagesFromDb)];
+    const uiMessages = [sanitizedMessage, ...convertToUIMessages(messagesFromDb)];
 
     const { longitude, latitude, city, country } = geolocation(request);
 
@@ -148,10 +152,10 @@ export async function POST(request: Request) {
       messages: [
         {
           chatId: id,
-          id: message.id,
+          id: sanitizedMessage.id || generateUUID(),
           role: 'user',
-          parts: message.parts,
-          attachments: [],
+          parts: sanitizedMessage.parts || [{ type: 'text', text: sanitizedMessage.content }],
+          attachments: sanitizedMessage.attachments || [],
           createdAt: new Date(),
         },
       ],

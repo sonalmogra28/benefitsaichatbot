@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { logAccess } from './lib/utils/audit';
 import { auth } from './app/(auth)/stack-auth';
+import { rateLimit, applyRateLimitHeaders } from './lib/rate-limit';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -13,9 +14,36 @@ export async function middleware(request: NextRequest) {
     return new Response('pong', { status: 200 });
   }
 
-  // Skip middleware for API routes, static files, and auth pages/handlers
+  // Apply rate limiting to API routes
+  if (pathname.startsWith('/api/')) {
+    // Get user session for authenticated rate limiting
+    let userId: string | undefined;
+    try {
+      const session = await auth();
+      userId = session?.user?.id;
+    } catch {
+      // Continue without user ID
+    }
+    
+    const rateLimitResult = await rateLimit(request, userId);
+    
+    // If rate limit returns a response, it means the limit was exceeded
+    if (rateLimitResult instanceof NextResponse) {
+      return rateLimitResult;
+    }
+    
+    // Continue with the request but add rate limit headers
+    const response = NextResponse.next();
+    if ('remaining' in rateLimitResult) {
+      const config = { max: 60, windowMs: 60000 }; // Default, should match config
+      applyRateLimitHeaders(response, rateLimitResult, config.max);
+    }
+    
+    return response;
+  }
+  
+  // Skip middleware for static files and auth pages/handlers
   if (
-    pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/handler/') ||
     pathname.startsWith('/login') ||

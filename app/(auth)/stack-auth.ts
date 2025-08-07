@@ -37,13 +37,14 @@ export async function auth(): Promise<AuthSession | null> {
     }
 
     // First, look up user in our database by Stack user ID without tenant context
-    // Use Neon Auth sync table
-    const neonUsers = await db.execute(sql`
-      SELECT id, name, email, created_at, raw_json
-      FROM neon_auth.users_sync
-      WHERE id = ${stackUser.id}
-      LIMIT 1
-    `);
+    // Use Neon Auth sync table with parameterized query to prevent SQL injection
+    const neonUsers = await db
+      .select()
+      .from(sql`neon_auth.users_sync`)
+      .where(sql`id = ${sql.placeholder('userId')}`)
+      .limit(1)
+      .prepare('getNeonUser')
+      .execute({ userId: stackUser.id });
 
     if (!neonUsers || neonUsers.length === 0) {
       // User should exist in Neon Auth if they're signed in
