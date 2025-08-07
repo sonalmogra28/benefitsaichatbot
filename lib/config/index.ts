@@ -120,5 +120,5 @@ export const CSP_DIRECTIVES = {
   'form-action': ["'self'"],
   'base-uri': ["'self'"],
   'manifest-src': ["'self'"],
-  'worker-src': ["'self'", 'blob:"],
+  'worker-src': ["'self'", 'blob:'],
 } as const;

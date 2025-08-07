@@ -1,92 +1,116 @@
 import { stackServerApp } from '@/stack';
 import { db } from '@/lib/db';
 import { users, companies } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { setTenantContext } from '@/lib/db/tenant-utils';
+import type { StackAuthUser, AuthenticatedUser, SessionUser, UserRole } from '@/lib/db/types';
 
-export type UserType =
-  | 'employee'
-  | 'hr_admin'
-  | 'company_admin'
-  | 'platform_admin'
-  | 'guest';
+export type UserType = UserRole | 'guest';
 
-export interface AuthUser {
-  id: string;
-  email: string;
-  name?: string;
-  type: UserType;
-  companyId?: string;
-  stackUserId: string;
-}
+export interface AuthUser extends AuthenticatedUser {}
 
-export interface AuthSession {
-  user: AuthUser | null;
-  expires?: string;
-}
+export interface AuthSession extends SessionUser {}
 
 /**
  * Get the current authenticated user from Stack Auth
  */
 export async function auth(): Promise<AuthSession | null> {
   try {
-    const stackUser = await stackServerApp.getUser();
+    const stackUser = await stackServerApp.getUser() as StackAuthUser | null;
 
     if (!stackUser) {
       return { user: null };
     }
 
-    // First, look up user in our database by Stack user ID without tenant context
-    // Use Neon Auth sync table with parameterized query to prevent SQL injection
-    const neonUsers = await db
+    // Get user from our database using Stack user ID
+    const dbUsers = await db
       .select()
-      .from(sql`neon_auth.users_sync`)
-      .where(sql`id = ${sql.placeholder('userId')}`)
-      .limit(1)
-      .prepare('getNeonUser')
-      .execute({ userId: stackUser.id });
+      .from(users)
+      .where(eq(users.stackUserId, stackUser.id))
+      .limit(1);
 
-    if (!neonUsers || neonUsers.length === 0) {
-      // User should exist in Neon Auth if they're signed in
-      // Return basic info while Neon Auth syncs
+    if (dbUsers.length === 0) {
+      // Auto-create user on first login
+      const newUser = await createUserFromStackAuth(stackUser);
       return {
-        user: {
-          id: stackUser.id,
-          email: stackUser.primaryEmail || '',
-          name: stackUser.displayName || undefined,
-          type: 'employee' as UserType,
-          stackUserId: stackUser.id,
-        },
+        user: newUser,
       };
     }
 
-    const neonUser = neonUsers[0];
+    const dbUser = dbUsers[0];
     
-    // Extract metadata from raw_json
-    const rawJson = neonUser.raw_json as any;
-    const metadata = rawJson?.clientMetadata || {};
-    const userType = metadata.userType || 'employee';
-    const companyId = metadata.companyId || null;
-
-    // Set tenant context if user has a company
-    if (companyId) {
-      await setTenantContext(stackUser.id, companyId);
+    // Set tenant context for RLS
+    if (dbUser.companyId) {
+      await setTenantContext(dbUser.stackUserId, dbUser.companyId);
     }
-
+    
     return {
       user: {
-        id: neonUser.id as string,
-        email: neonUser.email as string,
-        name: (neonUser.name || neonUser.email) as string,
-        type: userType as UserType,
-        companyId: companyId,
-        stackUserId: neonUser.id as string,
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.firstName ? `${dbUser.firstName} ${dbUser.lastName || ''}`.trim() : dbUser.email,
+        type: (dbUser.role || 'employee') as UserRole,
+        companyId: dbUser.companyId || undefined,
+        stackUserId: dbUser.stackUserId,
+        permissions: getPermissionsForRole(dbUser.role as UserRole),
       },
     };
   } catch (error) {
     console.error('Auth error:', error);
+    
+    // Return null instead of throwing to prevent app crashes
+    // The middleware will handle redirecting unauthenticated users
     return null;
   }
+}
+
+/**
+ * Create a new user from Stack Auth data
+ */
+async function createUserFromStackAuth(stackUser: StackAuthUser): Promise<AuthUser> {
+  // Extract metadata from Stack Auth
+  const metadata = stackUser.clientMetadata || {};
+  const userType = (metadata.userType as UserRole) || 'employee';
+  const companyId = metadata.companyId;
+  
+  // Validate company exists if companyId provided
+  if (companyId) {
+    const companyExists = await db
+      .select({ id: companies.id })
+      .from(companies)
+      .where(eq(companies.id, companyId))
+      .limit(1);
+      
+    if (companyExists.length === 0) {
+      throw new Error('Invalid company assignment');
+    }
+  }
+  
+  // Create user in database
+  const [newUser] = await db
+    .insert(users)
+    .values({
+      stackUserId: stackUser.id,
+      email: stackUser.primaryEmail || stackUser.signedUpWithEmail || '',
+      firstName: stackUser.displayName?.split(' ')[0] || '',
+      lastName: stackUser.displayName?.split(' ').slice(1).join(' ') || '',
+      role: userType,
+      companyId: companyId || null,
+      department: metadata.department || null,
+      employeeId: metadata.employeeId || null,
+      isActive: true,
+    })
+    .returning();
+    
+  return {
+    id: newUser.id,
+    email: newUser.email,
+    name: stackUser.displayName || newUser.email,
+    type: userType,
+    companyId: newUser.companyId || undefined,
+    stackUserId: newUser.stackUserId,
+    permissions: getPermissionsForRole(userType),
+  };
 }
 
 /**
@@ -105,7 +129,7 @@ export async function signOut() {
  * Get the current user's company
  */
 export async function getUserCompany(userId: string) {
-  const user = await db
+  const [result] = await db
     .select({
       company: companies,
     })
@@ -114,7 +138,7 @@ export async function getUserCompany(userId: string) {
     .where(eq(users.id, userId))
     .limit(1);
 
-  return user[0]?.company || null;
+  return result?.company || null;
 }
 
 /**
@@ -125,7 +149,80 @@ export function hasRole(
   requiredRoles: UserType[],
 ): boolean {
   if (!user) return false;
+  
+  // Platform admin has access to everything
+  if (user.type === 'platform_admin') return true;
+  
+  // Company admin has access to HR admin functions
+  if (user.type === 'company_admin' && requiredRoles.includes('hr_admin')) {
+    return true;
+  }
+  
   return requiredRoles.includes(user.type);
+}
+
+/**
+ * Get permissions for a given role
+ */
+function getPermissionsForRole(role: UserRole): string[] {
+  const permissions: Record<UserRole, string[]> = {
+    employee: [
+      'benefits.view',
+      'benefits.enroll',
+      'profile.view',
+      'profile.edit',
+      'chat.use',
+    ],
+    hr_admin: [
+      'benefits.view',
+      'benefits.enroll',
+      'benefits.manage',
+      'profile.view',
+      'profile.edit',
+      'chat.use',
+      'employees.view',
+      'employees.edit',
+      'documents.upload',
+      'analytics.view',
+    ],
+    company_admin: [
+      'benefits.view',
+      'benefits.enroll',
+      'benefits.manage',
+      'profile.view',
+      'profile.edit',
+      'chat.use',
+      'employees.view',
+      'employees.edit',
+      'employees.delete',
+      'documents.upload',
+      'documents.delete',
+      'analytics.view',
+      'analytics.export',
+      'company.edit',
+      'billing.view',
+    ],
+    platform_admin: [
+      '*', // All permissions
+    ],
+  };
+  
+  return permissions[role] || [];
+}
+
+/**
+ * Check if user has specific permission
+ */
+export function hasPermission(
+  user: AuthUser | null,
+  permission: string,
+): boolean {
+  if (!user) return false;
+  
+  // Platform admin has all permissions
+  if (user.type === 'platform_admin') return true;
+  
+  return user.permissions?.includes(permission) || false;
 }
 
 /**
@@ -148,6 +245,19 @@ export async function requireRole(
   const user = await requireAuth();
   if (!hasRole(user, requiredRoles)) {
     throw new Error('Insufficient permissions');
+  }
+  return user;
+}
+
+/**
+ * Require specific permission - throws if not authorized
+ */
+export async function requirePermission(
+  permission: string,
+): Promise<AuthUser> {
+  const user = await requireAuth();
+  if (!hasPermission(user, permission)) {
+    throw new Error(`Missing required permission: ${permission}`);
   }
   return user;
 }

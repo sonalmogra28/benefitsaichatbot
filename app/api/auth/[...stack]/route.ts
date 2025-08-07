@@ -1,30 +1,57 @@
-// File: /app/api/auth/[...stack]/route.ts
-
 import { StackHandler } from '@stackframe/stack';
 import { stackServerApp } from '@/stack';
 import type { NextRequest } from 'next/server';
+import { withRateLimit } from '@/lib/rate-limit';
 
-// Create async route handlers that properly handle Stack Auth
+export const dynamic = 'force-dynamic';
+
+// Create handler with proper configuration
+const createHandler = () => StackHandler({
+  app: stackServerApp,
+  // Set to true for authentication endpoints to handle full page renders
+  fullPage: true,
+});
+
+// Apply rate limiting to auth endpoints
+const authRateLimitConfig = {
+  max: 5, // 5 attempts
+  windowMs: 15 * 60 * 1000, // per 15 minutes
+};
+
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ stack: string[] }> },
 ) {
-  const stackHandler = await StackHandler({
-    app: stackServerApp,
-    fullPage: false,
-  });
-
-  return stackHandler(request, context);
+  const handler = await createHandler();
+  const params = await context.params;
+  const path = params.stack.join('/');
+  
+  // Log auth access for monitoring
+  console.log(`Auth GET: /${path}`);
+  
+  // Apply rate limiting for sensitive endpoints
+  if (path.includes('signin') || path.includes('signup')) {
+    return withRateLimit(() => handler(request, context), authRateLimitConfig)(request, context);
+  }
+  
+  return handler(request, context);
 }
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ stack: string[] }> },
 ) {
-  const stackHandler = await StackHandler({
-    app: stackServerApp,
-    fullPage: false,
-  });
-
-  return stackHandler(request, context);
+  const handler = await createHandler();
+  const params = await context.params;
+  const path = params.stack.join('/');
+  
+  // Log auth access for monitoring
+  console.log(`Auth POST: /${path}`);
+  
+  // Apply rate limiting for sensitive endpoints
+  if (path.includes('signin') || path.includes('signup') || path.includes('password')) {
+    return withRateLimit(() => handler(request, context), authRateLimitConfig)(request, context);
+  }
+  
+  return handler(request, context);
 }
