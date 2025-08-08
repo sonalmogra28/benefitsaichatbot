@@ -13,5 +13,10 @@
   "eslint.workingDirectories": [
     { "pattern": "app/*" },
     { "pattern": "packages/*" }
-  ]
+  ],
+  "chat.renderRelatedFiles": true,
+  "chat.tools.autoApprove": true,
+  "inlineChat.lineEmptyHint": true,
+  "biome.enabled": false,
+  "git.branchRandomName.enable": true
 }
