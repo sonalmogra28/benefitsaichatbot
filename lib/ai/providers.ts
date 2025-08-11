@@ -1,56 +1,50 @@
-import {
-  customProvider,
-  extractReasoningMiddleware,
-  wrapLanguageModel,
-} from 'ai';
-import { openai } from '@ai-sdk/openai';
-import { Anthropic } from '@anthropic-ai/sdk';
-import { isTestEnvironment } from '../constants';
+// lib/ai/providers.ts
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { streamText } from 'ai';
 
-// Instantiate Anthropic client
-const anthropicClient = process.env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  : new Anthropic();
+const {
+  GCP_PROJECT,
+  GCP_REGION,
+  VERTEX_AI_MODEL,
+} = process.env;
 
-// Providers map for different LLM backends
-const providersMap: Record<string, ReturnType<typeof customProvider>> = {
-  // OpenAI-based provider
-  openai: customProvider({
-    languageModels: {
-      'chat-model': openai('gpt-4o'),
-      'chat-model-reasoning': wrapLanguageModel({
-        model: openai('gpt-4o'),
-        middleware: extractReasoningMiddleware({ tagName: 'think' }),
-      }),
-      'title-model': openai('gpt-4o-mini'),
-      'artifact-model': openai('gpt-4o'),
-    },
-    imageModels: {
-      'small-model': openai.imageModel('dall-e-3'),
-    },
-  }),
-  // Anthropic-based provider
-  anthropic: customProvider({
-    languageModels: {
-      'claude-3.5-sonnet': async ({
-        prompt,
-        system,
-      }: { prompt: string; system?: string }) => {
-        const messages: Array<{ role: 'user' | 'assistant'; content: string }> =
-          [];
-        if (system) messages.push({ role: 'assistant', content: system }); // Anthropic doesn't have system role
-        messages.push({ role: 'user', content: prompt });
-        const res = await anthropicClient.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
-          messages,
-          max_tokens: 4096,
+if (!GCP_PROJECT || !GCP_REGION || !VERTEX_AI_MODEL) {
+    throw new Error('Missing Vertex AI model configuration.');
+}
+
+// Setup for Google's new Vertex AI SDK
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY as string);
+
+const vertexAI = genAI.getGenerativeModel({
+    model: VERTEX_AI_MODEL,
+    // Add other generation config here
+});
+
+export const vertexAILanguageModel = {
+    async stream(prompt: string, system?: string) {
+        const chat = vertexAI.startChat({
+            history: system ? [{ role: 'user', parts: [{ text: system }] }, { role: 'model', parts: [{ text: 'OK' }] }] : [],
         });
-        return res.content;
-      },
+
+        const result = await chat.sendMessageStream(prompt);
+        return result.stream;
     },
-  }),
+    async generate(prompt: string, system?: string) {
+        const chat = vertexAI.startChat({
+            history: system ? [{ role: 'user', parts: [{ text: system }] }, { role: 'model', parts: [{ text: 'OK' }] }] : [],
+        });
+
+        const result = await chat.sendMessage(prompt);
+        const response = result.response;
+        return response.text();
+    }
 };
-// Select provider based on env var or test environment
-export const myProvider = isTestEnvironment
-  ? providersMap.openai
-  : providersMap[process.env.LLM_PROVIDER || 'openai'];
+
+// This is a simplified example. In a real app, you would have a more
+// robust way to handle different models and providers.
+export const myProvider = {
+    languageModels: {
+        'chat-model': vertexAILanguageModel,
+        'title-model': vertexAILanguageaModel,
+    },
+};
