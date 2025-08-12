@@ -29,7 +29,13 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "next.config.js"
+    "next.config.js",
+    "scripts/**/*.ts"
   ],
-  "exclude": ["node_modules", "scripts/**/*", "vitest.config.ts", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules", "vitest.config.ts", "**/*.test.ts", "**/*.spec.ts"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  }
 }

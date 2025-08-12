@@ -2,6 +2,7 @@ import { Toaster } from 'sonner';
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
+import { FirebaseProvider } from '@/components/firebase-provider';
 
 import './globals.css';
 import { StackProvider, StackTheme } from '@stackframe/stack';
@@ -72,19 +73,21 @@ export default async function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <StackProvider app={stackServerApp}>
-          <StackTheme>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <Toaster position="top-center" />
-              {children}
-            </ThemeProvider>
-          </StackTheme>
-        </StackProvider>
+        <FirebaseProvider>
+          <StackProvider app={stackServerApp}>
+            <StackTheme>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                disableTransitionOnChange
+              >
+                <Toaster position="top-center" />
+                {children}
+              </ThemeProvider>
+            </StackTheme>
+          </StackProvider>
+        </FirebaseProvider>
       </body>
     </html>
   );

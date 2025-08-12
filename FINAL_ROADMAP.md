@@ -1,57 +1,60 @@
-# Final Roadmap and Project Status
+# Final Roadmap to Production Launch
 
-This document outlines the final roadmap for the Benefits AI Chatbot project and provides a summary of the current progress.
+This document outlines the critical path to complete the project and prepare it for a full production launch.
 
-## Current Status
+---
 
-The project is now in a stable state. All critical security issues have been addressed, core features have been implemented, and the admin systems are in place. The test coverage has also been improved.
+## Phase 1: Complete Core Admin Functionality & RAG Pipeline (Target: 1 Week)
 
-### Key Accomplishments
+### **1. Super Admin Interface**
+-   **Tasks:**
+    1.  Implement company creation and management UI.
+    2.  Build a platform-wide analytics dashboard.
+    3.  Add controls for managing platform settings.
+-   **Priority:** HIGH
 
-*   **Security:**
-    *   Resolved conflicting Next.js configuration files.
-    *   Implemented Row-Level Security (RLS) to ensure data isolation between tenants.
-    *   Added API validation to all critical endpoints.
-    *   Removed all `console.log` statements from the application code.
-*   **Core Features:**
-    *   Completed the Retrieval-Augmented Generation (RAG) integration with the `searchKnowledge` tool.
-    *   Implemented the employee benefits dashboard with real data.
-    *   Implemented the cost calculator.
-    *   Implemented the plan comparison tool.
-*   **Admin Systems:**
-    *   Implemented full CRUD functionality for company management in the super admin dashboard.
-    *   Implemented full CRUD functionality for user management in the super admin dashboard.
-    *   Implemented the analytics dashboard in the super admin dashboard.
-    *   Integrated the email system with Resend.com and added a test email feature.
-*   **Testing:**
-    *   Added comprehensive tests for the authentication and middleware.
-    *   Resolved all dependency issues and configured the test environment correctly.
+### **2. RAG & Document Management**
+-   **Tasks:**
+    1.  Implement a secure file upload system for super admins to upload documents on behalf of companies.
+    2.  Create a document processing pipeline that extracts text, generates embeddings using Vertex AI, and upserts them into the vector database.
+    3.  Build a UI for managing uploaded documents, including the ability to view, delete, and re-process them.
+-   **Priority:** HIGH
 
-## Final Roadmap
+### **3. HRIS Integration (Google Workspace)**
+-   **Tasks:**
+    1.  Implement OAuth 2.0 for Google Workspace integration.
+    2.  Develop a service to sync employee data from Google Workspace to the application's database.
+    3.  Create a UI for managing the integration settings.
+-   **Priority:** MEDIUM
 
-The project is now ready for the final phase of development: **Phase 4: Polish & Launch**.
+---
 
-### Phase 4: Polish & Launch (1-2 weeks)
+## Phase 2: UI Polish, Documentation & Testing (Target: 1 Week)
 
-*   **Comprehensive Testing (3-5 days):**
-    *   Conduct thorough end-to-end testing of all user flows.
-    *   Perform user acceptance testing (UAT) with a pilot group of users.
-    *   Increase test coverage to at least 80%.
-*   **Performance Optimization (2-3 days):**
-    *   Implement caching strategies for frequently accessed data.
-    *   Optimize database queries.
-    *   Analyze and optimize the performance of the chat and RAG functionality.
-*   **Documentation (1-2 days):**
-    *   Update all project documentation to reflect the current state of the application.
-    *   Create user guides for employees, HR admins, and company admins.
-*   **Deployment Preparation (1 day):**
-    *   Configure the production environment.
-    *   Perform a final security review.
-    *   Prepare the deployment scripts.
-*   **Launch!**
-    *   Deploy the application to production.
-    *   Monitor the application for any issues.
+### **1. UI Polish**
+-   **Tasks:**
+    1.  Review and refine all admin and user interfaces for consistency and ease of use.
+    2.  Ensure all user journeys are intuitive and complete.
+-   **Priority:** HIGH
 
-## Conclusion
+### **2. Documentation**
+-   **Tasks:**
+    1.  Create a comprehensive in-app guide for all user roles.
+    2.  Write detailed technical documentation for deployment and maintenance.
+-   **Priority:** HIGH
 
-The project has come a long way and is now in a great position for a successful launch. By following the final roadmap, we can ensure that the application is stable, performant, and ready for production use.
+### **3. Testing**
+-   **Tasks:**
+    1.  Conduct thorough end-to-end testing of all user journeys and features.
+    2.  Perform a security audit to identify and address any vulnerabilities.
+-   **Priority:** CRITICAL
+
+---
+
+## Final Delivery Checklist
+-   [ ] All core features are implemented and functional.
+-   [ ] Performance benchmarks are met or exceeded.
+-   [ ] The platform is stable and monitored.
+-   [ ] All documentation is complete and accessible.
+-   [ ] Training materials are ready for distribution.
+-   [ ] A successful handover to the client has been completed.

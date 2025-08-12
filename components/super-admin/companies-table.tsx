@@ -1,6 +1,7 @@
+// components/super-admin/companies-table.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import useSWR from 'swr';
 import {
   Table,
   TableBody,
@@ -10,92 +11,37 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import type { CompanyWithStats } from '@/lib/types/super-admin';
+import { fetcher } from '@/lib/utils';
+import type { Company } from '@/lib/db/schema';
 
-interface CompaniesTableProps {
-  onEdit: (company: CompanyWithStats) => void;
-  onDelete: (company: CompanyWithStats) => void;
-}
+export function CompaniesTable() {
+  const { data: companies, error } = useSWR<Company[]>('/api/super-admin/companies', fetcher);
 
-export function CompaniesTable({ onEdit, onDelete }: CompaniesTableProps) {
-  const [companies, setCompanies] = useState<CompanyWithStats[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchCompanies() {
-      setLoading(true);
-      const response = await fetch(`/api/super-admin/companies?page=${page}`);
-      const data = await response.json();
-      setCompanies((prev) => [...prev, ...data.companies]);
-      setHasMore(data.total > companies.length + data.companies.length);
-      setLoading(false);
-    }
-    fetchCompanies();
-  }, [page]);
+  if (error) return <div>Failed to load companies</div>;
+  if (!companies) return <div>Loading...</div>;
 
   return (
-    <div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Domain</TableHead>
-            <TableHead>Users</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Actions</TableHead>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Domain</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {companies.map((company) => (
+          <TableRow key={company.id}>
+            <TableCell>{company.name}</TableCell>
+            <TableCell>{company.domain}</TableCell>
+            <TableCell>
+              <Button variant="outline" size="sm">
+                Manage
+              </Button>
+            </TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {companies.map((company) => (
-            <TableRow key={company.id}>
-              <TableCell>{company.name}</TableCell>
-              <TableCell>{company.domain}</TableCell>
-              <TableCell>{company.userCount}</TableCell>
-              <TableCell>
-                <Badge variant={company.isActive ? 'default' : 'destructive'}>
-                  {company.isActive ? 'Active' : 'Inactive'}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(company)}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onDelete(company)}>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      {hasMore && (
-        <div className="text-center mt-4">
-          <Button onClick={() => setPage(page + 1)} disabled={loading}>
-            {loading ? 'Loading...' : 'Load More'}
-          </Button>
-        </div>
-      )}
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

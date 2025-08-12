@@ -1,90 +1,76 @@
+// components/super-admin/create-company-dialog.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { CompanyWithStats } from '@/lib/types/super-admin';
+import { createCompany } from '@/lib/services/super-admin.service';
+import { useSWRConfig } from 'swr';
 
-interface CreateCompanyDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (companyData: any) => void;
-  company?: CompanyWithStats | null;
-}
-
-export function CreateCompanyDialog({
-  isOpen,
-  onClose,
-  onSave,
-  company,
-}: CreateCompanyDialogProps) {
+export function CreateCompanyDialog() {
+  const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState('');
   const [domain, setDomain] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
+  const { mutate } = useSWRConfig();
 
-  useEffect(() => {
-    if (company) {
-      setName(company.name);
-      setDomain(company.domain || '');
-      setAdminEmail('');
-    } else {
-      setName('');
-      setDomain('');
-      setAdminEmail('');
-    }
-  }, [company]);
-
-  const handleSave = () => {
-    onSave({
-      id: company?.id,
-      name,
-      domain,
-      adminEmail: !company ? adminEmail : undefined,
-    });
-    onClose();
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await createCompany({ name, domain });
+    mutate('/api/super-admin/companies');
+    setIsOpen(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button>Create Company</Button>
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{company ? 'Edit Company' : 'Create Company'}</DialogTitle>
+          <DialogTitle>Create a new company</DialogTitle>
+          <DialogDescription>
+            Enter the details of the new company below.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="name">Company Name</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <Label htmlFor="domain">Domain</Label>
-            <Input id="domain" value={domain} onChange={(e) => setDomain(e.target.value)} />
-          </div>
-          {!company && (
-            <div>
-              <Label htmlFor="admin-email">Admin Email</Label>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
               <Input
-                id="admin-email"
-                type="email"
-                value={adminEmail}
-                onChange={(e) => setAdminEmail(e.target.value)}
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="col-span-3"
               />
             </div>
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave}>Save</Button>
-        </DialogFooter>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="domain" className="text-right">
+                Domain
+              </Label>
+              <Input
+                id="domain"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit">Create</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
