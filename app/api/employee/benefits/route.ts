@@ -1,65 +1,66 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/(auth)/stack-auth';
 import { db } from '@/lib/db';
-import { benefitPlans, benefitEnrollments, } from '@/lib/db/schema';
+import { users, benefitEnrollments, benefitPlans } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 
-// GET /api/employee/benefits - Get available benefit plans and current enrollments
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
-    
-    if (!session?.user?.id || !session?.user?.companyId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get all active benefit plans for the user's company
-    const availablePlans = await db
+    const [user] = await db
       .select()
-      .from(benefitPlans)
-      .where(and(
-        eq(benefitPlans.companyId, session.user.companyId),
-        eq(benefitPlans.isActive, true)
-      ));
+      .from(users)
+      .where(eq(users.stackUserId, session.user.id));
 
-    // Get user's current enrollments
-    const userEnrollments = await db
-      .select({
-        enrollment: benefitEnrollments,
-        plan: benefitPlans,
-      })
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const enrollments = await db
+      .select()
       .from(benefitEnrollments)
       .innerJoin(benefitPlans, eq(benefitEnrollments.benefitPlanId, benefitPlans.id))
-      .where(and(
-        eq(benefitEnrollments.userId, session.user.id),
-        eq(benefitEnrollments.status, 'active')
-      ));
+      .where(eq(benefitEnrollments.userId, user.id));
 
-    // Calculate costs and savings
-    const totalMonthlyCost = userEnrollments.reduce((sum, { enrollment }) => 
-      sum + Number(enrollment.employeeContribution), 0
-    );
-    
-    const employerContribution = userEnrollments.reduce((sum, { enrollment }) => 
-      sum + Number(enrollment.employerContribution), 0
-    );
+    const healthPlanEnrollment = enrollments.find(e => e.benefit_plans.type === 'health');
 
-    return NextResponse.json({
-      availablePlans,
-      currentEnrollments: userEnrollments,
-      summary: {
-        totalPlans: availablePlans.length,
-        enrolledPlans: userEnrollments.length,
-        monthlyEmployeeCost: totalMonthlyCost,
-        monthlyEmployerContribution: employerContribution,
-        annualEmployeeCost: totalMonthlyCost * 12,
-        annualSavings: employerContribution * 12,
+    const summary = {
+      healthPlan: healthPlanEnrollment ? {
+        name: healthPlanEnrollment.benefit_plans.name,
+        type: healthPlanEnrollment.benefit_plans.category,
+        deductibleUsed: 500, // Mock data
+        deductibleTotal: healthPlanEnrollment.benefit_plans.deductibleIndividual,
+        outOfPocketUsed: 1200, // Mock data
+        outOfPocketMax: healthPlanEnrollment.benefit_plans.outOfPocketMaxIndividual,
+      } : undefined,
+      coverageTypes: enrollments.map(e => ({
+        type: e.benefit_plans.type,
+        status: e.benefit_enrollments.status,
+        monthlyPremium: e.benefit_enrollments.monthlyCost,
+        coverageLevel: e.benefit_enrollments.coverageType,
+      })),
+      upcomingDeadlines: [
+        {
+          event: 'Open Enrollment',
+          date: '2025-11-15',
+          daysRemaining: 90, // Mock data
+        }
+      ],
+      savingsOpportunity: {
+        amount: 350,
+        recommendation: 'Consider switching to the HDHP plan to save on premiums.'
       }
-    });
+    };
+
+    return NextResponse.json(summary);
   } catch (error) {
-    console.error('Error fetching employee benefits:', error);
+    console.error('Error fetching benefits summary:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch benefits' },
+      { error: 'Failed to fetch benefits summary' },
       { status: 500 }
     );
   }

@@ -58,7 +58,6 @@ export async function POST(request: NextRequest) {
     }
 
     // TODO: Store reset token in database with expiration
-    console.log(`Password reset token for ${email}: ${resetToken}`);
 
     return NextResponse.json({
       message:
@@ -103,7 +102,6 @@ export async function PUT(request: NextRequest) {
 
     // TODO: Hash password and update user
     // This would typically involve updating the user's password in the auth system
-    console.log(`Password reset confirmed for ${email} with token ${token}`);
 
     return NextResponse.json({
       message:

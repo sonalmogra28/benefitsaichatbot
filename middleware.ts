@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { logAccess } from './lib/utils/audit';
 import { auth } from './app/(auth)/stack-auth';
 import { rateLimit, applyRateLimitHeaders } from './lib/rate-limit';
+import { setTenantContext } from './lib/auth/api-middleware';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -34,7 +35,7 @@ export async function middleware(request: NextRequest) {
     
     // Continue with the request but add rate limit headers
     const response = NextResponse.next();
-    if ('remaining' in rateLimitResult) {
+    if (rateLimitResult && 'remaining' in rateLimitResult) {
       const config = { max: 60, windowMs: 60000 }; // Default, should match config
       applyRateLimitHeaders(response, rateLimitResult, config.max);
     }
@@ -68,6 +69,10 @@ export async function middleware(request: NextRequest) {
         // Redirect to login if not authenticated
         return NextResponse.redirect(new URL('/login', request.url));
       }
+      
+      // Set tenant context for RLS
+      await setTenantContext(request);
+      
       // Audit access: map user type to role
       let role: 'user' | 'admin' | 'super-admin';
       if (user.type === 'company_admin' || user.type === 'hr_admin') {
@@ -92,12 +97,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      * - public files with extensions
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*).*)',
+    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\..*).*)',
   ],
 };

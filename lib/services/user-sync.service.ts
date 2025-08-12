@@ -76,7 +76,6 @@ export class UserSyncService {
       if (hasChanges) {
         // Note: update method might not be available on server user
         // This would need to be done client-side or via API
-        console.log('Metadata update required - implement client-side update');
       }
     } catch (error) {
       console.error('Failed to update Stack user metadata:', error);

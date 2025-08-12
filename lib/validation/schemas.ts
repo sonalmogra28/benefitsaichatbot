@@ -1,126 +1,63 @@
 import { z } from 'zod';
 
-/**
- * Shared field helpers
- */
-export const id = z.string().uuid();
-export const timestamp = z.string().datetime();
+// ============================================================================
+// USER SCHEMAS
+// ============================================================================
 
-/**
- * Company validation schema
- */
-export const companySchema = z.object({
-  id,
-  stackOrgId: z.string(),
-  name: z.string().min(1),
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  companyId: z.string().uuid(),
+  role: z.enum(['employee', 'hr_admin', 'company_admin']),
+});
+
+export const updateUserSchema = z.object({
+  firstName: z.string().min(1, 'First name is required').optional(),
+  lastName: z.string().min(1, 'Last name is required').optional(),
+  department: z.string().optional(),
+  role: z.enum(['employee', 'hr_admin', 'company_admin']).optional(),
+});
+
+// ============================================================================
+// COMPANY SCHEMAS
+// ============================================================================
+
+export const createCompanySchema = z.object({
+  name: z.string().min(1, 'Company name is required'),
+  domain: z.string().optional(),
+});
+
+export const updateCompanySchema = z.object({
+  name: z.string().min(1, 'Company name is required').optional(),
   domain: z.string().optional(),
   settings: z.record(z.any()).optional(),
-  subscriptionTier: z.enum(['basic', 'pro', 'enterprise']).optional(),
-  isActive: z.boolean().optional(),
-  createdAt: timestamp.optional(),
-  updatedAt: timestamp.optional(),
 });
 
-export type CompanyInput = z.infer<typeof companySchema>;
+// ============================================================================
+// BENEFITS SCHEMAS
+// ============================================================================
 
-/**
- * User schema
- */
-export const userSchema = z.object({
-  id,
-  stackUserId: z.string(),
-  companyId: id,
-  email: z.string().email(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  role: z.enum(['employee', 'hr_admin', 'company_admin']).optional(),
-  employeeId: z.string().optional(),
-  department: z.string().optional(),
-  hireDate: z.string().date().optional(),
-  isActive: z.boolean().optional(),
-  createdAt: timestamp.optional(),
-  updatedAt: timestamp.optional(),
-});
-
-export type UserInput = z.infer<typeof userSchema>;
-
-/**
- * Benefit Plan schema (subset for validation)
- */
-export const benefitPlanSchema = z.object({
-  id,
-  companyId: id,
-  name: z.string(),
-  type: z.string(),
+export const createBenefitPlanSchema = z.object({
+  name: z.string().min(1, 'Plan name is required'),
+  type: z.enum(['health', 'dental', 'vision', 'life', 'disability', 'retirement']),
   category: z.string(),
   provider: z.string(),
-  description: z.string().optional(),
-  monthlyPremiumEmployee: z.string().optional(),
-  monthlyPremiumFamily: z.string().optional(),
-  deductibleIndividual: z.string().optional(),
-  deductibleFamily: z.string().optional(),
-  outOfPocketMaxIndividual: z.string().optional(),
-  outOfPocketMaxFamily: z.string().optional(),
-  copayPrimaryCare: z.string().optional(),
-  copaySpecialist: z.string().optional(),
-  coinsurancePercentage: z.number().int().optional(),
-  features: z.array(z.string()).optional(),
-  coverageDetails: z.record(z.any()).optional(),
-  effectiveDate: z.string().date(),
-  endDate: z.string().date().optional(),
-  isActive: z.boolean().optional(),
-  createdAt: timestamp.optional(),
-  updatedAt: timestamp.optional(),
+  monthlyPremiumEmployee: z.number().positive(),
+  monthlyPremiumFamily: z.number().positive(),
+  deductibleIndividual: z.number().positive(),
+  deductibleFamily: z.number().positive(),
+  outOfPocketMaxIndividual: z.number().positive(),
+  outOfPocketMaxFamily: z.number().positive(),
+  effectiveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
 });
 
-export type BenefitPlanInput = z.infer<typeof benefitPlanSchema>;
+// ============================================================================
+// ENROLLMENT SCHEMAS
+// ============================================================================
 
-/**
- * Benefit Enrollment schema (subset)
- */
-export const benefitEnrollmentSchema = z.object({
-  id,
-  userId: id,
-  benefitPlanId: id,
-  coverageType: z.string().default('employee'),
-  enrollmentDate: z.string().date().default(() => new Date().toISOString().split('T')[0]),
-  effectiveDate: z.string().date(),
-  endDate: z.string().date().optional(),
-  monthlyCost: z.string().default('0'),
-  employerContribution: z.string().default('0'),
-  employeeContribution: z.string().default('0'),
-  dependents: z.array(z.any()).default([]),
-  status: z.enum(['active', 'terminated', 'pending']).optional().default('active'),
-  createdAt: timestamp.optional(),
-  updatedAt: timestamp.optional(),
+export const createEnrollmentSchema = z.object({
+  planId: z.string().uuid(),
+  coverageType: z.enum(['individual', 'family', 'employee_spouse']),
+  effectiveDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
 });
-
-export type BenefitEnrollmentInput = z.infer<typeof benefitEnrollmentSchema>;
-
-/**
- * Knowledge base document schema (subset)
- */
-export const knowledgeBaseDocumentSchema = z.object({
-  id,
-  companyId: id,
-  title: z.string(),
-  content: z.string().default(''),
-  documentType: z.string().default('faq'),
-  category: z.string().optional(),
-  createdBy: id.optional(),
-  createdAt: timestamp.optional(),
-  updatedAt: timestamp.optional(),
-});
-
-export type KnowledgeBaseDocumentInput = z.infer<typeof knowledgeBaseDocumentSchema>;
-
-/**
- * Export collection of schemas for easy access
- */
-export const Schemas = {
-  company: companySchema,
-  user: userSchema,
-  benefitPlan: benefitPlanSchema,
-  benefitEnrollment: benefitEnrollmentSchema,
-  knowledgeBaseDocument: knowledgeBaseDocumentSchema,
-};

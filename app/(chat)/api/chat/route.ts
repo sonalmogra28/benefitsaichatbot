@@ -27,6 +27,7 @@ import { compareBenefitsPlans } from '@/lib/ai/tools/compare-benefits-plans';
 import { calculateBenefitsCost } from '@/lib/ai/tools/calculate-benefits-cost';
 import { showBenefitsDashboard } from '@/lib/ai/tools/show-benefits-dashboard';
 import { showCostCalculator } from '@/lib/ai/tools/show-cost-calculator';
+import { searchKnowledge } from '@/lib/ai/tools/search-knowledge';
 import { isProductionEnvironment } from '@/lib/constants';
 import { myProvider } from '@/lib/ai/providers';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
@@ -175,6 +176,7 @@ export async function POST(request: Request) {
             selectedChatModel === 'chat-model-reasoning'
               ? []
               : [
+                  'searchKnowledge',
                   'comparePlans',
                   'calculateBenefitsCost',
                   'showBenefitsDashboard',
@@ -185,6 +187,7 @@ export async function POST(request: Request) {
                 ],
           experimental_transform: smoothStream({ chunking: 'word' }),
           tools: {
+            searchKnowledge,
             comparePlans: compareBenefitsPlans,
             calculateBenefitsCost,
             showBenefitsDashboard,

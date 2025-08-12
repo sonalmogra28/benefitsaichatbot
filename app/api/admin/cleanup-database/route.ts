@@ -12,10 +12,7 @@ import { withPlatformAdmin } from '@/lib/auth/api-middleware';
 
 export const GET = withPlatformAdmin(async (request: NextRequest, { session }) => {
   try {
-    console.log('🔧 Starting database cleanup...');
-
     // 1. Find duplicate users by email
-    console.log('📋 Checking for duplicate users by email...');
     const allUsers = await db.select().from(users);
     const emailGroups = allUsers.reduce(
       (groups, user) => {
@@ -72,21 +69,6 @@ export const GET = withPlatformAdmin(async (request: NextRequest, { session }) =
         orphanedUsers.length,
       ),
     };
-
-    console.log('🔧 Database cleanup completed');
-
-    // Log admin action for audit trail
-    console.log(JSON.stringify({
-      level: 'audit',
-      action: 'database_cleanup_report',
-      userId: session.user.id,
-      userRole: session.user.type,
-      timestamp: new Date().toISOString(),
-      report: {
-        totalUsers: report.totalUsers,
-        issues: report.duplicateEmails + report.invalidStackUsers + report.orphanedUsers
-      }
-    }));
 
     return NextResponse.json({
       success: true,

@@ -3,6 +3,8 @@ import { Shield, Heart, Eye, Users, PiggyBank, TrendingUp, Calendar } from 'luci
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface BenefitsSummary {
   healthPlan?: {
@@ -32,7 +34,33 @@ interface BenefitsSummary {
   };
 }
 
-export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
+export function BenefitsDashboard() {
+  const [summary, setSummary] = useState<BenefitsSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchSummary() {
+      try {
+        const response = await fetch('/api/employee/benefits');
+        if (response.ok) {
+          const data = await response.json();
+          setSummary(data);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchSummary();
+  }, []);
+
+  if (loading) {
+    return <BenefitsDashboardSkeleton />;
+  }
+
+  if (!summary) {
+    return <div>Could not load benefits summary.</div>;
+  }
+  
   const getCoverageIcon = (type: string) => {
     const icons: Record<string, JSX.Element> = {
       'Medical': <Heart className="size-5" />,
@@ -188,5 +216,39 @@ export function BenefitsDashboard({ summary }: { summary: BenefitsSummary }) {
         </motion.div>
       )}
     </motion.div>
+  );
+}
+
+function BenefitsDashboardSkeleton() {
+  return (
+    <div className="w-full space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Skeleton className="h-6 w-3/4" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-2 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-2 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-4">
+              <Skeleton className="h-6 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-1/2" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
   );
 }

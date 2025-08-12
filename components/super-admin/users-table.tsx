@@ -18,29 +18,29 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
-import type { CompanyWithStats } from '@/lib/types/super-admin';
+import type { UserWithCompany } from '@/lib/types/super-admin';
 
-interface CompaniesTableProps {
-  onEdit: (company: CompanyWithStats) => void;
-  onDelete: (company: CompanyWithStats) => void;
+interface UsersTableProps {
+  onEdit: (user: UserWithCompany) => void;
+  onDelete: (user: UserWithCompany) => void;
 }
 
-export function CompaniesTable({ onEdit, onDelete }: CompaniesTableProps) {
-  const [companies, setCompanies] = useState<CompanyWithStats[]>([]);
+export function UsersTable({ onEdit, onDelete }: UsersTableProps) {
+  const [users, setUsers] = useState<UserWithCompany[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchCompanies() {
+    async function fetchUsers() {
       setLoading(true);
-      const response = await fetch(`/api/super-admin/companies?page=${page}`);
+      const response = await fetch(`/api/super-admin/users?page=${page}`);
       const data = await response.json();
-      setCompanies((prev) => [...prev, ...data.companies]);
-      setHasMore(data.total > companies.length + data.companies.length);
+      setUsers((prev) => [...prev, ...data.users]);
+      setHasMore(data.total > users.length + data.users.length);
       setLoading(false);
     }
-    fetchCompanies();
+    fetchUsers();
   }, [page]);
 
   return (
@@ -49,21 +49,23 @@ export function CompaniesTable({ onEdit, onDelete }: CompaniesTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Domain</TableHead>
-            <TableHead>Users</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Company</TableHead>
+            <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {companies.map((company) => (
-            <TableRow key={company.id}>
-              <TableCell>{company.name}</TableCell>
-              <TableCell>{company.domain}</TableCell>
-              <TableCell>{company.userCount}</TableCell>
+          {users.map((user) => (
+            <TableRow key={user.id}>
+              <TableCell>{user.firstName} {user.lastName}</TableCell>
+              <TableCell>{user.email}</TableCell>
+              <TableCell>{user.company?.name}</TableCell>
+              <TableCell>{user.role}</TableCell>
               <TableCell>
-                <Badge variant={company.isActive ? 'default' : 'destructive'}>
-                  {company.isActive ? 'Active' : 'Inactive'}
+                <Badge variant={user.isActive ? 'default' : 'destructive'}>
+                  {user.isActive ? 'Active' : 'Inactive'}
                 </Badge>
               </TableCell>
               <TableCell>
@@ -74,11 +76,11 @@ export function CompaniesTable({ onEdit, onDelete }: CompaniesTableProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(company)}>
+                    <DropdownMenuItem onClick={() => onEdit(user)}>
                       <Pencil className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onDelete(company)}>
+                    <DropdownMenuItem onClick={() => onDelete(user)}>
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>

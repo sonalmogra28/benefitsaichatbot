@@ -13,8 +13,6 @@ import { notificationService } from '@/lib/services/notification.service';
  * Process a document: extract text, chunk it, generate embeddings, and store in Pinecone
  */
 export async function processDocument(documentId: string) {
-  console.log(`🔄 Processing document ${documentId}`);
-
   try {
     // Fetch document from database
     const [document] = await db
@@ -71,10 +69,6 @@ export async function processDocument(documentId: string) {
       overlapSize: 200,
     });
 
-    console.log(
-      `📄 Extracted ${extractedText.length} characters, created ${chunks.length} chunks`,
-    );
-
     // Generate embeddings for each chunk
     const chunksWithEmbeddings: DocumentChunk[] = [];
 
@@ -102,8 +96,6 @@ export async function processDocument(documentId: string) {
       document.companyId,
       chunksWithEmbeddings,
     );
-
-    console.log(`✅ Document processed: ${vectorsUpserted} vectors stored`);
 
     // Update document status to processed
     await db

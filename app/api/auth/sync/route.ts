@@ -69,11 +69,6 @@ export async function POST(request: NextRequest) {
     // Parse webhook event
     const event: StackWebhookEvent = JSON.parse(rawBody);
 
-    console.log(`Received Stack webhook: ${event.type}`, {
-      userId: event.userId,
-      organizationId: event.organizationId,
-    });
-
     // Handle different event types
     switch (event.type) {
       case 'user.created':
@@ -179,7 +174,6 @@ async function handleUserDeletion(stackUserId: string): Promise<void> {
       WHERE stack_user_id = ${stackUserId}
     `);
 
-    console.log(`Soft deleted user ${stackUserId}`);
   } catch (error) {
     console.error(`Failed to handle user deletion for ${stackUserId}:`, error);
   }
@@ -196,8 +190,6 @@ async function handleOrganizationEvent(event: StackWebhookEvent): Promise<void> 
 
     switch (event.type) {
       case 'organization.created':
-        // Check if we need to create a company record
-        console.log('Stack organization created:', event.organizationId);
         break;
 
       case 'organization.updated':

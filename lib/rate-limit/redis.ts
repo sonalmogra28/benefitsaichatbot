@@ -29,7 +29,6 @@ export class RedisRateLimiter implements RateLimiter {
     });
     
     this.client.on('connect', () => {
-      console.log('Redis client connected');
       this.connected = true;
     });
     

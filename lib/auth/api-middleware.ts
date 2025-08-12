@@ -1,170 +1,64 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { auth, type UserType } from '@/app/(auth)/stack-auth';
-import { setTenantContext } from '@/lib/db/tenant-utils';
+import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from '@workos-inc/authkit-nextjs';
+import { db } from '../db';
+import { users } from '../db/schema';
+import { eq } from 'drizzle-orm';
+import { auth } from '@/app/(auth)/stack-auth';
+import type { Session } from 'next-auth';
 
-export type AuthenticatedHandler<T = any> = (
-  request: NextRequest,
-  context: T & { session: NonNullable<Awaited<ReturnType<typeof auth>>> }
-) => Promise<Response> | Response;
+type AuthenticatedApiHandler = (
+  req: NextRequest,
+  session: Session,
+) => Promise<NextResponse>;
 
-export type RouteHandler = (
-  request: NextRequest,
-  context?: any
-) => Promise<Response> | Response;
-
-/**
- * Middleware wrapper for API route authentication and authorization
- * @param handler - The route handler function
- * @param requiredRoles - Array of roles that can access this endpoint (empty = any authenticated user)
- * @returns Wrapped handler with authentication
- */
-export function withAuth<T = any>(
-  handler: AuthenticatedHandler<T>,
-  requiredRoles: UserType[] = []
-): RouteHandler {
-  return async (request: NextRequest, context?: T): Promise<Response> => {
+export function withAuth(handler: AuthenticatedApiHandler) {
+  return async (req: NextRequest) => {
     try {
-      // Get the authenticated session
       const session = await auth();
-      
-      // Check if user is authenticated
       if (!session?.user) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: {
-              code: 'UNAUTHORIZED',
-              message: 'Authentication required',
-              details: { reason: 'No valid session found' }
-            }
-          },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
       }
-      
-      // Check role-based authorization if roles are specified
-      if (requiredRoles.length > 0 && !requiredRoles.includes(session.user.type)) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: {
-              code: 'FORBIDDEN',
-              message: 'Insufficient permissions',
-              details: { 
-                requiredRoles,
-                userRole: session.user.type 
-              }
-            }
-          },
-          { status: 403 }
-        );
-      }
-      
-      // Set tenant context for row-level security
-      await setTenantContext(
-        session.user.id,
-        session.user.companyId
-      );
-      
-      // Log API access for audit trail
-      console.log(JSON.stringify({
-        level: 'audit',
-        action: 'api_access',
-        userId: session.user.id,
-        userRole: session.user.type,
-        endpoint: request.url,
-        method: request.method,
-        timestamp: new Date().toISOString(),
-      }));
-      
-      // Call the handler with authenticated context
-      const enhancedContext = context ? { ...context, session } : { session };
-      return await handler(request, enhancedContext as T & { session: NonNullable<typeof session> });
-      
+      return handler(req, session as Session);
     } catch (error) {
-      console.error('Auth middleware error:', error);
-      return NextResponse.json(
-        { 
-          success: false,
-          error: {
-            code: 'INTERNAL_ERROR',
-            message: 'Authentication error',
-            details: process.env.NODE_ENV === 'development' ? error : undefined
-          }
-        },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   };
 }
 
-/**
- * Middleware wrapper specifically for platform admin endpoints
- */
-export function withPlatformAdmin<T = any>(handler: AuthenticatedHandler<T>): RouteHandler {
-  return withAuth(handler, ['platform_admin']);
+export function withPlatformAdmin(handler: AuthenticatedApiHandler) {
+  return withAuth(async (req, session) => {
+    if (session.user.type !== 'platform_admin') {
+      return NextResponse.json({ error: 'Platform admin access required' }, { status: 403 });
+    }
+    return handler(req, session);
+  });
 }
 
-/**
- * Middleware wrapper for company admin endpoints (includes HR admin and platform admin)
- */
-export function withCompanyAdmin<T = any>(handler: AuthenticatedHandler<T>): RouteHandler {
-  return withAuth(handler, ['company_admin', 'hr_admin', 'platform_admin']);
+export function withCompanyAdmin(handler: AuthenticatedApiHandler) {
+  return withAuth(async (req, session) => {
+    if (!['company_admin', 'hr_admin', 'platform_admin'].includes(session.user.type)) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+    if (session.user.type !== 'platform_admin' && !session.user.companyId) {
+        return NextResponse.json({ error: 'Company association required' }, { status: 403 });
+    }
+    return handler(req, session);
+  });
 }
 
-/**
- * Middleware wrapper for any admin role
- */
-export function withAnyAdmin<T = any>(handler: AuthenticatedHandler<T>): RouteHandler {
-  return withAuth(handler, ['hr_admin', 'company_admin', 'platform_admin']);
-}
+export async function setTenantContext(req: NextRequest) {
+  const token = await getToken({ req });
 
-/**
- * Helper to extract and validate API keys for service-to-service auth
- */
-export async function validateApiKey(request: NextRequest): Promise<boolean> {
-  const apiKey = request.headers.get('x-api-key');
-  
-  if (!apiKey) {
-    return false;
+  if (token?.user?.id) {
+    const [user] = await db
+      .select({ companyId: users.companyId })
+      .from(users)
+      .where(eq(users.stackUserId, token.user.id));
+
+    if (user?.companyId) {
+      await db.execute(`SET rls.company_id = '${user.companyId}'`);
+    }
   }
-  
-  // In production, validate against stored API keys
-  // For now, check against environment variable
-  const validApiKey = process.env.INTERNAL_API_KEY;
-  
-  return apiKey === validApiKey;
-}
 
-/**
- * Middleware for cron job endpoints
- */
-export function withCronAuth<T = any>(
-  handler: (request: NextRequest, context?: T) => Promise<Response> | Response
-) {
-  return async (request: NextRequest, context?: T): Promise<Response> => {
-    // Check for cron secret in authorization header
-    const authHeader = request.headers.get('authorization');
-    const cronSecret = process.env.CRON_SECRET;
-    
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      // Also check for valid API key as fallback
-      const hasValidApiKey = await validateApiKey(request);
-      
-      if (!hasValidApiKey) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: {
-              code: 'UNAUTHORIZED',
-              message: 'Invalid cron authentication'
-            }
-          },
-          { status: 401 }
-        );
-      }
-    }
-    
-    return handler(request, context);
-  };
+  return NextResponse.next();
 }
