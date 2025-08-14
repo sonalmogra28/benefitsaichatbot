@@ -1,5 +1,6 @@
-import Form from 'next/form';
+'use client';
 
+import { useState } from 'react';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 
@@ -8,14 +9,23 @@ export function AuthForm({
   children,
   defaultEmail = '',
 }: {
-  action: NonNullable<
-    string | ((formData: FormData) => void | Promise<void>) | undefined
-  >;
+  action: (email: string, password: string) => Promise<void>;
   children: React.ReactNode;
   defaultEmail?: string;
 }) {
+  const [email, setEmail] = useState(defaultEmail);
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await action(email, password);
+  };
+
   return (
-    <Form action={action} className="flex flex-col gap-4 px-4 sm:px-16">
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-4 px-4 sm:px-16"
+    >
       <div className="flex flex-col gap-2">
         <Label
           htmlFor="email"
@@ -33,7 +43,8 @@ export function AuthForm({
           autoComplete="email"
           required
           autoFocus
-          defaultValue={defaultEmail}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
       </div>
 
@@ -51,10 +62,12 @@ export function AuthForm({
           className="bg-muted text-md md:text-sm"
           type="password"
           required
+          value={password}
+          onChange={(e) => setPassword(e.targe.value)}
         />
       </div>
 
       {children}
-    </Form>
+    </form>
   );
 }

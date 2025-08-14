@@ -1,6 +1,8 @@
+// components/super-admin/create-company-dialog.tsx
 'use client';
 
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,190 +10,65 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { toast } from '@/components/toast';
+import { createCompany } from '@/lib/services/super-admin.service';
+import { useSWRConfig } from 'swr';
 
-interface CreateCompanyDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
-}
+export function CreateCompanyDialog() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [domain, setDomain] = useState('');
+  const { mutate } = useSWRConfig();
 
-const FEATURES = [
-  { id: 'chat_enabled', label: 'Chat Enabled', default: true },
-  { id: 'document_upload', label: 'Document Upload', default: true },
-  { id: 'custom_branding', label: 'Custom Branding', default: false },
-  { id: 'advanced_analytics', label: 'Advanced Analytics', default: false },
-  { id: 'api_access', label: 'API Access', default: false },
-  { id: 'sso_enabled', label: 'SSO Enabled', default: false },
-  { id: 'priority_support', label: 'Priority Support', default: false },
-];
-
-export function CreateCompanyDialog({
-  open,
-  onOpenChange,
-  onSuccess,
-}: CreateCompanyDialogProps) {
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    domain: '',
-    adminEmail: '',
-    billingPlan: 'starter',
-    features: FEATURES.filter(f => f.default).map(f => f.id),
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      const response = await fetch('/api/super-admin/companies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create company');
-      }
-
-      toast({
-        type: 'success',
-        description: `${formData.name} has been created successfully.`,
-      });
-
-      onSuccess();
-      onOpenChange(false);
-      setFormData({
-        name: '',
-        domain: '',
-        adminEmail: '',
-        billingPlan: 'starter',
-        features: FEATURES.filter(f => f.default).map(f => f.id),
-      });
-    } catch (error) {
-      toast({
-        type: 'error',
-        description: 'Failed to create company. Please try again.',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleFeature = (featureId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      features: prev.features.includes(featureId)
-        ? prev.features.filter(f => f !== featureId)
-        : [...prev.features, featureId],
-    }));
+    await createCompany({ name, domain });
+    mutate('/api/super-admin/companies');
+    setIsOpen(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button>Create Company</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create a new company</DialogTitle>
+          <DialogDescription>
+            Enter the details of the new company below.
+          </DialogDescription>
+        </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Create New Company</DialogTitle>
-            <DialogDescription>
-              Set up a new company account with an admin user.
-            </DialogDescription>
-          </DialogHeader>
-
           <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Company Name *</Label>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Acme Corporation"
-                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="col-span-3"
               />
             </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="domain">Domain (optional)</Label>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="domain" className="text-right">
+                Domain
+              </Label>
               <Input
                 id="domain"
-                value={formData.domain}
-                onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                placeholder="acme.com"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                className="col-span-3"
               />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="adminEmail">Admin Email *</Label>
-              <Input
-                id="adminEmail"
-                type="email"
-                value={formData.adminEmail}
-                onChange={(e) => setFormData({ ...formData, adminEmail: e.target.value })}
-                placeholder="admin@acme.com"
-                required
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="billingPlan">Billing Plan</Label>
-              <Select
-                value={formData.billingPlan}
-                onValueChange={(value) => setFormData({ ...formData, billingPlan: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="free">Free</SelectItem>
-                  <SelectItem value="starter">Starter</SelectItem>
-                  <SelectItem value="professional">Professional</SelectItem>
-                  <SelectItem value="enterprise">Enterprise</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Features</Label>
-              <div className="grid grid-cols-2 gap-4">
-                {FEATURES.map((feature) => (
-                  <div key={feature.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={feature.id}
-                      checked={formData.features.includes(feature.id)}
-                      onCheckedChange={() => toggleFeature(feature.id)}
-                    />
-                    <Label
-                      htmlFor={feature.id}
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      {feature.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
-
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Company'}
-            </Button>
+            <Button type="submit">Create</Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -1,104 +1,119 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Check, TrendingUp, Shield, Heart } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ShieldCheck, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from './ui/button';
 
 interface Plan {
+  id: string;
   name: string;
-  type: string;
-  monthlyPremium: number;
+  premium: number;
   deductible: number;
   outOfPocketMax: number;
-  features: string[];
+  type: string;
+  category: string;
+  provider: string;
 }
 
-interface PlanComparisonProps {
-  plans: Plan[];
-}
+export function PlanComparison() {
+  const [allPlans, setAllPlans] = useState<Plan[]>([]);
+  const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
+  const [comparison, setComparison] = useState<Plan[]>([]);
+  
+  useEffect(() => {
+    // In a real application, you would fetch these plans from an API
+    const mockPlans: Plan[] = [
+      { id: '1', name: 'Gold PPO', premium: 500, deductible: 1000, outOfPocketMax: 5000, type: 'health', category: 'PPO', provider: 'Blue Cross' },
+      { id: '2', name: 'Silver HMO', premium: 350, deductible: 2500, outOfPocketMax: 7000, type: 'health', category: 'HMO', provider: 'Kaiser' },
+      { id: '3', name: 'Bronze HDHP', premium: 250, deductible: 5000, outOfPocketMax: 8000, type: 'health', category: 'HDHP', provider: 'Aetna' },
+      { id: '4', name: 'Vision Basic', premium: 20, deductible: 50, outOfPocketMax: 200, type: 'vision', category: 'PPO', provider: 'VSP' },
+      { id: '5', name: 'Dental Premier', premium: 45, deductible: 100, outOfPocketMax: 1500, type: 'dental', category: 'PPO', provider: 'Delta Dental' },
+    ];
+    setAllPlans(mockPlans);
+  }, []);
 
-export function PlanComparison({ plans }: PlanComparisonProps) {
-  const getPlanIcon = (type: string) => {
-    switch(type) {
-      case 'HMO': return <Shield className="size-5" />;
-      case 'PPO': return <Heart className="size-5" />;
-      case 'HDHP': return <TrendingUp className="size-5" />;
-      default: return <Shield className="size-5" />;
-    }
+  const handleSelectPlan = (planId: string) => {
+    setSelectedPlanIds((prev) =>
+      prev.includes(planId) ? prev.filter((id) => id !== planId) : [...prev, planId]
+    );
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0
-    }).format(amount);
+  const comparePlans = () => {
+    setComparison(allPlans.filter(plan => selectedPlanIds.includes(plan.id)));
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-      {plans.map((plan, index) => (
-        <motion.div
-          key={plan.name}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.1 }}
-        >
-          <Card className="relative overflow-hidden hover:shadow-lg transition-shadow">
-            {plan.type === 'PPO' && (
-              <Badge className="absolute top-4 right-4" variant="default">
-                Most Popular
-              </Badge>
-            )}
-            
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                {getPlanIcon(plan.type)}
-                <CardTitle>{plan.name}</CardTitle>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full space-y-4"
+    >
+      <Card>
+        <CardHeader>
+          <CardTitle>Select Plans to Compare</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {allPlans.map((plan) => (
+              <div key={plan.id} className="flex items-center space-x-2">
+                <Checkbox
+                  id={plan.id}
+                  checked={selectedPlanIds.includes(plan.id)}
+                  onCheckedChange={() => handleSelectPlan(plan.id)}
+                />
+                <label htmlFor={plan.id}>{plan.name}</label>
               </div>
-              <CardDescription>{plan.type} Plan</CardDescription>
-            </CardHeader>
-            
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Monthly Premium</span>
-                  <span className="text-2xl font-bold">{formatCurrency(plan.monthlyPremium)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Deductible</span>
-                  <span className="font-semibold">{formatCurrency(plan.deductible)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Out-of-Pocket Max</span>
-                  <span className="font-semibold">{formatCurrency(plan.outOfPocketMax)}</span>
-                </div>
-              </div>
-              
-              <div className="border-t pt-4">
-                <p className="text-sm font-medium mb-2">Key Features</p>
-                <ul className="space-y-1">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm">
-                      <Check className="size-4 text-green-500" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full bg-primary text-primary-foreground rounded-md py-2 font-medium hover:bg-primary/90 transition-colors"
-              >
-                Select This Plan
-              </motion.button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ))}
-    </div>
+            ))}
+          </div>
+          <Button onClick={comparePlans} disabled={selectedPlanIds.length < 2}>Compare Selected</Button>
+        </CardContent>
+      </Card>
+      {comparison.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Plan Comparison</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Feature</TableHead>
+                  {comparison.map(plan => <TableHead key={plan.id}>{plan.name}</TableHead>)}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>Premium</TableCell>
+                  {comparison.map(plan => <TableCell key={plan.id}>${plan.premium}/mo</TableCell>)}
+                </TableRow>
+                <TableRow>
+                  <TableCell>Deductible</TableCell>
+                  {comparison.map(plan => <TableCell key={plan.id}>${plan.deductible}</TableCell>)}
+                </TableRow>
+                <TableRow>
+                  <TableCell>Out-of-Pocket Max</TableCell>
+                  {comparison.map(plan => <TableCell key={plan.id}>${plan.outOfPocketMax}</TableCell>)}
+                </TableRow>
+                 <TableRow>
+                  <TableCell>Type</TableCell>
+                  {comparison.map(plan => <TableCell key={plan.id}><Badge>{plan.type}</Badge></TableCell>)}
+                </TableRow>
+                 <TableRow>
+                  <TableCell>Category</TableCell>
+                  {comparison.map(plan => <TableCell key={plan.id}><Badge variant="secondary">{plan.category}</Badge></TableCell>)}
+                </TableRow>
+                 <TableRow>
+                  <TableCell>Provider</TableCell>
+                  {comparison.map(plan => <TableCell key={plan.id}>{plan.provider}</TableCell>)}
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </motion.div>
   );
 }

@@ -473,15 +473,6 @@ export class SuperAdminService {
     const userEmail = 'system@platform';
 
     // In production, this would write to a dedicated audit log table
-    console.log('[AUDIT]', {
-      timestamp: new Date(),
-      userId,
-      userEmail,
-      action,
-      resourceType,
-      resourceId,
-      details,
-    });
   }
 
   // Data Export

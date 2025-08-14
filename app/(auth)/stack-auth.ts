@@ -11,69 +11,56 @@ export interface AuthUser extends AuthenticatedUser {}
 
 export interface AuthSession extends SessionUser {}
 
-/**
- * Get the current authenticated user from Stack Auth
- */
 export async function auth(): Promise<AuthSession | null> {
   try {
     const stackUser = await stackServerApp.getUser() as StackAuthUser | null;
-
     if (!stackUser) {
       return { user: null };
     }
-
-    // Get user from our database using Stack user ID
-    const dbUsers = await db
-      .select()
-      .from(users)
-      .where(eq(users.stackUserId, stackUser.id))
-      .limit(1);
-
-    if (dbUsers.length === 0) {
-      // Auto-create user on first login
-      const newUser = await createUserFromStackAuth(stackUser);
-      return {
-        user: newUser,
-      };
+    const dbUser = await getUserFromDb(stackUser.id);
+    if (!dbUser) {
+      return { user: null };
     }
-
-    const dbUser = dbUsers[0];
-    
-    // Set tenant context for RLS
-    if (dbUser.companyId) {
-      await setTenantContext(dbUser.stackUserId, dbUser.companyId);
-    }
-    
-    return {
-      user: {
-        id: dbUser.id,
-        email: dbUser.email,
-        name: dbUser.firstName ? `${dbUser.firstName} ${dbUser.lastName || ''}`.trim() : dbUser.email,
-        type: (dbUser.role || 'employee') as UserRole,
-        companyId: dbUser.companyId || undefined,
-        stackUserId: dbUser.stackUserId,
-        permissions: getPermissionsForRole(dbUser.role as UserRole),
-      },
-    };
+    return { user: dbUser };
   } catch (error) {
     console.error('Auth error:', error);
-    
-    // Return null instead of throwing to prevent app crashes
-    // The middleware will handle redirecting unauthenticated users
     return null;
   }
 }
 
-/**
- * Create a new user from Stack Auth data
- */
-async function createUserFromStackAuth(stackUser: StackAuthUser): Promise<AuthUser> {
-  // Extract metadata from Stack Auth
+export async function getUserFromDb(stackUserId: string): Promise<AuthUser | null> {
+  const dbUsers = await db
+    .select()
+    .from(users)
+    .where(eq(users.stackUserId, stackUserId))
+    .limit(1);
+
+  if (dbUsers.length === 0) {
+    return null;
+  }
+  
+  const dbUser = dbUsers[0];
+  
+  if (dbUser.companyId) {
+    await setTenantContext(dbUser.stackUserId, dbUser.companyId);
+  }
+  
+  return {
+    id: dbUser.id,
+    email: dbUser.email,
+    name: dbUser.firstName ? `${dbUser.firstName} ${dbUser.lastName || ''}`.trim() : dbUser.email,
+    type: (dbUser.role || 'employee') as UserRole,
+    companyId: dbUser.companyId || undefined,
+    stackUserId: dbUser.stackUserId,
+    permissions: getPermissionsForRole(dbUser.role as UserRole),
+  };
+}
+
+export async function createUserFromStackAuth(stackUser: StackAuthUser): Promise<AuthUser> {
   const metadata = stackUser.clientMetadata || {};
   const userType = (metadata.userType as UserRole) || 'employee';
   const companyId = metadata.companyId;
   
-  // Validate company exists if companyId provided
   if (companyId) {
     const companyExists = await db
       .select({ id: companies.id })
@@ -86,7 +73,6 @@ async function createUserFromStackAuth(stackUser: StackAuthUser): Promise<AuthUs
     }
   }
   
-  // Create user in database
   const [newUser] = await db
     .insert(users)
     .values({
@@ -113,21 +99,12 @@ async function createUserFromStackAuth(stackUser: StackAuthUser): Promise<AuthUs
   };
 }
 
-/**
- * Sign out the current user
- * Note: Sign out must be done client-side with Stack Auth
- */
 export async function signOut() {
-  // Stack Auth signOut is only available client-side
-  // Use the SignOutForm component for signing out
   throw new Error(
     'Sign out must be done client-side. Use the SignOutForm component.',
   );
 }
 
-/**
- * Get the current user's company
- */
 export async function getUserCompany(userId: string) {
   const [result] = await db
     .select({
@@ -141,29 +118,18 @@ export async function getUserCompany(userId: string) {
   return result?.company || null;
 }
 
-/**
- * Check if user has required role
- */
 export function hasRole(
   user: AuthUser | null,
   requiredRoles: UserType[],
 ): boolean {
   if (!user) return false;
-  
-  // Platform admin has access to everything
   if (user.type === 'platform_admin') return true;
-  
-  // Company admin has access to HR admin functions
   if (user.type === 'company_admin' && requiredRoles.includes('hr_admin')) {
     return true;
   }
-  
   return requiredRoles.includes(user.type);
 }
 
-/**
- * Get permissions for a given role
- */
 function getPermissionsForRole(role: UserRole): string[] {
   const permissions: Record<UserRole, string[]> = {
     employee: [
@@ -203,31 +169,21 @@ function getPermissionsForRole(role: UserRole): string[] {
       'billing.view',
     ],
     platform_admin: [
-      '*', // All permissions
+      '*',
     ],
   };
-  
   return permissions[role] || [];
 }
 
-/**
- * Check if user has specific permission
- */
 export function hasPermission(
   user: AuthUser | null,
   permission: string,
 ): boolean {
   if (!user) return false;
-  
-  // Platform admin has all permissions
   if (user.type === 'platform_admin') return true;
-  
   return user.permissions?.includes(permission) || false;
 }
 
-/**
- * Require authentication - throws if not authenticated
- */
 export async function requireAuth(): Promise<AuthUser> {
   const session = await auth();
   if (!session?.user) {
@@ -236,9 +192,6 @@ export async function requireAuth(): Promise<AuthUser> {
   return session.user;
 }
 
-/**
- * Require specific role - throws if not authorized
- */
 export async function requireRole(
   requiredRoles: UserType[],
 ): Promise<AuthUser> {
@@ -249,9 +202,6 @@ export async function requireRole(
   return user;
 }
 
-/**
- * Require specific permission - throws if not authorized
- */
 export async function requirePermission(
   permission: string,
 ): Promise<AuthUser> {

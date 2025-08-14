@@ -20,7 +20,6 @@ export class StackOrgService {
     try {
       // Note: Creating organizations programmatically may not be supported
       // This would typically be done through the Stack Auth dashboard
-      console.log(`Organization creation requested for company ${companyId}`, data);
       
       // For now, return a mock response
       const mockOrgId = `org_${companyId}`;
@@ -53,7 +52,6 @@ export class StackOrgService {
         .from(companies)
         .where(eq(companies.stackOrgId, ''));
 
-      console.log(`Found ${companiesWithoutOrg.length} companies without Stack organizations`);
 
       for (const company of companiesWithoutOrg) {
         try {
@@ -92,7 +90,6 @@ export class StackOrgService {
         })
         .where(eq(users.id, userId));
 
-      console.log(`Added user ${userId} to company ${companyId}`);
 
     } catch (error) {
       console.error('Failed to add user to organization:', error);
@@ -114,7 +111,6 @@ export class StackOrgService {
         WHERE id = ${userId}
       `);
 
-      console.log(`Removed user ${userId} from organization`);
 
     } catch (error) {
       console.error('Failed to remove user from organization:', error);
@@ -140,7 +136,6 @@ export class StackOrgService {
         })
         .where(eq(companies.id, companyId));
 
-      console.log(`Updated organization for company ${companyId}`);
 
     } catch (error) {
       console.error('Failed to update organization:', error);

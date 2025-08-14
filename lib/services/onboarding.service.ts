@@ -59,8 +59,6 @@ export class OnboardingService {
       // Send welcome email
       await this.sendWelcomeEmail(stackUser.primaryEmail || '', stackUser.displayName || '');
 
-      console.log(`Completed onboarding for user ${userId}`);
-
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
       throw error;
@@ -196,8 +194,6 @@ export class OnboardingService {
           updatedAt: new Date(),
         })
         .where(eq(users.stackUserId, userId));
-
-      console.log(`Reset onboarding for user ${userId}`);
 
     } catch (error) {
       console.error('Failed to reset onboarding:', error);

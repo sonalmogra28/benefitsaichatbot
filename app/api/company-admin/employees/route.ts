@@ -5,14 +5,7 @@ import { users, benefitEnrollments, companies } from '@/lib/db/schema';
 import { eq, and, count, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { EmailService } from '@/lib/services/email.service';
-
-const inviteEmployeeSchema = z.object({
-  email: z.string().email(),
-  role: z.enum(['employee', 'admin', 'company_admin']),
-  department: z.string().optional(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-});
+import { createUserSchema } from '@/lib/validation/schemas';
 
 const emailService = new EmailService();
 
@@ -125,7 +118,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const validated = inviteEmployeeSchema.parse(body);
+    const validated = createUserSchema.parse(body);
 
     // Check if email already exists in company
     const existingUser = await db
@@ -152,7 +145,6 @@ export async function POST(request: NextRequest) {
         stackUserId: `pending_${Date.now()}_${validated.email}`, // Temporary ID until user signs up
         companyId: session.user.companyId,
         role: validated.role,
-        department: validated.department,
         firstName: validated.firstName,
         lastName: validated.lastName,
         isActive: false, // Will be activated when they accept the invitation
@@ -180,7 +172,7 @@ export async function POST(request: NextRequest) {
         inviterName: session.user.name || session.user.email,
         role: validated.role,
       });
-    } catch (emailError) {
+    } catch (emailError). {
       console.error('Failed to send invitation email:', emailError);
       // Don't fail the whole operation if email fails
     }

@@ -10,9 +10,9 @@ export const GET = withPlatformAdmin(async (request: NextRequest) => {
     const analytics = await superAdminService.getSystemAnalytics();
     return NextResponse.json(analytics);
   } catch (error) {
-    console.error('Error fetching analytics:', error);
+    console.error('Error fetching system analytics:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch analytics' },
+      { error: 'Failed to fetch system analytics' },
       { status: 500 }
     );
   }

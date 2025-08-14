@@ -31,14 +31,10 @@ export async function runMigration() {
   const client = postgres(connectionString);
   const db = drizzle(client, { schema });
 
-  console.log('🚀 Starting multi-tenant migration...');
-
   try {
     // Step 1: Create new tables (Drizzle will handle this via schema)
-    console.log('📋 Creating new multi-tenant tables...');
     
     // Step 2: Create default company for migration
-    console.log('🏢 Creating default company...');
     const [defaultCompany] = await db.insert(schema.companies).values({
       stackOrgId: DEFAULT_STACK_ORG_ID,
       name: DEFAULT_COMPANY_NAME,
@@ -47,10 +43,7 @@ export async function runMigration() {
       isActive: true,
     }).returning();
 
-    console.log(`✅ Created default company: ${defaultCompany.id}`);
-
     // Step 3: Migrate existing users
-    console.log('👥 Migrating existing users...');
     const existingUsers = await db.select().from(schema.user);
     
     const migratedUsers = [];
@@ -72,11 +65,9 @@ export async function runMigration() {
       }).returning();
 
       migratedUsers.push({ legacy: legacyUser, new: newUser });
-      console.log(`✅ Migrated user: ${legacyUser.email} -> ${newUser.id}`);
     }
 
     // Step 4: Migrate existing chats
-    console.log('💬 Migrating existing chats...');
     const existingChats = await db.select().from(schema.chat);
     
     const migratedChats = [];
@@ -97,11 +88,9 @@ export async function runMigration() {
       }).returning();
 
       migratedChats.push({ legacy: legacyChat, new: newChat });
-      console.log(`✅ Migrated chat: ${legacyChat.title} -> ${newChat.id}`);
     }
 
     // Step 5: Migrate existing messages
-    console.log('📝 Migrating existing messages...');
     
     // Migrate Message_v2 (current format)
     const existingMessages = await db.select().from(schema.message);
@@ -148,11 +137,10 @@ export async function runMigration() {
         });
       }
     } catch (error) {
-      console.log('ℹ️ No legacy messages to migrate');
+      // No legacy messages to migrate
     }
 
     // Step 6: Migrate votes
-    console.log('👍 Migrating votes...');
     try {
       const existingVotes = await db.select().from(schema.vote);
       
@@ -162,14 +150,12 @@ export async function runMigration() {
 
         // Find the new message ID (this is complex due to ID changes)
         // For now, we'll skip vote migration and let users re-vote
-        console.log('ℹ️ Skipping vote migration - users will need to re-vote');
       }
     } catch (error) {
-      console.log('ℹ️ No votes to migrate');
+      // No votes to migrate
     }
 
     // Step 7: Set up Row-Level Security
-    console.log('🔒 Setting up Row-Level Security...');
     
     await db.execute(sql`ALTER TABLE companies ENABLE ROW LEVEL SECURITY`);
     await db.execute(sql`ALTER TABLE users ENABLE ROW LEVEL SECURITY`);
@@ -217,20 +203,11 @@ export async function runMigration() {
     }
 
     // Step 8: Verify data integrity
-    console.log('🔍 Verifying data integrity...');
     
     const userCount = await db.select({ count: sql`count(*)` }).from(schema.users);
     const chatCount = await db.select({ count: sql`count(*)` }).from(schema.chats);
     const messageCount = await db.select({ count: sql`count(*)` }).from(schema.messages);
     
-    console.log(`✅ Migration completed successfully!`);
-    console.log(`📊 Migration Summary:`);
-    console.log(`   - Companies: 1 (default)`);
-    console.log(`   - Users: ${userCount[0].count}`);
-    console.log(`   - Chats: ${chatCount[0].count}`);
-    console.log(`   - Messages: ${messageCount[0].count}`);
-    console.log(`   - Default Company ID: ${defaultCompany.id}`);
-    console.log(`   - Default Stack Org ID: ${DEFAULT_STACK_ORG_ID}`);
 
     return {
       success: true,
@@ -249,8 +226,6 @@ export async function runMigration() {
 
 // Rollback function for emergency use
 export async function rollbackMigration() {
-  console.log('🔄 Rolling back migration...');
-  
   const connectionString = process.env.POSTGRES_URL_NO_SSL || process.env.POSTGRES_URL;
   const client = postgres(connectionString!);
   const db = drizzle(client, { schema });
@@ -271,10 +246,8 @@ export async function rollbackMigration() {
 
     for (const table of tablesToDrop) {
       await db.execute(sql.raw(`DROP TABLE IF EXISTS ${table} CASCADE`));
-      console.log(`🗑️ Dropped table: ${table}`);
     }
 
-    console.log('✅ Rollback completed');
     
   } catch (error) {
     console.error('❌ Rollback failed:', error);

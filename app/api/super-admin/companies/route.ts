@@ -1,16 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { withPlatformAdmin } from '@/lib/auth/api-middleware';
+import {
+  withPlatformAdmin,
+} from '@/lib/auth/api-middleware';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
 import { z } from 'zod';
-
-const createCompanySchema = z.object({
-  name: z.string().min(1).max(100),
-  domain: z.string().optional(),
-  maxUsers: z.number().optional(),
-  features: z.array(z.string()).default([]),
-  billingPlan: z.enum(['free', 'starter', 'professional', 'enterprise']).default('starter'),
-  adminEmail: z.string().email(),
-});
+import { createCompanySchema, updateCompanySchema } from '@/lib/validation/schemas';
 
 const superAdminService = new SuperAdminService();
 
@@ -33,14 +27,12 @@ export const GET = withPlatformAdmin(async (request: NextRequest) => {
   }
 });
 
-// POST /api/super-admin/companies - Create new company
+// POST /api/super-admin/companies - Create a new company
 export const POST = withPlatformAdmin(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const validated = createCompanySchema.parse(body);
-    
     const company = await superAdminService.createCompany(validated);
-    
     return NextResponse.json(company, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -49,7 +41,6 @@ export const POST = withPlatformAdmin(async (request: NextRequest) => {
         { status: 400 }
       );
     }
-    
     console.error('Error creating company:', error);
     return NextResponse.json(
       { error: 'Failed to create company' },

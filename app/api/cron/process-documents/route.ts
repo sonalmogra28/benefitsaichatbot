@@ -44,18 +44,6 @@ export const GET = withCronAuth(async (request: NextRequest) => {
     
     const successCount = results.filter(r => r.status === 'success').length;
     
-    // Log cron execution
-    console.log(JSON.stringify({
-      level: 'info',
-      action: 'cron_document_processing',
-      timestamp: new Date().toISOString(),
-      results: {
-        total: results.length,
-        success: successCount,
-        failed: results.length - successCount
-      }
-    }));
-
     return NextResponse.json({
       success: true,
       data: {
@@ -101,16 +89,6 @@ export const POST = withPlatformAdmin(async (request: NextRequest, { session }) 
     }
     
     const result = await processDocument(documentId);
-    
-    // Log manual document processing
-    console.log(JSON.stringify({
-      level: 'audit',
-      action: 'manual_document_processing',
-      userId: session.user.id,
-      userRole: session.user.type,
-      documentId,
-      timestamp: new Date().toISOString()
-    }));
     
     return NextResponse.json({
       success: true,

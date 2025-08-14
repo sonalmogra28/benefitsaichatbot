@@ -121,11 +121,6 @@ let env: Env;
 
 try {
   env = validateEnv();
-  
-  // Log successful validation in development
-  if (env.NODE_ENV === 'development') {
-    console.log('✅ Environment variables validated successfully');
-  }
 } catch (error) {
   // In production, fail fast
   if (process.env.NODE_ENV === 'production') {

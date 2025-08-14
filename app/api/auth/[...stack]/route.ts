@@ -26,9 +26,6 @@ export async function GET(
   const params = await context.params;
   const path = params.stack.join('/');
   
-  // Log auth access for monitoring
-  console.log(`Auth GET: /${path}`);
-  
   // Apply rate limiting for sensitive endpoints
   if (path.includes('signin') || path.includes('signup')) {
     return withRateLimit(() => handler(request, context), authRateLimitConfig)(request, context);
@@ -44,9 +41,6 @@ export async function POST(
   const handler = await createHandler();
   const params = await context.params;
   const path = params.stack.join('/');
-  
-  // Log auth access for monitoring
-  console.log(`Auth POST: /${path}`);
   
   // Apply rate limiting for sensitive endpoints
   if (path.includes('signin') || path.includes('signup') || path.includes('password')) {

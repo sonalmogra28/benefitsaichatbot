@@ -2,14 +2,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { withPlatformAdmin } from '@/lib/auth/api-middleware';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
 import { z } from 'zod';
+import { createUserSchema } from '@/lib/validation/schemas';
 
 const bulkCreateSchema = z.object({
-  companyId: z.string(),
-  users: z.array(z.object({
-    email: z.string().email(),
-    name: z.string(),
-    type: z.enum(['employee', 'hr_admin', 'company_admin']),
-  })),
+  users: z.array(createUserSchema),
   sendInvites: z.boolean().default(true),
 });
 

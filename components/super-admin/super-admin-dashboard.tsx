@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -21,9 +24,17 @@ import {
   Download,
   Upload,
   Plus,
+  Mail,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import AnalyticsDashboard from '@/components/admin/analytics-dashboard';
+import { CompaniesTable } from './companies-table';
+import { CreateCompanyDialog } from './create-company-dialog';
+import { UsersTable } from './users-table';
+import { CreateUserDialog } from './create-user-dialog';
+import type { CompanyWithStats } from '@/lib/types/super-admin';
+import type { UserWithCompany } from '@/lib/types/super-admin';
+import type { Company } from '@/lib/db/schema';
 
 interface SuperAdminDashboardProps {
   stats: {
@@ -51,6 +62,98 @@ export function SuperAdminDashboard({
   costBreakdown = { daily: [], byUser: [] }
 }: SuperAdminDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  const [isCompanyDialogOpen, setIsCompanyDialogOpen] = useState(false);
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<CompanyWithStats | null>(null);
+  const [editingUser, setEditingUser] = useState<UserWithCompany | null>(null);
+  const [allCompanies, setAllCompanies] = useState<Company[]>([]);
+  const [testEmail, setTestEmail] = useState({ to: '', subject: '', text: '' });
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  useEffect(() => {
+    async function fetchAllCompanies() {
+      const response = await fetch('/api/super-admin/companies?limit=1000');
+      const data = await response.json();
+      setAllCompanies(data.companies);
+    }
+    fetchAllCompanies();
+  }, []);
+
+  const handleOpenCompanyDialog = (company?: CompanyWithStats) => {
+    setEditingCompany(company || null);
+    setIsCompanyDialogOpen(true);
+  };
+
+  const handleCloseCompanyDialog = () => {
+    setEditingCompany(null);
+    setIsCompanyDialogOpen(false);
+  };
+
+  const handleOpenUserDialog = (user?: UserWithCompany) => {
+    setEditingUser(user || null);
+    setIsUserDialogOpen(true);
+  };
+
+  const handleCloseUserDialog = () => {
+    setEditingUser(null);
+    setIsUserDialogOpen(false);
+  };
+
+  const handleSaveCompany = async (companyData: any) => {
+    const url = companyData.id
+      ? `/api/super-admin/companies/${companyData.id}`
+      : '/api/super-admin/companies';
+    const method = companyData.id ? 'PUT' : 'POST';
+
+    await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(companyData),
+    });
+    // TODO: Refresh the table data
+  };
+
+  const handleDeleteCompany = async (company: CompanyWithStats) => {
+    if (confirm(`Are you sure you want to delete ${company.name}?`)) {
+      await fetch(`/api/super-admin/companies/${company.id}`, {
+        method: 'DELETE',
+      });
+      // TODO: Refresh the table data
+    }
+  };
+
+  const handleSaveUser = async (userData: any) => {
+    const url = userData.id
+      ? `/api/super-admin/users/${userData.id}`
+      : '/api/super-admin/users';
+    const method = userData.id ? 'PUT' : 'POST';
+
+    await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData),
+    });
+    // TODO: Refresh the table data
+  };
+
+  const handleDeleteUser = async (user: UserWithCompany) => {
+    if (confirm(`Are you sure you want to delete ${user.firstName} ${user.lastName}?`)) {
+      await fetch(`/api/super-admin/users/${user.id}`, {
+        method: 'DELETE',
+      });
+      // TODO: Refresh the table data
+    }
+  };
+  
+  const handleSendTestEmail = async () => {
+    setIsSendingEmail(true);
+    await fetch('/api/test/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testEmail),
+    });
+    setIsSendingEmail(false);
+  };
 
   // Calculate platform health metrics
   const platformHealth = {
@@ -314,21 +417,14 @@ export function SuperAdminDashboard({
                   <CardTitle>Company Management</CardTitle>
                   <CardDescription>Manage all companies on the platform</CardDescription>
                 </div>
-                <Button>
+                <Button onClick={() => handleOpenCompanyDialog()}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Company
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Company Management Interface</h3>
-                <p className="text-muted-foreground mb-4">
-                  Full company CRUD operations, subscription management, and tenant configuration
-                </p>
-                <Button variant="outline">View All Companies</Button>
-              </div>
+              <CompaniesTable onEdit={handleOpenCompanyDialog} onDelete={handleDeleteCompany} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -341,35 +437,14 @@ export function SuperAdminDashboard({
                   <CardTitle>User Management</CardTitle>
                   <CardDescription>Cross-tenant user administration</CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => window.location.href = '/super-admin/users/assign-role'}
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    Assign Roles
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Bulk Import
-                  </Button>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add User
-                  </Button>
-                </div>
+                <Button onClick={() => handleOpenUserDialog()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add User
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">User Management Interface</h3>
-                <p className="text-muted-foreground mb-4">
-                  Search across all tenants, manage roles, and monitor user activity
-                </p>
-                <Button variant="outline">View All Users</Button>
-              </div>
+              <UsersTable onEdit={handleOpenUserDialog} onDelete={handleDeleteUser} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -395,93 +470,45 @@ export function SuperAdminDashboard({
         </TabsContent>
 
         <TabsContent value="system" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* Infrastructure Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Infrastructure Status</CardTitle>
-                <CardDescription>Core system components health</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Server className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Database Cluster</span>
-                  </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    Healthy
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Server className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Redis Cache</span>
-                  </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    Healthy
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Server className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Vector Database</span>
-                  </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    Healthy
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Server className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Background Jobs</span>
-                  </div>
-                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                    12 Pending
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* System Metrics */}
-            <Card>
-              <CardHeader>
-                <CardTitle>System Metrics</CardTitle>
-                <CardDescription>Real-time performance indicators</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>CPU Usage</span>
-                    <span className="font-medium">42%</span>
-                  </div>
-                  <Progress value={42} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Memory Usage</span>
-                    <span className="font-medium">68%</span>
-                  </div>
-                  <Progress value={68} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>API Response Time</span>
-                    <span className="font-medium">{platformHealth.responseTime}ms</span>
-                  </div>
-                  <Progress value={Math.min((500 - platformHealth.responseTime) / 5, 100)} className="h-2" />
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Error Rate</span>
-                    <span className="font-medium">{platformHealth.errorRate}%</span>
-                  </div>
-                  <Progress value={100 - platformHealth.errorRate} className="h-2" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Email System</CardTitle>
+              <CardDescription>Send a test email to verify the email service is working.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="to">To</Label>
+                <Input
+                  id="to"
+                  type="email"
+                  value={testEmail.to}
+                  onChange={(e) => setTestEmail({ ...testEmail, to: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="subject">Subject</Label>
+                <Input
+                  id="subject"
+                  value={testEmail.subject}
+                  onChange={(e) => setTestEmail({ ...testEmail, subject: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="text">Text</Label>
+                <Textarea
+                  id="text"
+                  value={testEmail.text}
+                  onChange={(e) => setTestEmail({ ...testEmail, text: e.target.value })}
+                />
+              </div>
+              <Button onClick={handleSendTestEmail} disabled={isSendingEmail}>
+                <Mail className="mr-2 h-4 w-4" />
+                {isSendingEmail ? 'Sending...' : 'Send Test Email'}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
-
+        
         <TabsContent value="revenue" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
@@ -564,6 +591,19 @@ export function SuperAdminDashboard({
           </Card>
         </TabsContent>
       </Tabs>
+      <CreateCompanyDialog
+        isOpen={isCompanyDialogOpen}
+        onClose={handleCloseCompanyDialog}
+        onSave={handleSaveCompany}
+        company={editingCompany}
+      />
+      <CreateUserDialog
+        isOpen={isUserDialogOpen}
+        onClose={handleCloseUserDialog}
+        onSave={handleSaveUser}
+        user={editingUser}
+        companies={allCompanies}
+      />
     </div>
   );
 }
