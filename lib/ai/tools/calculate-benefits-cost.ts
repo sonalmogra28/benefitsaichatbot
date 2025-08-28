@@ -1,10 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { auth } from '@/app/(auth)/stack-auth';
-import { db } from '@/lib/db';
-import { eq, and } from 'drizzle-orm';
-import { benefitPlans, } from '@/lib/db/schema';
-import { getCurrentTenantContext } from '@/lib/db/tenant-context';
+import { benefitService } from '@/lib/firebase/services/benefit.service';
+import { getFirebaseUser } from '@/lib/auth/admin-middleware';
 
 export const calculateBenefitsCost = tool({
   description: "Calculate estimated annual benefits costs based on plan details and expected usage",
@@ -27,23 +24,11 @@ export const calculateBenefitsCost = tool({
     coverageType, 
     expectedMedicalUsage, 
     additionalFactors 
-  }: {
-    planId?: string;
-    planType: 'health' | 'dental' | 'vision';
-    coverageType: 'individual' | 'family' | 'employee_spouse';
-    expectedMedicalUsage: 'low' | 'moderate' | 'high';
-    additionalFactors?: {
-      expectedDoctorVisits: number;
-      expectedSpecialistVisits: number;
-      expectedPrescriptions: number;
-      expectedEmergencyVisits: number;
-      expectedHospitalDays: number;
-    };
-  }) => {
+  }, { context }) => {
     try {
       // Get current user session and tenant context
-      const session = await auth();
-      if (!session?.user?.id) {
+      const user = await getFirebaseUser(context.idToken);
+      if (!user) {
         return {
           error: 'User not authenticated',
           estimatedAnnualCost: 0,
@@ -51,8 +36,7 @@ export const calculateBenefitsCost = tool({
         };
       }
 
-      const tenantContext = await getCurrentTenantContext();
-      if (!tenantContext.companyId) {
+      if (!user.companyId) {
         return {
           error: 'User not associated with a company',
           estimatedAnnualCost: 0,
@@ -61,31 +45,11 @@ export const calculateBenefitsCost = tool({
       }
 
       // Get benefit plan(s) to calculate costs
-      let plans: typeof benefitPlans.$inferSelect[] = [];
+      let plans = await benefitService.getBenefitPlans(user.companyId);
       if (planId) {
-        // Get specific plan
-        plans = await db
-          .select()
-          .from(benefitPlans)
-          .where(
-            and(
-              eq(benefitPlans.id, planId),
-              eq(benefitPlans.companyId, tenantContext.companyId),
-              eq(benefitPlans.isActive, true)
-            )
-          );
+        plans = plans.filter(p => p.id === planId);
       } else {
-        // Get all plans of the specified type
-        plans = await db
-          .select()
-          .from(benefitPlans)
-          .where(
-            and(
-              eq(benefitPlans.type, planType),
-              eq(benefitPlans.companyId, tenantContext.companyId),
-              eq(benefitPlans.isActive, true)
-            )
-          );
+        plans = plans.filter(p => p.type === planType);
       }
 
       if (plans.length === 0) {
@@ -108,53 +72,26 @@ export const calculateBenefitsCost = tool({
         // Get monthly premium based on coverage type
         let monthlyPremium = 0;
         if (coverageType === 'individual') {
-          monthlyPremium = Number(plan.monthlyPremiumEmployee || 0);
+          monthlyPremium = plan.monthlyPremium || 0;
         } else if (coverageType === 'family') {
-          monthlyPremium = Number(plan.monthlyPremiumFamily || 0);
+          monthlyPremium = plan.monthlyPremium || 0; // TODO: Add family premium
         } else if (coverageType === 'employee_spouse') {
-          const individual = Number(plan.monthlyPremiumEmployee || 0);
-          const family = Number(plan.monthlyPremiumFamily || 0);
-          monthlyPremium = individual + ((family - individual) * 0.6);
+          monthlyPremium = (plan.monthlyPremium || 0) * 1.6; // TODO: Add spouse premium
         }
 
         const annualPremium = monthlyPremium * 12;
 
         // Calculate estimated out-of-pocket costs
         const deductible = coverageType === 'family' 
-          ? Number(plan.deductibleFamily || 0)
-          : Number(plan.deductibleIndividual || 0);
+          ? plan.deductibleFamily || 0
+          : plan.deductibleIndividual || 0;
         
         const outOfPocketMax = coverageType === 'family'
-          ? Number(plan.outOfPocketMaxFamily || 0)
-          : Number(plan.outOfPocketMaxIndividual || 0);
+          ? plan.outOfPocketMaxFamily || 0
+          : plan.outOfPocketMaxIndividual || 0;
 
         // Calculate expected costs based on usage
-        let estimatedMedicalCosts = 0;
-        
-        if (planType === 'health' && additionalFactors) {
-          const { 
-            expectedDoctorVisits = 4, 
-            expectedSpecialistVisits = 2,
-            expectedPrescriptions = 12,
-            expectedEmergencyVisits = 0,
-            expectedHospitalDays = 0
-          } = additionalFactors;
-
-          // Calculate costs based on copays and coinsurance
-          const copayPrimary = Number(plan.copayPrimaryCare || 25);
-          const copaySpecialist = Number(plan.copaySpecialist || 50);
-          const coinsurance = (plan.coinsurancePercentage || 20) / 100;
-
-          estimatedMedicalCosts = 
-            (expectedDoctorVisits * copayPrimary) +
-            (expectedSpecialistVisits * copaySpecialist) +
-            (expectedPrescriptions * 20) + // Average prescription copay
-            (expectedEmergencyVisits * 250) + // Average ER copay
-            (expectedHospitalDays * 1000 * coinsurance); // Hospital costs after deductible
-        } else {
-          // Simple estimation based on usage level
-          estimatedMedicalCosts = deductible * multiplier;
-        }
+        let estimatedMedicalCosts = deductible * multiplier;
 
         // Cap at out-of-pocket maximum
         const totalOutOfPocket = Math.min(
@@ -180,9 +117,6 @@ export const calculateBenefitsCost = tool({
           details: {
             coverageType,
             expectedUsage: expectedMedicalUsage,
-            copayPrimary: Number(plan.copayPrimaryCare || 0),
-            copaySpecialist: Number(plan.copaySpecialist || 0),
-            coinsurance: plan.coinsurancePercentage || 0
           }
         };
       });

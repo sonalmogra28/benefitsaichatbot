@@ -3,9 +3,8 @@ import { imageDocumentHandler } from '@/artifacts/image/server';
 import { sheetDocumentHandler } from '@/artifacts/sheet/server';
 import { textDocumentHandler } from '@/artifacts/text/server';
 import type { ArtifactKind } from '@/components/artifact';
-import type { Document } from '../db/schema-chat';
-import { saveDocument } from '../db/queries';
-import type { Session } from 'next-auth';
+import { db } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { UIMessageStreamWriter } from 'ai';
 
 export interface SaveDocumentProps {
@@ -16,18 +15,28 @@ export interface SaveDocumentProps {
   userId: string;
 }
 
+export interface Document {
+  id: string;
+  title: string;
+  kind: ArtifactKind;
+  content: string;
+  userId: string;
+  createdAt: any;
+  updatedAt: any;
+}
+
 export interface CreateDocumentCallbackProps {
   id: string;
   title: string;
   dataStream: UIMessageStreamWriter;
-  session: Session;
+  userId: string;
 }
 
 export interface UpdateDocumentCallbackProps {
   document: Document;
   description: string;
   dataStream: UIMessageStreamWriter;
-  session: Session;
+  userId: string;
 }
 
 export interface DocumentHandler<T = ArtifactKind> {
@@ -48,16 +57,16 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
         id: args.id,
         title: args.title,
         dataStream: args.dataStream,
-        session: args.session,
+        userId: args.userId,
       });
 
-      if (args.session?.user?.id) {
+      if (args.userId) {
         await saveDocument({
           id: args.id,
           title: args.title,
           content: draftContent,
           kind: config.kind,
-          userId: args.session.user.id,
+          userId: args.userId,
         });
       }
 
@@ -68,16 +77,16 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
         document: args.document,
         description: args.description,
         dataStream: args.dataStream,
-        session: args.session,
+        userId: args.userId,
       });
 
-      if (args.session?.user?.id) {
+      if (args.userId) {
         await saveDocument({
           id: args.document.id,
           title: args.document.title,
           content: draftContent,
           kind: config.kind,
-          userId: args.session.user.id,
+          userId: args.userId,
         });
       }
 
@@ -97,3 +106,25 @@ export const documentHandlersByArtifactKind: Array<DocumentHandler> = [
 ];
 
 export const artifactKinds = ['text', 'code', 'image', 'sheet'] as const;
+
+// Helper function to save document to Firestore
+async function saveDocument(props: SaveDocumentProps) {
+  try {
+    const documentRef = db.collection('documents').doc(props.id);
+    
+    await documentRef.set({
+      id: props.id,
+      title: props.title,
+      kind: props.kind,
+      content: props.content,
+      userId: props.userId,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to save document:', error);
+    return false;
+  }
+}

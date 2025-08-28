@@ -1,0 +1,52 @@
+type Company @table {
+  name: String!
+  createdAt: Timestamp!
+  address: String
+  contactEmail: String
+  phoneNumber: String
+}
+
+type Employee @table {
+  company: Company
+  firstName: String!
+  lastName: String!
+  email: String!
+  employeeId: String!
+  createdAt: Timestamp!
+  dateOfBirth: Date
+  hireDate: Date
+  phoneNumber: String
+  address: String
+}
+
+type BenefitPlan @table {
+  company: Company
+  name: String!
+  type: String!
+  description: String!
+  createdAt: Timestamp!
+  eligibilityCriteria: String
+  premiumCost: Float
+  coverageDetails: String
+}
+
+type Enrollment @table {
+  employee: Employee
+  benefitPlan: BenefitPlan
+  enrollmentDate: Date!
+  effectiveStartDate: Date!
+  status: String!
+  createdAt: Timestamp!
+  effectiveEndDate: Date
+  notes: String
+}
+
+type Dependent @table {
+  employee: Employee
+  firstName: String!
+  lastName: String!
+  relationship: String!
+  dateOfBirth: Date!
+  createdAt: Timestamp!
+  SSNLast4: String
+}

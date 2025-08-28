@@ -1,7 +1,8 @@
-// components/super-admin/companies-table.tsx
 'use client';
 
-import useSWR from 'swr';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection } from 'firebase/firestore';
+import { db } from '@/lib/firestore';
 import {
   Table,
   TableBody,
@@ -10,38 +11,31 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { fetcher } from '@/lib/utils';
-import type { Company } from '@/lib/db/schema';
 
 export function CompaniesTable() {
-  const { data: companies, error } = useSWR<Company[]>('/api/super-admin/companies', fetcher);
-
-  if (error) return <div>Failed to load companies</div>;
-  if (!companies) return <div>Loading...</div>;
+  const [value, loading, error] = useCollection(collection(db, 'companies'));
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Domain</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {companies.map((company) => (
-          <TableRow key={company.id}>
-            <TableCell>{company.name}</TableCell>
-            <TableCell>{company.domain}</TableCell>
-            <TableCell>
-              <Button variant="outline" size="sm">
-                Manage
-              </Button>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div>
+      <h1 className="text-2xl font-bold">Companies</h1>
+      {error && <p className="text-red-500">{error.message}</p>}
+      {loading && <p>Loading...</p>}
+      {value && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {value.docs.map((doc) => (
+              <TableRow key={doc.id}>
+                <TableCell>{doc.data().name}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
   );
 }

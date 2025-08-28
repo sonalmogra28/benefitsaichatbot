@@ -1,24 +1,28 @@
-import { auth } from '@/app/(auth)/stack-auth';
-import { redirect } from 'next/navigation';
+'use client';
+
 import Link from 'next/link';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
-export default async function AdminLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-  
-  if (!session?.user) {
-    redirect('/login');
+  const [user, loading] = useAuthState(auth);
+  const router = useRouter();
+
+  if (loading) {
+    return <div>Loading...</div>;
   }
-  
-  // Check if user has platform admin role
-  if (session.user.type !== 'platform_admin') {
-    redirect('/');
+
+  if (!user) {
+    router.push('/login');
+    return null;
   }
-  
+
   return (
     <SidebarProvider>
       <div className="flex h-screen">

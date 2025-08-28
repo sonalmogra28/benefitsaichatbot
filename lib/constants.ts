@@ -1,5 +1,3 @@
-import { generateDummyPassword } from './db/utils';
-
 export const isProductionEnvironment = process.env.NODE_ENV === 'production';
 export const isDevelopmentEnvironment = process.env.NODE_ENV === 'development';
 export const isTestEnvironment = Boolean(
@@ -10,4 +8,57 @@ export const isTestEnvironment = Boolean(
 
 export const guestRegex = /^guest-\d+$/;
 
-export const DUMMY_PASSWORD = generateDummyPassword();
+// Generate a dummy password for development/testing
+export const DUMMY_PASSWORD = 'TempPass123!@#';
+
+// Firebase Collection Names
+export const COLLECTIONS = {
+  USERS: 'users',
+  COMPANIES: 'companies',
+  CONVERSATIONS: 'conversations',
+  DOCUMENTS: 'documents',
+  BENEFITS: 'benefits',
+  AUDIT_LOGS: 'audit_logs',
+  ANALYTICS: 'analytics_events',
+} as const;
+
+// User Roles
+export const USER_ROLES = {
+  SUPER_ADMIN: 'super_admin',
+  PLATFORM_ADMIN: 'platform_admin',
+  COMPANY_ADMIN: 'company_admin',
+  HR_ADMIN: 'hr_admin',
+  EMPLOYEE: 'employee',
+} as const;
+
+// Document Types
+export const DOCUMENT_TYPES = {
+  POLICY: 'policy',
+  GUIDE: 'guide',
+  FAQ: 'faq',
+  FORM: 'form',
+  OTHER: 'other',
+} as const;
+
+// AI Model Configuration
+export const AI_CONFIG = {
+  DEFAULT_MODEL: 'gemini-2.0-flash-exp',
+  TEMPERATURE: 0.7,
+  MAX_TOKENS: 2048,
+  STREAMING: true,
+} as const;
+
+// Storage Limits
+export const STORAGE_LIMITS = {
+  MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
+  MAX_STORAGE_PER_COMPANY: 10 * 1024 * 1024 * 1024, // 10GB
+  ALLOWED_FILE_TYPES: ['pdf', 'doc', 'docx', 'txt', 'png', 'jpg', 'jpeg'],
+} as const;
+
+// Rate Limiting
+export const RATE_LIMITS = {
+  API_CALLS_PER_MINUTE: 60,
+  API_CALLS_PER_HOUR: 1000,
+  CHAT_MESSAGES_PER_MINUTE: 20,
+  DOCUMENT_UPLOADS_PER_DAY: 100,
+} as const;

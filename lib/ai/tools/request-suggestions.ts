@@ -1,19 +1,29 @@
 import { z } from 'zod';
-import type { Session } from 'next-auth';
 import { streamObject, tool } from 'ai';
 import type { UIMessageStreamWriter } from 'ai';
-import { getDocumentById, saveSuggestions } from '@/lib/db/queries';
-import type { Suggestion } from '@/lib/db/schema-chat';
+import { db } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { generateUUID } from '@/lib/utils';
 import { myProvider } from '../providers';
 
 interface RequestSuggestionsProps {
-  session: Session;
+  userId: string;
   dataStream: UIMessageStreamWriter;
 }
 
+interface Suggestion {
+  id: string;
+  documentId: string;
+  userId: string;
+  originalText: string;
+  suggestedText: string;
+  description: string;
+  createdAt: FieldValue | Date;
+  isResolved: boolean;
+}
+
 export const requestSuggestions = ({
-  session,
+  userId,
   dataStream,
 }: RequestSuggestionsProps) =>
   tool({
@@ -24,69 +34,122 @@ export const requestSuggestions = ({
         .describe('The ID of the document to request edits'),
     }),
     execute: async ({ documentId }: { documentId: string }) => {
-      const document = await getDocumentById({ id: documentId });
+      try {
+        // Get document from Firestore
+        const documentRef = await db.collection('documents').doc(documentId).get();
+        
+        if (!documentRef.exists) {
+          return {
+            error: 'Document not found',
+          };
+        }
+        
+        const document = documentRef.data();
+        
+        if (!document || !document.content) {
+          return {
+            error: 'Document has no content',
+          };
+        }
 
-      if (!document || !document.content) {
+        const suggestions: Omit<Suggestion, 'createdAt'>[] = [];
+
+        const { elementStream } = streamObject({
+          model: myProvider.languageModel('artifact-model'),
+          system:
+            'You are a help writing assistant. Given a piece of writing, please offer suggestions to improve the piece of writing and describe the change. It is very important for the edits to contain full sentences instead of just words. Max 5 suggestions.',
+          prompt: document.content,
+          output: 'array',
+          schema: z.object({
+            originalSentence: z.string().describe('The original sentence'),
+            suggestedSentence: z.string().describe('The suggested sentence'),
+            description: z.string().describe('The description of the suggestion'),
+          }),
+        });
+
+        for await (const element of elementStream) {
+          if (element) {
+            const suggestion = {
+              id: generateUUID(),
+              documentId,
+              userId,
+              originalText: element.originalSentence,
+              suggestedText: element.suggestedSentence,
+              description: element.description,
+              isResolved: false,
+            };
+
+            suggestions.push(suggestion);
+            dataStream.writeSuggestion(suggestion);
+          }
+        }
+
+        // Save suggestions to Firestore
+        if (suggestions.length > 0) {
+          const batch = db.batch();
+          
+          suggestions.forEach(suggestion => {
+            const suggestionRef = db.collection('suggestions').doc(suggestion.id);
+            batch.set(suggestionRef, {
+              ...suggestion,
+              createdAt: FieldValue.serverTimestamp(),
+            });
+          });
+          
+          await batch.commit();
+        }
+
         return {
-          error: 'Document not found',
-        };
-      }
-
-      const suggestions: Array<
-        Omit<Suggestion, 'userId' | 'createdAt' | 'documentCreatedAt'>
-      > = [];
-
-      const { elementStream } = streamObject({
-        model: myProvider.languageModel('artifact-model'),
-        system:
-          'You are a help writing assistant. Given a piece of writing, please offer suggestions to improve the piece of writing and describe the change. It is very important for the edits to contain full sentences instead of just words. Max 5 suggestions.',
-        prompt: document.content,
-        output: 'array',
-        schema: z.object({
-          originalSentence: z.string().describe('The original sentence'),
-          suggestedSentence: z.string().describe('The suggested sentence'),
-          description: z.string().describe('The description of the suggestion'),
-        }),
-      });
-
-      for await (const element of elementStream) {
-        // @ts-ignore todo: fix type
-        const suggestion: Suggestion = {
-          originalText: element.originalSentence,
-          suggestedText: element.suggestedSentence,
-          description: element.description,
-          id: generateUUID(),
-          documentId: documentId,
-          isResolved: false,
-        };
-
-        dataStream.write({
-          type: 'data-suggestion',
-          data: suggestion,
-          transient: true,
-        });
-
-        suggestions.push(suggestion);
-      }
-
-      if (session.user?.id) {
-        const userId = session.user.id;
-
-        await saveSuggestions({
-          suggestions: suggestions.map((suggestion) => ({
-            ...suggestion,
-            userId,
-            createdAt: new Date(),
-            documentCreatedAt: document.createdAt,
+          success: true,
+          documentId,
+          suggestions: suggestions.map(({ id, description }) => ({
+            id,
+            description,
           })),
-        });
+        };
+      } catch (error) {
+        console.error('Failed to generate suggestions:', error);
+        return {
+          error: 'Failed to generate suggestions',
+        };
       }
-
-      return {
-        id: documentId,
-        title: document.title,
-        kind: document.kind,
-        message: 'Suggestions have been added to the document',
-      };
     },
   });
+
+// Helper function to get document by ID
+export async function getDocumentById(documentId: string) {
+  try {
+    const doc = await db.collection('documents').doc(documentId).get();
+    if (!doc.exists) {
+      return null;
+    }
+    return {
+      id: doc.id,
+      ...doc.data()
+    };
+  } catch (error) {
+    console.error('Failed to get document:', error);
+    return null;
+  }
+}
+
+// Helper function to save suggestions
+export async function saveSuggestions(suggestions: Omit<Suggestion, 'createdAt'>[]) {
+  try {
+    const batch = db.batch();
+    
+    suggestions.forEach(suggestion => {
+      const suggestionRef = db.collection('suggestions').doc(suggestion.id);
+      batch.set(suggestionRef, {
+        ...suggestion,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    });
+    
+    await batch.commit();
+    return true;
+  } catch (error) {
+    console.error('Failed to save suggestions:', error);
+    return false;
+  }
+}

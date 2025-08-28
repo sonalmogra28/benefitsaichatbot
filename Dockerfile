@@ -1,44 +1,49 @@
-# Dockerfile for Next.js Application
-#
-# This Dockerfile is optimized for production builds of a Next.js application,
-# ensuring a small, secure, and efficient image for deployment on Google Cloud Run.
+FROM node:20-alpine AS base
 
-# --- Stage 1: Build ---
-# This stage installs dependencies and builds the Next.js application.
-FROM node:18-alpine AS build
-
-# Set working directory
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies
+# Copy package files
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN npm install -g pnpm
+RUN pnpm install --frozen-lockfile
 
-# Copy application code
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build the Next.js application for production
+# Set environment variables for build
+ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV production
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+# Build the application
+RUN npm install -g pnpm
 RUN pnpm build
 
-# --- Stage 2: Production ---
-# This stage creates the final, smaller production image.
-FROM node:18-alpine AS production
-
-# Set working directory
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
-# Copy production-necessary files from the build stage
-COPY --from=build /app/.next ./.next
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/public ./public
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
 
-# Set Node.js environment to production
-ENV NODE_ENV=production
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Expose the port the app runs on
-EXPOSE 3000
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Command to run the application
-# Using "next start" is the standard way to run a production Next.js app.
-CMD ["npm", "start"]
+USER nextjs
+
+EXPOSE 8080
+
+ENV PORT 8080
+ENV HOSTNAME "0.0.0.0"
+
+CMD ["node", "server.js"]

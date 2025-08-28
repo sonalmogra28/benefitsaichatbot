@@ -1,24 +1,20 @@
 import { extractText } from 'unpdf';
-import { generateEmbedding as generateOpenAIEmbedding } from '@/lib/ai/embeddings';
-import { db } from '@/lib/db';
-import { knowledgeBaseDocuments } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { db } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import {
   upsertDocumentChunks,
   type DocumentChunk,
-} from '@/lib/vectors/pinecone';
+} from '@/lib/ai/vector-search';
 import { notificationService } from '@/lib/services/notification.service';
 
 /**
- * Process a document: extract text, chunk it, generate embeddings, and store in Pinecone
+ * Process a document: extract text, chunk it, generate embeddings, and store in Vertex AI Vector Search
  */
 export async function processDocument(documentId: string) {
   try {
-    // Fetch document from database
-    const [document] = await db
-      .select()
-      .from(knowledgeBaseDocuments)
-      .where(eq(knowledgeBaseDocuments.id, documentId))
+    // Fetch document from Firestore
+    const docRef = await db.collection('documents').doc(documentId).get();
+    const document = docRef.exists ? { id: docRef.id, ...docRef.data() } : null
       .limit(1);
 
     if (!document) {
@@ -69,32 +65,23 @@ export async function processDocument(documentId: string) {
       overlapSize: 200,
     });
 
-    // Generate embeddings for each chunk
-    const chunksWithEmbeddings: DocumentChunk[] = [];
+    const documentChunks = chunks.map((chunk, i) => ({
+      id: `${documentId}-chunk-${i}`,
+      text: chunk,
+      metadata: {
+        documentId,
+        companyId: document.companyId,
+        documentTitle: document.title,
+        chunkIndex: i,
+        category: document.category || undefined,
+        tags: (document.tags as string[]) || [],
+      },
+    }));
 
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      const embedding = await generateEmbedding(chunk);
-
-      chunksWithEmbeddings.push({
-        id: `${documentId}-chunk-${i}`,
-        text: chunk,
-        metadata: {
-          documentId,
-          companyId: document.companyId,
-          documentTitle: document.title,
-          chunkIndex: i,
-          category: document.category || undefined,
-          tags: (document.tags as string[]) || [],
-        },
-        embedding,
-      });
-    }
-
-    // Store in Pinecone
+    // Store in Vertex AI
     const vectorsUpserted = await upsertDocumentChunks(
       document.companyId,
-      chunksWithEmbeddings,
+      documentChunks,
     );
 
     // Update document status to processed
@@ -190,13 +177,6 @@ export function chunkText(
   }
 
   return chunks;
-}
-
-/**
- * Generate embedding for a text chunk using OpenAI
- */
-export async function generateEmbedding(text: string): Promise<number[]> {
-  return generateOpenAIEmbedding(text);
 }
 
 /**

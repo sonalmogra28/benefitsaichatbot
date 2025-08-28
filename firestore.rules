@@ -1,0 +1,181 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions for role-based access control
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserRole() {
+      return request.auth.token.role;
+    }
+    
+    function getUserCompanyId() {
+      return request.auth.token.companyId;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && getUserRole() == 'super-admin';
+    }
+    
+    function isPlatformAdmin() {
+      return isAuthenticated() && 
+        getUserRole() in ['super-admin', 'platform-admin'];
+    }
+    
+    function isCompanyAdmin(companyId) {
+      return isAuthenticated() && 
+        getUserCompanyId() == companyId &&
+        getUserRole() in ['company-admin', 'super-admin', 'platform-admin'];
+    }
+    
+    function isHRAdmin(companyId) {
+      return isAuthenticated() && 
+        getUserCompanyId() == companyId &&
+        getUserRole() in ['hr-admin', 'company-admin', 'super-admin', 'platform-admin'];
+    }
+    
+    function belongsToCompany(companyId) {
+      return isAuthenticated() && 
+        (getUserCompanyId() == companyId || isPlatformAdmin());
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Validation functions
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+    
+    function isValidEmail(email) {
+      return email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+    
+    function isValidTimestamp(field) {
+      return request.resource.data[field] is timestamp;
+    }
+    
+    // Users collection - user profiles
+    match /users/{userId} {
+      allow read: if isOwner(userId) || 
+                     isHRAdmin(resource.data.companyId) || 
+                     isPlatformAdmin();
+      
+      allow create: if isPlatformAdmin() &&
+                      hasRequiredFields(['email', 'role', 'createdAt']) &&
+                      isValidEmail(request.resource.data.email);
+      
+      allow update: if (isOwner(userId) && 
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'companyId'])) ||
+                      isHRAdmin(resource.data.companyId) ||
+                      isPlatformAdmin();
+      
+      allow delete: if isPlatformAdmin();
+    }
+    
+    // Companies collection
+    match /companies/{companyId} {
+      allow read: if belongsToCompany(companyId) || isPlatformAdmin();
+      
+      allow create: if isPlatformAdmin() &&
+                      hasRequiredFields(['name', 'status', 'createdAt']);
+      
+      allow update: if isCompanyAdmin(companyId) || isPlatformAdmin();
+      
+      allow delete: if isSuperAdmin();
+      
+      // Company subcollections
+      match /users/{userId} {
+        allow read: if belongsToCompany(companyId);
+        allow write: if isHRAdmin(companyId) || isPlatformAdmin();
+      }
+      
+      match /benefitPlans/{planId} {
+        allow read: if belongsToCompany(companyId);
+        allow write: if isHRAdmin(companyId) || isPlatformAdmin();
+      }
+      
+      match /documents/{docId} {
+        allow read: if belongsToCompany(companyId);
+        allow create: if belongsToCompany(companyId) &&
+                        request.resource.data.uploadedBy == request.auth.uid;
+        allow update: if (resource.data.uploadedBy == request.auth.uid) ||
+                        isHRAdmin(companyId) ||
+                        isPlatformAdmin();
+        allow delete: if isCompanyAdmin(companyId) || isPlatformAdmin();
+      }
+      
+      match /conversations/{conversationId} {
+        allow read: if resource.data.userId == request.auth.uid ||
+                      isHRAdmin(companyId) ||
+                      isPlatformAdmin();
+        allow create: if belongsToCompany(companyId) &&
+                        request.resource.data.userId == request.auth.uid;
+        allow update: if resource.data.userId == request.auth.uid;
+        allow delete: if isPlatformAdmin();
+        
+        match /messages/{messageId} {
+          allow read: if get(/databases/$(database)/documents/companies/$(companyId)/conversations/$(conversationId)).data.userId == request.auth.uid ||
+                        isHRAdmin(companyId) ||
+                        isPlatformAdmin();
+          allow create: if get(/databases/$(database)/documents/companies/$(companyId)/conversations/$(conversationId)).data.userId == request.auth.uid;
+          allow update: if false; // Messages are immutable
+          allow delete: if isPlatformAdmin();
+        }
+      }
+    }
+    
+    // Audit logs - write only, read restricted
+    match /audit_logs/{logId} {
+      allow read: if isPlatformAdmin();
+      allow create: if isAuthenticated() &&
+                      hasRequiredFields(['action', 'userId', 'timestamp']) &&
+                      request.resource.data.userId == request.auth.uid &&
+                      isValidTimestamp('timestamp');
+      allow update, delete: if false; // Audit logs are immutable
+    }
+    
+    // Error logs - write only for system, read for admins
+    match /error_logs/{logId} {
+      allow read: if isPlatformAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Error logs are immutable
+    }
+    
+    // Security incidents - write only, read restricted to super admins
+    match /security_incidents/{incidentId} {
+      allow read: if isSuperAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Security logs are immutable
+    }
+    
+    // System configuration - super admin only
+    match /system_config/{configId} {
+      allow read: if isPlatformAdmin();
+      allow write: if isSuperAdmin();
+    }
+    
+    // Pending emails queue
+    match /pending_emails/{emailId} {
+      allow read: if isPlatformAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isPlatformAdmin() &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'sentAt', 'error']);
+      allow delete: if isPlatformAdmin();
+    }
+    
+    // Analytics data - read only for authorized users
+    match /analytics/{metric} {
+      allow read: if isPlatformAdmin();
+      allow write: if false; // Written by Cloud Functions only
+    }
+    
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,163 +1,230 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CompaniesTable } from '@/components/super-admin/companies-table';
-import { CreateCompanyDialog } from '@/components/super-admin/create-company-dialog';
-import { toast } from '@/components/toast';
-import { Plus, RefreshCw } from 'lucide-react';
-import type { CompanyWithStats } from '@/lib/types/super-admin';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Building2, Search, Plus, Users, FileText, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
-export default function CompaniesPage() {
+interface Company {
+  id: string;
+  name: string;
+  domain: string;
+  employeeCount: number;
+  planType: string;
+  status: 'active' | 'pending' | 'inactive';
+  createdAt: Date;
+  adminEmail: string;
+}
+
+export default function AdminCompaniesPage() {
+  const [user, loading] = useAuthState(auth);
   const router = useRouter();
-  const [companies, setCompanies] = useState<CompanyWithStats[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-
-  const fetchCompanies = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/super-admin/companies?page=${page}&limit=20`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch companies');
-      }
-      
-      const data = await response.json();
-      setCompanies(data.companies);
-      setTotal(data.total);
-    } catch (error) {
-      toast({
-        type: 'error',
-        description: 'Failed to load companies',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchCompanies();
-  }, [page]);
-
-  const handleEdit = (company: CompanyWithStats) => {
-    router.push(`/admin/companies/${company.id}/edit`);
-  };
-
-  const handleDelete = async (companyId: string) => {
-    if (!confirm('Are you sure you want to delete this company?')) {
-      return;
+    if (!loading && !user) {
+      router.push('/login');
+    } else if (user) {
+      user.getIdTokenResult().then((idTokenResult) => {
+        if (!idTokenResult.claims.platform_admin && !idTokenResult.claims.super_admin) {
+          router.push('/');
+        }
+      });
     }
+  }, [user, loading, router]);
 
-    try {
-      const response = await fetch(`/api/super-admin/companies/${companyId}`, {
-        method: 'DELETE',
-      });
+  const filteredCompanies = companies.filter(company =>
+    company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    company.domain.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-      if (!response.ok) {
-        throw new Error('Failed to delete company');
-      }
-
-      toast({
-        type: 'success',
-        description: 'The company has been deleted successfully.',
-      });
-
-      fetchCompanies();
-    } catch (error) {
-      toast({
-        type: 'error',
-        description: 'Failed to delete company',
-      });
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge className="bg-green-100 text-green-700">Active</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>;
+      case 'inactive':
+        return <Badge className="bg-gray-100 text-gray-700">Inactive</Badge>;
+      default:
+        return null;
     }
   };
 
-  const handleViewDetails = (companyId: string) => {
-    router.push(`/admin/companies/${companyId}`);
-  };
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex justify-between items-center">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Company Management</h1>
-          <p className="text-muted-foreground">Manage all companies on the platform</p>
+          <p className="text-muted-foreground">Manage platform companies and organizations</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={fetchCompanies}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        <Link href="/admin/companies/new">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Company
           </Button>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Company
-          </Button>
-        </div>
+        </Link>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{companies.length}</div>
+            <p className="text-xs text-muted-foreground">Registered organizations</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {companies.filter(c => c.status === 'active').length}
+            </div>
+            <p className="text-xs text-muted-foreground">Currently active</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {companies.reduce((acc, c) => acc + c.employeeCount, 0)}
+            </div>
+            <p className="text-xs text-muted-foreground">Across all companies</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending Setup</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {companies.filter(c => c.status === 'pending').length}
+            </div>
+            <p className="text-xs text-muted-foreground">Need configuration</p>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Companies ({total})</CardTitle>
-          <CardDescription>
-            View and manage all companies registered on the platform
-          </CardDescription>
+          <CardTitle>Companies</CardTitle>
+          <div className="flex items-center space-x-2 mt-4">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search companies..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          {loading && companies.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading companies...
-            </div>
-          ) : companies.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No companies found. Create your first company to get started.
+          {filteredCompanies.length === 0 ? (
+            <div className="text-center py-12">
+              <Building2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No companies found</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                {searchTerm ? 'Try adjusting your search' : 'Add your first company to get started'}
+              </p>
             </div>
           ) : (
-            <CompaniesTable
-              companies={companies}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onViewDetails={handleViewDetails}
-            />
+            <div className="space-y-2">
+              <div className="grid grid-cols-12 gap-4 pb-2 border-b text-sm font-medium text-muted-foreground">
+                <div className="col-span-3">Company Name</div>
+                <div className="col-span-2">Domain</div>
+                <div className="col-span-2">Employees</div>
+                <div className="col-span-2">Plan</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-1">Actions</div>
+              </div>
+              {filteredCompanies.map((company) => (
+                <div key={company.id} className="grid grid-cols-12 gap-4 py-3 border-b items-center hover:bg-muted/50 transition-colors">
+                  <div className="col-span-3">
+                    <div className="font-medium">{company.name}</div>
+                    <div className="text-sm text-muted-foreground">{company.adminEmail}</div>
+                  </div>
+                  <div className="col-span-2 text-sm">
+                    {company.domain}
+                  </div>
+                  <div className="col-span-2">
+                    <div className="flex items-center text-sm">
+                      <Users className="h-3 w-3 mr-1 text-muted-foreground" />
+                      {company.employeeCount}
+                    </div>
+                  </div>
+                  <div className="col-span-2 text-sm">
+                    {company.planType}
+                  </div>
+                  <div className="col-span-2">
+                    {getStatusBadge(company.status)}
+                  </div>
+                  <div className="col-span-1">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit Company
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Users className="mr-2 h-4 w-4" />
+                          Manage Users
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <FileText className="mr-2 h-4 w-4" />
+                          View Documents
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Company
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
-
-      <CreateCompanyDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onSuccess={fetchCompanies}
-      />
-
-      {/* Pagination */}
-      {total > 20 && (
-        <div className="flex justify-center gap-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => setPage(Math.max(1, page - 1))}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <span className="py-2 px-4">
-            Page {page} of {Math.ceil(total / 20)}
-          </span>
-          <Button
-            variant="outline"
-            onClick={() => setPage(page + 1)}
-            disabled={page >= Math.ceil(total / 20)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

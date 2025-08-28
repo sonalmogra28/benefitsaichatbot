@@ -1,23 +1,15 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/app/(auth)/stack-auth';
+import { withAuth } from '@/lib/auth/admin-middleware';
+import { USER_ROLES } from '@/lib/constants/roles';
 import { onboardingService } from '@/lib/services/onboarding.service';
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(USER_ROLES.EMPLOYEE, async (request: NextRequest, context, user) => {
   try {
-    // Get authenticated user
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     // Parse request body
     const data = await request.json();
 
     // Complete onboarding
-    await onboardingService.completeOnboarding(session.user.stackUserId, data);
+    await onboardingService.completeOnboarding(user.uid, data);
 
     return NextResponse.json({
       success: true,
@@ -31,21 +23,12 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(USER_ROLES.EMPLOYEE, async (request: NextRequest, context, user) => {
   try {
-    // Get authenticated user
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     // Get onboarding status
-    const status = await onboardingService.getOnboardingStatus(session.user.stackUserId);
+    const status = await onboardingService.getOnboardingStatus(user.uid);
 
     return NextResponse.json(status);
 
@@ -56,25 +39,16 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(USER_ROLES.EMPLOYEE, async (request: NextRequest, context, user) => {
   try {
-    // Get authenticated user
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     // Parse request body
     const { step, data } = await request.json();
 
     // Update onboarding progress
     await onboardingService.updateOnboardingProgress(
-      session.user.stackUserId,
+      user.uid,
       step,
       data
     );
@@ -91,4 +65,4 @@ export async function PATCH(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

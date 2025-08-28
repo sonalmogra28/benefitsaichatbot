@@ -1,23 +1,20 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/app/(auth)/stack-auth';
-import { db } from '@/lib/db';
-import { users, benefitEnrollments, companies } from '@/lib/db/schema';
-import { eq, and, count, desc, sql } from 'drizzle-orm';
-import { z } from 'zod';
+import { requireCompanyAdmin } from '@/lib/auth/admin-middleware';
+import { userService } from '@/lib/firebase/services/user.service';
+import { adminAuth } from '@/lib/firebase/admin';
 import { EmailService } from '@/lib/services/email.service';
 import { createUserSchema } from '@/lib/validation/schemas';
+import { z } from 'zod';
 
 const emailService = new EmailService();
 
 // GET /api/company-admin/employees - List employees for a company
-export async function GET(request: NextRequest) {
+export const GET = requireCompanyAdmin(async (
+  request: NextRequest,
+  context,
+  user
+) => {
   try {
-    const session = await auth();
-    
-    if (!session?.user?.companyId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const role = searchParams.get('role') || 'all';
@@ -26,73 +23,29 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get('limit') || '50');
     const offset = (page - 1) * limit;
 
-    // Build where conditions
-    const whereConditions = [eq(users.companyId, session.user.companyId)];
-    
-    if (role !== 'all') {
-      whereConditions.push(eq(users.role, role));
-    }
-    
-    if (status !== 'all') {
-      whereConditions.push(eq(users.isActive, status === 'active'));
-    }
-    
-    if (search) {
-      whereConditions.push(
-        sql`${users.firstName} ILIKE ${`%${search}%`} OR ${users.lastName} ILIKE ${`%${search}%`} OR ${users.email} ILIKE ${`%${search}%`} OR ${users.department} ILIKE ${`%${search}%`}`
-      );
-    }
+    const employees = await userService.listUsers({
+      companyId: user.companyId,
+      limit,
+    });
 
-    // Get total count
-    const [countResult] = await db
-      .select({ total: count() })
-      .from(users)
-      .where(and(...whereConditions));
-
-    // Get employees with enrollment status
-    const employees = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        firstName: users.firstName,
-        lastName: users.lastName,
-        role: users.role,
-        department: users.department,
-        isActive: users.isActive,
-        lastActive: users.updatedAt,
-        createdAt: users.createdAt,
-        enrollmentCount: sql<number>`(
-          SELECT COUNT(*) 
-          FROM ${benefitEnrollments} 
-          WHERE ${benefitEnrollments.userId} = ${users.id} 
-          AND ${benefitEnrollments.status} = 'active'
-        )`,
-      })
-      .from(users)
-      .where(and(...whereConditions))
-      .orderBy(desc(users.createdAt))
-      .limit(limit)
-      .offset(offset);
-
-    // Transform data to match frontend expectations
     const transformedEmployees = employees.map(emp => ({
-      id: emp.id,
-      name: `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.email,
+      id: emp.uid,
+      name: `${emp.displayName || ''}`.trim() || emp.email,
       email: emp.email,
       role: emp.role || 'employee',
-      status: emp.isActive ? 'active' : 'inactive',
+      status: 'active', // TODO: Add isActive to user model
       department: emp.department,
-      enrollmentStatus: emp.enrollmentCount > 0 ? 'enrolled' : 'not_enrolled',
-      lastActive: emp.lastActive,
+      enrollmentStatus: 'not_enrolled', // TODO: Implement enrollment status
+      lastActive: emp.updatedAt,
       createdAt: emp.createdAt,
     }));
 
     return NextResponse.json({
       employees: transformedEmployees,
-      total: countResult?.total || 0,
+      total: transformedEmployees.length, // TODO: Implement total count
       page,
       limit,
-      hasMore: offset + limit < (countResult?.total || 0),
+      hasMore: false, // TODO: Implement hasMore
     });
   } catch (error) {
     console.error('Error fetching employees:', error);
@@ -101,78 +54,37 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // POST /api/company-admin/employees - Invite new employee
-export async function POST(request: NextRequest) {
+export const POST = requireCompanyAdmin(async (
+  request: NextRequest,
+  context,
+  user
+) => {
   try {
-    const session = await auth();
-    
-    if (!session?.user?.companyId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has permission to invite employees
-    if (session.user.type !== 'company_admin' && session.user.type !== 'hr_admin') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
-    }
-
     const body = await request.json();
     const validated = createUserSchema.parse(body);
 
-    // Check if email already exists in company
-    const existingUser = await db
-      .select()
-      .from(users)
-      .where(and(
-        eq(users.email, validated.email),
-        eq(users.companyId, session.user.companyId)
-      ))
-      .limit(1);
+    const newUser = await adminAuth.createUser({
+      email: validated.email,
+      displayName: `${validated.firstName} ${validated.lastName}`,
+    });
 
-    if (existingUser.length > 0) {
-      return NextResponse.json(
-        { error: 'A user with this email already exists in your company' },
-        { status: 400 }
-      );
-    }
+    await userService.assignUserToCompany(newUser.uid, user.companyId);
+    await userService.updateUserRole(newUser.uid, validated.role);
 
-    // Create the user with pending status
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        email: validated.email,
-        stackUserId: `pending_${Date.now()}_${validated.email}`, // Temporary ID until user signs up
-        companyId: session.user.companyId,
-        role: validated.role,
-        firstName: validated.firstName,
-        lastName: validated.lastName,
-        isActive: false, // Will be activated when they accept the invitation
-      })
-      .returning();
+    // TODO: Get company name from Firestore
+    const companyName = 'Your Company';
 
-    // Get company details for the email
-    let companyName = 'Your Company';
-    if (session.user.companyId) {
-      const [company] = await db
-        .select()
-        .from(companies)
-        .where(eq(companies.id, session.user.companyId))
-        .limit(1);
-      if (company) {
-        companyName = company.name;
-      }
-    }
-
-    // Send invitation email
     try {
       await emailService.sendEmployeeInvitation({
         email: validated.email,
         companyName,
-        inviterName: session.user.name || session.user.email,
+        inviterName: user.name || user.email,
         role: validated.role,
       });
-    } catch (emailError). {
+    } catch (emailError) {
       console.error('Failed to send invitation email:', emailError);
       // Don't fail the whole operation if email fails
     }
@@ -180,9 +92,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: {
-        id: newUser.id,
+        id: newUser.uid,
         email: newUser.email,
-        role: newUser.role,
+        role: validated.role,
         status: 'pending',
       },
     }, { status: 201 });
@@ -200,4 +112,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

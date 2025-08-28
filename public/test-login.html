@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: white;
+            color: black;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            background: black;
+            color: white;
+            border: 2px solid black;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: white;
+            color: black;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid black;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>LOGIN TEST</h1>
+    
+    <div class="status" id="status">
+        Click a button to test login
+    </div>
+    
+    <button onclick="testEmployeeLogin()">TEST EMPLOYEE LOGIN</button>
+    <button onclick="testAdminLogin()">TEST ADMIN LOGIN</button>
+    <button onclick="checkSession()">CHECK SESSION</button>
+    <button onclick="clearSession()">CLEAR SESSION</button>
+    
+    <script>
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML = `
+                <strong>Status:</strong> ${message}<br>
+                <strong>Time:</strong> ${new Date().toLocaleTimeString()}
+            `;
+        }
+        
+        function testEmployeeLogin() {
+            updateStatus('Setting employee session...');
+            
+            // Set demo employee
+            sessionStorage.setItem('authMode', 'demo');
+            sessionStorage.setItem('mockUser', JSON.stringify({
+                uid: 'demo-employee-001',
+                email: 'employee@acme.com',
+                displayName: 'John Employee',
+                role: 'employee',
+                companyId: 'acme-corp',
+                emailVerified: true
+            }));
+            
+            updateStatus('Employee session set! Redirecting to chat...');
+            
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        }
+        
+        function testAdminLogin() {
+            updateStatus('Setting admin session...');
+            
+            // Set demo admin
+            sessionStorage.setItem('authMode', 'demo');
+            sessionStorage.setItem('mockUser', JSON.stringify({
+                uid: 'demo-super-001',
+                email: 'superadmin@test.com',
+                displayName: 'Sarah Super Admin',
+                role: 'super_admin',
+                emailVerified: true
+            }));
+            
+            updateStatus('Admin session set! Redirecting to admin dashboard...');
+            
+            setTimeout(() => {
+                window.location.href = '/super-admin';
+            }, 1000);
+        }
+        
+        function checkSession() {
+            const authMode = sessionStorage.getItem('authMode');
+            const mockUser = sessionStorage.getItem('mockUser');
+            
+            if (authMode && mockUser) {
+                const user = JSON.parse(mockUser);
+                updateStatus(`
+                    <strong>Auth Mode:</strong> ${authMode}<br>
+                    <strong>Email:</strong> ${user.email}<br>
+                    <strong>Role:</strong> ${user.role}<br>
+                    <strong>Name:</strong> ${user.displayName}
+                `);
+            } else {
+                updateStatus('No session found');
+            }
+        }
+        
+        function clearSession() {
+            sessionStorage.removeItem('authMode');
+            sessionStorage.removeItem('mockUser');
+            updateStatus('Session cleared!');
+        }
+        
+        // Check session on load
+        window.onload = () => {
+            checkSession();
+        };
+    </script>
+</body>
+</html>

@@ -1,6 +1,5 @@
-import { db } from '@/lib/db';
-import { analyticsEvents, auditLogs } from '@/lib/db/schema';
-import type { InsertAuditLog } from '@/lib/db/types';
+import { db } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export interface AuditEvent {
   userId?: string;
@@ -15,12 +14,12 @@ export interface AuditEvent {
 }
 
 /**
- * Log an audit event to the database
+ * Log an audit event to Firestore
  */
 export async function logAuditEvent(event: AuditEvent): Promise<void> {
   try {
-    // Log to audit_logs table
-    const auditEntry: InsertAuditLog = {
+    // Create audit log entry
+    const auditEntry = {
       userId: event.userId || null,
       companyId: event.companyId || null,
       action: event.action,
@@ -30,12 +29,14 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
       ipAddress: event.ip || null,
       userAgent: event.userAgent || null,
       success: event.success !== false,
+      createdAt: FieldValue.serverTimestamp(),
     };
     
-    await db.insert(auditLogs).values(auditEntry);
+    // Log to audit_logs collection
+    await db.collection('audit_logs').add(auditEntry);
     
-    // Also log to analytics for tracking
-    await db.insert(analyticsEvents).values({
+    // Also log to analytics_events for tracking
+    await db.collection('analytics_events').add({
       userId: event.userId || null,
       companyId: event.companyId || null,
       eventType: `audit:${event.action}`,
@@ -47,18 +48,19 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
       },
       ipAddress: event.ip || null,
       userAgent: event.userAgent || null,
+      createdAt: FieldValue.serverTimestamp(),
     });
   } catch (error) {
     console.error('Failed to log audit event:', error);
-    // Don't throw - audit logging should not break the app
+    // Don't throw - audit logging should not break the application
   }
 }
 
 /**
- * Log authentication events
+ * Log a security event
  */
-export async function logAuthEvent(
-  type: 'login' | 'logout' | 'failed_login' | 'permission_denied' | 'signup',
+export async function logSecurityEvent(
+  type: 'login' | 'logout' | 'permission_denied' | 'password_reset' | 'mfa_enabled' | 'mfa_disabled',
   userId?: string,
   details?: Record<string, any>
 ): Promise<void> {
@@ -66,124 +68,141 @@ export async function logAuthEvent(
     userId,
     action: type,
     resource: 'auth',
-    details: {
-      ...details,
-      timestamp: new Date().toISOString(),
-    },
-    success: type !== 'failed_login' && type !== 'permission_denied',
+    details,
+    success: type !== 'permission_denied',
   });
 }
 
 /**
- * Log data access events
+ * Log an API access event
  */
-export async function logDataAccess(
-  userId: string,
-  resource: string,
-  action: 'read' | 'write' | 'delete',
-  resourceId?: string,
+export async function logApiAccess(
+  endpoint: string,
+  method: string,
+  userId?: string,
+  statusCode?: number,
   details?: Record<string, any>
 ): Promise<void> {
   await logAuditEvent({
     userId,
-    action: `data:${action}`,
-    resource,
-    resourceId,
+    action: 'api_access',
+    resource: endpoint,
+    details: {
+      method,
+      statusCode,
+      ...details,
+    },
+    success: statusCode ? statusCode < 400 : true,
+  });
+}
+
+/**
+ * Log a data access event
+ */
+export async function logDataAccess(
+  collection: string,
+  operation: 'read' | 'write' | 'delete',
+  documentId?: string,
+  userId?: string,
+  details?: Record<string, any>
+): Promise<void> {
+  await logAuditEvent({
+    userId,
+    action: `data_${operation}`,
+    resource: collection,
+    resourceId: documentId,
     details,
     success: true,
   });
 }
 
 /**
- * Log admin actions
+ * Query audit logs
  */
-export async function logAdminAction(
-  userId: string,
-  companyId: string | null,
-  action: string,
-  resource: string,
-  resourceId?: string,
-  details?: Record<string, any>
-): Promise<void> {
-  await logAuditEvent({
-    userId,
-    companyId: companyId || undefined,
-    action: `admin:${action}`,
-    resource,
-    resourceId,
-    details: {
-      ...details,
-      adminAction: true,
-      timestamp: new Date().toISOString(),
-    },
-    success: true,
-  });
-}
-
-/**
- * Log security events
- */
-export async function logSecurityEvent(
-  type: 'suspicious_activity' | 'rate_limit_exceeded' | 'invalid_token' | 'csrf_attempt',
-  userId?: string,
-  details?: Record<string, any>
-): Promise<void> {
-  await logAuditEvent({
-    userId,
-    action: `security:${type}`,
-    resource: 'security',
-    details: {
-      ...details,
-      severity: 'high',
-      timestamp: new Date().toISOString(),
-    },
-    success: false,
-  });
-}
-
-/**
- * Get recent audit logs for a user
- */
-export async function getUserAuditLogs(
-  userId: string,
-  limit: number = 50
-): Promise<any[]> {
-  try {
-    const logs = await db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.userId, userId))
-      .orderBy(desc(auditLogs.createdAt))
-      .limit(limit);
-    
-    return logs;
-  } catch (error) {
-    console.error('Failed to fetch audit logs:', error);
-    return [];
+export async function getAuditLogs(
+  filters: {
+    userId?: string;
+    companyId?: string;
+    action?: string;
+    startDate?: Date;
+    endDate?: Date;
+  },
+  limit = 100
+) {
+  let query = db.collection('audit_logs').orderBy('createdAt', 'desc');
+  
+  if (filters.userId) {
+    query = query.where('userId', '==', filters.userId);
   }
+  
+  if (filters.companyId) {
+    query = query.where('companyId', '==', filters.companyId);
+  }
+  
+  if (filters.action) {
+    query = query.where('action', '==', filters.action);
+  }
+  
+  if (filters.startDate) {
+    query = query.where('createdAt', '>=', filters.startDate);
+  }
+  
+  if (filters.endDate) {
+    query = query.where('createdAt', '<=', filters.endDate);
+  }
+  
+  const snapshot = await query.limit(limit).get();
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
 }
 
 /**
- * Get recent audit logs for a company
+ * Get recent security events for a user
  */
-export async function getCompanyAuditLogs(
-  companyId: string,
-  limit: number = 100
-): Promise<any[]> {
-  try {
-    const logs = await db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.companyId, companyId))
-      .orderBy(desc(auditLogs.createdAt))
-      .limit(limit);
+export async function getUserSecurityEvents(userId: string, limit = 20) {
+  const snapshot = await db.collection('audit_logs')
+    .where('userId', '==', userId)
+    .where('resource', '==', 'auth')
+    .orderBy('createdAt', 'desc')
+    .limit(limit)
+    .get();
     
-    return logs;
-  } catch (error) {
-    console.error('Failed to fetch company audit logs:', error);
-    return [];
-  }
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
 }
 
-// Import after to avoid circular dependency
-import { eq, desc } from 'drizzle-orm';
+/**
+ * Check for suspicious activity
+ */
+export async function checkSuspiciousActivity(userId: string): Promise<boolean> {
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  
+  // Check for multiple failed login attempts
+  const failedLogins = await db.collection('audit_logs')
+    .where('userId', '==', userId)
+    .where('action', '==', 'login')
+    .where('success', '==', false)
+    .where('createdAt', '>=', oneHourAgo)
+    .get();
+    
+  if (failedLogins.size >= 5) {
+    return true;
+  }
+  
+  // Check for permission denied events
+  const permissionDenied = await db.collection('audit_logs')
+    .where('userId', '==', userId)
+    .where('action', '==', 'permission_denied')
+    .where('createdAt', '>=', oneHourAgo)
+    .get();
+    
+  if (permissionDenied.size >= 10) {
+    return true;
+  }
+  
+  return false;
+}

@@ -11,21 +11,21 @@ import { useSidebar } from './ui/sidebar';
 import { memo } from 'react';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { type VisibilityType, VisibilitySelector } from './visibility-selector';
-import type { AuthSession } from '@/app/(auth)/stack-auth';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 
 function PureChatHeader({
   chatId,
   selectedModelId,
   selectedVisibilityType,
   isReadonly,
-  session,
 }: {
   chatId: string;
   selectedModelId: string;
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
-  session: AuthSession;
 }) {
+  const [user] = useAuthState(auth);
   const router = useRouter();
   const { open } = useSidebar();
 
@@ -56,7 +56,7 @@ function PureChatHeader({
 
       {!isReadonly && (
         <ModelSelector
-          session={session}
+          session={{ user }}
           selectedModelId={selectedModelId}
           className="order-1 md:order-2"
         />

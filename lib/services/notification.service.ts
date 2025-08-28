@@ -1,190 +1,303 @@
-import { emailService } from '@/lib/services/email.service';
-import { db } from '@/lib/db';
-import { users, companies } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { Resend } from 'resend';
+import { db } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
-export interface DocumentProcessedNotificationData {
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export interface Notification {
+  id: string;
   userId: string;
-  documentName: string;
-  status: 'processed' | 'failed';
-  error?: string;
+  type: 'email' | 'in_app' | 'sms';
+  subject: string;
+  message: string;
+  status: 'pending' | 'sent' | 'failed';
+  metadata?: Record<string, any>;
+  sentAt?: any;
+  createdAt: any;
 }
 
-export interface BenefitsEnrollmentNotificationData {
-  userId: string;
-  enrollmentDetails: {
-    planName: string;
-    effectiveDate: string;
-    premiumAmount: number;
-  };
+export interface EmailTemplate {
+  subject: string;
+  html: string;
+  text?: string;
 }
 
-export class NotificationService {
-  async sendDocumentProcessedNotification(
-    data: DocumentProcessedNotificationData,
-  ): Promise<{ success: boolean; error?: string }> {
+class NotificationService {
+  /**
+   * Send an email notification
+   */
+  async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+    text?: string
+  ): Promise<boolean> {
     try {
-      // Get user and company details
-      const [userWithCompany] = await db
-        .select({
-          user: users,
-          company: companies,
-        })
-        .from(users)
-        .leftJoin(companies, eq(users.companyId, companies.id))
-        .where(eq(users.id, data.userId))
-        .limit(1);
-
-      if (!userWithCompany?.user) {
-        return { success: false, error: 'User not found' };
+      if (!process.env.RESEND_API_KEY) {
+        console.warn('Resend API key not configured, skipping email');
+        return false;
       }
 
-      const { user, company } = userWithCompany;
-      const userName = `${user.firstName} ${user.lastName}`.trim();
+      const response = await resend.emails.send({
+        from: 'Benefits Assistant <noreply@benefitsassistant.ai>',
+        to,
+        subject,
+        html,
+        text,
+      });
 
-      let title: string;
-      let message: string;
-      let actionUrl: string | undefined;
-
-      if (data.status === 'processed') {
-        title = 'Document Processed Successfully';
-        message = `
-          <p>Great news! Your document "<strong>${data.documentName}</strong>" has been successfully processed and is now available in your benefits portal.</p>
-          <p>You can now:</p>
-          <ul>
-            <li>Search for information within this document</li>
-            <li>Ask AI questions about the content</li>
-            <li>Reference it in your benefits decisions</li>
-          </ul>
-        `;
-        actionUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/documents`;
-      } else {
-        title = 'Document Processing Failed';
-        message = `
-          <p>We encountered an issue processing your document "<strong>${data.documentName}</strong>".</p>
-          ${data.error ? `<p><strong>Error details:</strong> ${data.error}</p>` : ''}
-          <p>Please try uploading the document again, or contact your HR team if the problem persists.</p>
-        `;
-        actionUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/documents/upload`;
+      if (response.error) {
+        console.error('Failed to send email:', response.error);
+        return false;
       }
 
-      return await emailService.sendNotification({
-        email: user.email,
-        name: userName,
-        title,
+      // Log notification in Firestore
+      await this.logNotification({
+        userId: to,
+        type: 'email',
+        subject,
+        message: text || html.substring(0, 200),
+        status: 'sent',
+        metadata: { emailId: response.data?.id },
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Email send error:', error);
+      
+      // Log failed notification
+      await this.logNotification({
+        userId: to,
+        type: 'email',
+        subject,
+        message: text || html.substring(0, 200),
+        status: 'failed',
+        metadata: { error: (error as Error).message },
+      });
+      
+      return false;
+    }
+  }
+
+  /**
+   * Send in-app notification
+   */
+  async sendInAppNotification(
+    userId: string,
+    title: string,
+    message: string,
+    metadata?: Record<string, any>
+  ): Promise<boolean> {
+    try {
+      const notificationRef = db.collection('notifications').doc();
+      
+      await notificationRef.set({
+        id: notificationRef.id,
+        userId,
+        type: 'in_app',
+        subject: title,
         message,
-        actionUrl,
+        status: 'sent',
+        metadata,
+        read: false,
+        createdAt: FieldValue.serverTimestamp(),
+        sentAt: FieldValue.serverTimestamp(),
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Failed to send in-app notification:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get user notifications
+   */
+  async getUserNotifications(
+    userId: string,
+    limit = 50,
+    unreadOnly = false
+  ): Promise<Notification[]> {
+    try {
+      let query = db
+        .collection('notifications')
+        .where('userId', '==', userId)
+        .orderBy('createdAt', 'desc')
+        .limit(limit);
+
+      if (unreadOnly) {
+        query = query.where('read', '==', false);
+      }
+
+      const snapshot = await query.get();
+
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Notification));
+    } catch (error) {
+      console.error('Failed to get user notifications:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Mark notification as read
+   */
+  async markAsRead(notificationId: string, userId: string): Promise<boolean> {
+    try {
+      const notificationRef = db.collection('notifications').doc(notificationId);
+      const doc = await notificationRef.get();
+
+      if (!doc.exists || doc.data()?.userId !== userId) {
+        return false;
+      }
+
+      await notificationRef.update({
+        read: true,
+        readAt: FieldValue.serverTimestamp(),
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send welcome email to new user
+   */
+  async sendWelcomeEmail(
+    email: string,
+    name: string,
+    companyName?: string
+  ): Promise<boolean> {
+    const subject = 'Welcome to Benefits Assistant!';
+    const html = `
+      <h2>Welcome ${name}!</h2>
+      <p>Thank you for joining Benefits Assistant${companyName ? ` at ${companyName}` : ''}.</p>
+      <p>You can now:</p>
+      <ul>
+        <li>Chat with our AI assistant about your benefits</li>
+        <li>Compare different benefit plans</li>
+        <li>Calculate costs and savings</li>
+        <li>Access all your benefits documents</li>
+      </ul>
+      <p>Get started by logging in and asking any questions about your benefits!</p>
+      <br>
+      <p>Best regards,<br>The Benefits Assistant Team</p>
+    `;
+    
+    return this.sendEmail(email, subject, html);
+  }
+
+  /**
+   * Send password reset email
+   */
+  async sendPasswordResetEmail(
+    email: string,
+    resetLink: string
+  ): Promise<boolean> {
+    const subject = 'Reset Your Password';
+    const html = `
+      <h2>Password Reset Request</h2>
+      <p>We received a request to reset your password.</p>
+      <p>Click the link below to reset your password:</p>
+      <p><a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a></p>
+      <p>This link will expire in 1 hour.</p>
+      <p>If you didn't request this, please ignore this email.</p>
+      <br>
+      <p>Best regards,<br>The Benefits Assistant Team</p>
+    `;
+    
+    return this.sendEmail(email, subject, html);
+  }
+
+  /**
+   * Send enrollment confirmation
+   */
+  async sendEnrollmentConfirmation(
+    email: string,
+    planName: string,
+    details: Record<string, any>
+  ): Promise<boolean> {
+    const subject = `Enrollment Confirmed: ${planName}`;
+    const html = `
+      <h2>Enrollment Confirmation</h2>
+      <p>Your enrollment in ${planName} has been confirmed!</p>
+      <h3>Enrollment Details:</h3>
+      <ul>
+        ${Object.entries(details).map(([key, value]) => 
+          `<li><strong>${key}:</strong> ${value}</li>`
+        ).join('')}
+      </ul>
+      <p>You can view and manage your benefits anytime by logging into your account.</p>
+      <br>
+      <p>Best regards,<br>The Benefits Assistant Team</p>
+    `;
+    
+    return this.sendEmail(email, subject, html);
+  }
+
+  /**
+   * Log notification to database
+   */
+  private async logNotification(
+    notification: Omit<Notification, 'id' | 'createdAt'>
+  ): Promise<void> {
+    try {
+      const notificationRef = db.collection('notification_logs').doc();
+      
+      await notificationRef.set({
+        id: notificationRef.id,
+        ...notification,
+        createdAt: FieldValue.serverTimestamp(),
       });
     } catch (error) {
-      console.error('Failed to send document processed notification:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
+      console.error('Failed to log notification:', error);
     }
   }
 
-  async sendBenefitsEnrollmentNotification(
-    data: BenefitsEnrollmentNotificationData,
-  ): Promise<{ success: boolean; error?: string }> {
+  /**
+   * Get notification statistics
+   */
+  async getNotificationStats(companyId?: string) {
     try {
-      // Get user and company details
-      const [userWithCompany] = await db
-        .select({
-          user: users,
-          company: companies,
-        })
-        .from(users)
-        .leftJoin(companies, eq(users.companyId, companies.id))
-        .where(eq(users.id, data.userId))
-        .limit(1);
-
-      if (!userWithCompany?.user) {
-        return { success: false, error: 'User not found' };
+      let query = db.collection('notification_logs');
+      
+      if (companyId) {
+        // Would need to add companyId to notifications
+        query = query.where('companyId', '==', companyId);
       }
-
-      const { user, company } = userWithCompany;
-      const userName = `${user.firstName} ${user.lastName}`.trim();
-
-      const title = 'Benefits Enrollment Confirmation';
-      const message = `
-        <p>Your benefits enrollment has been confirmed!</p>
-        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">Enrollment Details</h3>
-          <p><strong>Plan:</strong> ${data.enrollmentDetails.planName}</p>
-          <p><strong>Effective Date:</strong> ${data.enrollmentDetails.effectiveDate}</p>
-          <p><strong>Monthly Premium:</strong> $${data.enrollmentDetails.premiumAmount.toFixed(2)}</p>
-        </div>
-        <p>You can view your complete benefits summary and make changes during the next open enrollment period.</p>
-      `;
-      const actionUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/benefits/summary`;
-
-      return await emailService.sendNotification({
-        email: user.email,
-        name: userName,
-        title,
-        message,
-        actionUrl,
+      
+      const snapshot = await query.get();
+      
+      const stats = {
+        total: snapshot.size,
+        sent: 0,
+        failed: 0,
+        pending: 0,
+        byType: {
+          email: 0,
+          in_app: 0,
+          sms: 0,
+        },
+      };
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        stats[data.status]++;
+        stats.byType[data.type]++;
       });
+      
+      return stats;
     } catch (error) {
-      console.error('Failed to send benefits enrollment notification:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  }
-
-  async sendSystemMaintenanceNotification(
-    userEmails: string[],
-    scheduledTime: string,
-    duration: string,
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      const title = 'Scheduled System Maintenance';
-      const message = `
-        <p>We will be performing scheduled maintenance on the benefits portal to improve your experience.</p>
-        <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-          <h3 style="margin-top: 0; color: #92400e;">Maintenance Schedule</h3>
-          <p><strong>Start Time:</strong> ${scheduledTime}</p>
-          <p><strong>Expected Duration:</strong> ${duration}</p>
-        </div>
-        <p>During this time, the portal may be temporarily unavailable. We apologize for any inconvenience and appreciate your patience.</p>
-        <p>All services will be fully restored after the maintenance window.</p>
-      `;
-
-      const emailPromises = userEmails.map((email) =>
-        emailService.sendNotification({
-          email,
-          name: 'Valued User',
-          title,
-          message,
-        }),
-      );
-
-      const results = await Promise.all(emailPromises);
-      const failedEmails = results.filter((result) => !result.success);
-
-      if (failedEmails.length > 0) {
-        console.error(
-          `Failed to send maintenance notifications to ${failedEmails.length} users`,
-        );
-        return {
-          success: false,
-          error: `Failed to send notifications to ${failedEmails.length} users`,
-        };
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error('Failed to send system maintenance notifications:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
+      console.error('Failed to get notification stats:', error);
+      return null;
     }
   }
 }
 
-// Export a singleton instance
 export const notificationService = new NotificationService();

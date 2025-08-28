@@ -1,32 +1,88 @@
-import { db } from '@/lib/db';
-import { chats, messages, chatAnalytics, type Chat, type Message } from '@/lib/db/schema';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { db } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
+
+export interface Chat {
+  id: string;
+  userId: string;
+  companyId: string;
+  title: string;
+  visibility: 'private' | 'public';
+  createdAt: any;
+  updatedAt: any;
+}
+
+export interface Message {
+  id: string;
+  chatId: string;
+  userId: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  createdAt: any;
+}
 
 /**
  * Create a new conversation for a user
  */
 export async function createConversation(userId: string, companyId: string, title?: string): Promise<Chat> {
-  const [newChat] = await db.insert(chats).values({
+  const chatRef = db.collection('chats').doc();
+  
+  const newChat = {
+    id: chatRef.id,
     userId,
     companyId,
     title: title || `Chat ${new Date().toLocaleDateString()}`,
-    visibility: 'private',
-  }).returning();
-
-  return newChat;
+    visibility: 'private' as const,
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+  
+  await chatRef.set(newChat);
+  
+  return {
+    ...newChat,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 }
 
 /**
  * Get a conversation by ID
  */
 export async function getConversation(chatId: string, userId: string): Promise<Chat | null> {
-  const [chat] = await db
-    .select()
-    .from(chats)
-    .where(and(eq(chats.id, chatId), eq(chats.userId, userId)))
-    .limit(1);
+  const chatDoc = await db.collection('chats').doc(chatId).get();
+  
+  if (!chatDoc.exists) {
+    return null;
+  }
+  
+  const chat = chatDoc.data() as Chat;
+  
+  // Verify the user owns this chat
+  if (chat.userId !== userId) {
+    return null;
+  }
+  
+  return {
+    id: chatDoc.id,
+    ...chat,
+  };
+}
 
-  return chat || null;
+/**
+ * Get all conversations for a user
+ */
+export async function getUserConversations(userId: string, limit = 50): Promise<Chat[]> {
+  const snapshot = await db
+    .collection('chats')
+    .where('userId', '==', userId)
+    .orderBy('updatedAt', 'desc')
+    .limit(limit)
+    .get();
+  
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  } as Chat));
 }
 
 /**
@@ -34,160 +90,152 @@ export async function getConversation(chatId: string, userId: string): Promise<C
  */
 export async function addMessage(
   chatId: string,
-  message: {
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-    parts?: any;
-    attachments?: any[];
-  }
+  userId: string,
+  role: 'user' | 'assistant' | 'system',
+  content: string
 ): Promise<Message> {
-  const [newMessage] = await db.insert(messages).values({
+  const messageRef = db.collection('chats').doc(chatId).collection('messages').doc();
+  
+  const newMessage = {
+    id: messageRef.id,
     chatId,
-    role: message.role,
-    parts: message.parts || [{ type: 'text', text: message.content }],
-    attachments: message.attachments || [],
-  }).returning();
-
-  return newMessage;
+    userId,
+    role,
+    content,
+    createdAt: FieldValue.serverTimestamp(),
+  };
+  
+  await messageRef.set(newMessage);
+  
+  // Update chat's updatedAt timestamp
+  await db.collection('chats').doc(chatId).update({
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  
+  return {
+    ...newMessage,
+    createdAt: new Date(),
+  };
 }
 
 /**
  * Get messages for a conversation
  */
-export async function getMessages(chatId: string, limit = 50): Promise<Message[]> {
-  return await db
-    .select()
-    .from(messages)
-    .where(eq(messages.chatId, chatId))
-    .orderBy(messages.createdAt)
-    .limit(limit);
-}
-
-/**
- * Get conversation history for a user
- */
-export async function getConversationHistory(
-  userId: string,
-  companyId: string,
-  limit = 20
-): Promise<Array<Chat & { messageCount: number; lastMessage: Date | null }>> {
-  const result = await db
-    .select({
-      id: chats.id,
-      userId: chats.userId,
-      companyId: chats.companyId,
-      title: chats.title,
-      visibility: chats.visibility,
-      createdAt: chats.createdAt,
-      messageCount: sql<number>`count(${messages.id})::int`,
-      lastMessage: sql<Date | null>`max(${messages.createdAt})`,
-    })
-    .from(chats)
-    .leftJoin(messages, eq(messages.chatId, chats.id))
-    .where(and(eq(chats.userId, userId), eq(chats.companyId, companyId)))
-    .groupBy(chats.id)
-    .orderBy(desc(sql`max(${messages.createdAt})`))
-    .limit(limit);
-
-  return result as any;
-}
-
-/**
- * Update conversation title
- */
-export async function updateConversationTitle(chatId: string, userId: string, title: string): Promise<boolean> {
-  const result = await db
-    .update(chats)
-    .set({ title })
-    .where(and(eq(chats.id, chatId), eq(chats.userId, userId)));
-
-  return result.length > 0;
+export async function getMessages(chatId: string, limit = 100): Promise<Message[]> {
+  const snapshot = await db
+    .collection('chats')
+    .doc(chatId)
+    .collection('messages')
+    .orderBy('createdAt', 'asc')
+    .limit(limit)
+    .get();
+  
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  } as Message));
 }
 
 /**
  * Delete a conversation and all its messages
  */
 export async function deleteConversation(chatId: string, userId: string): Promise<boolean> {
-  const result = await db
-    .delete(chats)
-    .where(and(eq(chats.id, chatId), eq(chats.userId, userId)));
-
-  return result.length > 0;
-}
-
-/**
- * Track chat analytics event
- */
-export async function trackChatEvent(event: {
-  companyId: string;
-  userId?: string;
-  chatId?: string;
-  messageId?: string;
-  eventType: 'message_sent' | 'tool_used' | 'feedback_given' | 'error';
-  toolName?: string;
-  responseTime?: number;
-  tokensUsed?: number;
-  cost?: number;
-  feedback?: 'positive' | 'negative' | 'neutral';
-  errorOccurred?: boolean;
-  metadata?: any;
-}) {
-  await db.insert(chatAnalytics).values({
-    companyId: event.companyId,
-    userId: event.userId,
-    chatId: event.chatId,
-    messageId: event.messageId,
-    eventType: event.eventType,
-    toolName: event.toolName,
-    responseTime: event.responseTime,
-    tokensUsed: event.tokensUsed,
-    cost: event.cost?.toString(),
-    feedback: event.feedback,
-    errorOccurred: event.errorOccurred || false,
-    metadata: event.metadata || {},
-  });
-}
-
-/**
- * Get or create a conversation for continuous chat
- */
-export async function getOrCreateConversation(
-  userId: string,
-  companyId: string,
-  conversationId?: string
-): Promise<Chat> {
-  // If conversationId provided, try to get it
-  if (conversationId) {
-    const existing = await getConversation(conversationId, userId);
-    if (existing) return existing;
+  try {
+    // Verify ownership
+    const chat = await getConversation(chatId, userId);
+    if (!chat) {
+      return false;
+    }
+    
+    // Delete all messages first
+    const messagesSnapshot = await db
+      .collection('chats')
+      .doc(chatId)
+      .collection('messages')
+      .get();
+    
+    const batch = db.batch();
+    
+    messagesSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // Delete the chat document
+    batch.delete(db.collection('chats').doc(chatId));
+    
+    await batch.commit();
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to delete conversation:', error);
+    return false;
   }
-
-  // Otherwise create a new conversation
-  return await createConversation(userId, companyId);
 }
 
 /**
- * Search conversations by content
+ * Update conversation title
  */
-export async function searchConversations(
+export async function updateConversationTitle(
+  chatId: string,
   userId: string,
-  companyId: string,
-  searchTerm: string,
-  limit = 20
-): Promise<Chat[]> {
-  // This is a simple implementation - for production, consider full-text search
-  const results = await db
-    .selectDistinct({ chat: chats })
-    .from(chats)
-    .innerJoin(messages, eq(messages.chatId, chats.id))
-    .where(
-      and(
-        eq(chats.userId, userId),
-        eq(chats.companyId, companyId),
-        sql`${messages.parts}::text ILIKE ${`%${searchTerm}%`}`
-      )
-    )
-    .limit(limit);
+  title: string
+): Promise<boolean> {
+  try {
+    // Verify ownership
+    const chat = await getConversation(chatId, userId);
+    if (!chat) {
+      return false;
+    }
+    
+    await db.collection('chats').doc(chatId).update({
+      title,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Failed to update conversation title:', error);
+    return false;
+  }
+}
 
-  return results.map(r => r.chat);
+/**
+ * Get conversation analytics
+ */
+export async function getConversationAnalytics(companyId: string) {
+  try {
+    const snapshot = await db
+      .collection('chats')
+      .where('companyId', '==', companyId)
+      .get();
+    
+    const totalChats = snapshot.size;
+    const uniqueUsers = new Set(snapshot.docs.map(doc => doc.data().userId)).size;
+    
+    // Get message counts
+    let totalMessages = 0;
+    for (const chatDoc of snapshot.docs) {
+      const messagesSnapshot = await db
+        .collection('chats')
+        .doc(chatDoc.id)
+        .collection('messages')
+        .get();
+      totalMessages += messagesSnapshot.size;
+    }
+    
+    return {
+      totalChats,
+      uniqueUsers,
+      totalMessages,
+      averageMessagesPerChat: totalChats > 0 ? Math.round(totalMessages / totalChats) : 0,
+    };
+  } catch (error) {
+    console.error('Failed to get conversation analytics:', error);
+    return {
+      totalChats: 0,
+      uniqueUsers: 0,
+      totalMessages: 0,
+      averageMessagesPerChat: 0,
+    };
+  }
 }

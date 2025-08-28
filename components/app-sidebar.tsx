@@ -1,9 +1,8 @@
 'use client';
 
-import type { AuthUser } from '@/app/(auth)/stack-auth';
 import { useRouter } from 'next/navigation';
 
-import { PlusIcon, DollarSign, LayoutGrid } from '@/components/icons';
+import { PlusIcon } from '@/components/icons';
 import { SidebarHistory } from '@/components/sidebar-history';
 import { SidebarUserNav } from '@/components/sidebar-user-nav';
 import { Button } from '@/components/ui/button';
@@ -17,12 +16,11 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { WithRole } from './with-role';
 
-export function AppSidebar({ user }: { user: AuthUser | null | undefined }) {
+export function AppSidebar() {
   const router = useRouter();
   const { setOpenMobile } = useSidebar();
-
-  const isCompanyAdmin = user?.type === 'company_admin';
 
   return (
     <Sidebar className="group-data-[side=left]:border-r-0">
@@ -61,21 +59,19 @@ export function AppSidebar({ user }: { user: AuthUser | null | undefined }) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {isCompanyAdmin && (
-          <div className="px-2 mb-4 space-y-2">
-            <Link href="/company-admin/benefits" className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
-              <DollarSign className="size-5" />
-              <span>Cost Calculator</span>
-            </Link>
-            <Link href="/company-admin/benefits/compare" className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
-              <LayoutGrid className="size-5" />
-              <span>Compare Plans</span>
-            </Link>
+        <SidebarHistory />
+        <div className="px-4">
+            <Link href="/profile">Profile</Link>
+        </div>
+        <WithRole allowedRoles="super-admin">
+          <div className="px-4">
+             <Link href="/super-admin">Super Admin</Link>
           </div>
-        )}
-        <SidebarHistory user={user} />
+        </WithRole>
       </SidebarContent>
-      <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>
+      <SidebarFooter>
+        <SidebarUserNav />
+      </SidebarFooter>
     </Sidebar>
   );
 }

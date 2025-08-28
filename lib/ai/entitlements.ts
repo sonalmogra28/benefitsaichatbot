@@ -1,4 +1,4 @@
-import type { UserType } from '@/app/(auth)/stack-auth';
+import type { UserRole } from '@/lib/types';
 import type { ChatModel } from './models';
 
 interface Entitlements {
@@ -6,7 +6,7 @@ interface Entitlements {
   availableChatModelIds: Array<ChatModel['id']>;
 }
 
-export const entitlementsByUserType: Record<UserType, Entitlements> = {
+export const entitlementsByUserType: Record<UserRole, Entitlements> = {
   /*
    * For guest users (no company)
    */
@@ -43,6 +43,14 @@ export const entitlementsByUserType: Record<UserType, Entitlements> = {
    * For platform administrators
    */
   platform_admin: {
+    maxMessagesPerDay: 1000,
+    availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
+  },
+
+  /*
+   * For super administrators
+   */
+  super_admin: {
     maxMessagesPerDay: 1000,
     availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
   },

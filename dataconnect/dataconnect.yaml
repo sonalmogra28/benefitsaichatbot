@@ -1,0 +1,12 @@
+specVersion: "v1"
+serviceId: "benefitschatbot"
+location: "us-west1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "benefitschatbot"
+      cloudSql:
+        instanceId: "benefitschatbot-fdc"
+      # schemaValidation: "COMPATIBLE"
+connectorDirs: ["./connector"]

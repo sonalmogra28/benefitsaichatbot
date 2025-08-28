@@ -1,63 +1,77 @@
-# Testing Guide for Live Environment
+# Testing Guide
 
-This guide provides a comprehensive checklist to test the Benefits AI Platform in a live production environment. It's crucial to perform these tests after every deployment to ensure all features are working as expected.
+This guide provides instructions for testing the Benefits AI Platform to ensure it is ready for production.
 
-## Testing Roles
+## Testing Checklist
 
--   **Test User 1:** Super Admin
--   **Test User 2:** Company Admin
--   **Test User 3:** Employee
+### 1. Authentication
+- [ ] User registration (employee)
+- [ ] User login and logout
+- [ ] Role-based access control (super admin, company admin, employee)
+- [ ] Protected routes
 
----
+### 2. Super Admin
+- [ ] Create, view, and manage companies
+- [ ] Create, view, and manage users
+- [ ] Assign roles to users
+- [ ] Upload and manage documents
+- [ ] View analytics dashboard
 
-## Part 1: Super Admin User Journey
+### 3. Company Admin
+- [ ] View and manage employees
+- [ ] View and manage benefit plans
+- [ ] View and manage enrollments
 
-**Objective:** Verify that the super admin can manage the entire platform.
+### 4. Chat
+- [ ] Send and receive messages
+- [ ] View chat history
+- [ ] Create new chats
+- [ ] RAG-powered responses
 
-| # | Test Case | Expected Result | Status |
-| :-- | :--- | :--- | :--- |
-| 1.1 | **Login:** Log in as the super admin. | Successfully redirected to the `/super-admin` dashboard. | ☐ PASS / ☐ FAIL |
-| 1.2 | **Create Company:** Navigate to the "Companies" page and create a new company. | The new company appears in the companies table. | ☐ PASS / ☐ FAIL |
-| 1.3 | **Upload Document:** Navigate to the "Documents" page, select the newly created company, and upload a PDF document. | The document uploads successfully and appears in the document list. The RAG pipeline should process it. | ☐ PASS / ☐ FAIL |
-| 1.4 | **Assign User Role:** Go to the "Users" page and assign the "company_admin" role to a test user for the new company. | The user's role is updated in the database and they now have company admin privileges. | ☐ PASS / ☐ FAIL |
+### 5. Document Processing
+- [ ] Upload a document
+- [ ] Verify that the document is processed correctly
+- [ ] Verify that the embeddings are stored in Firestore
 
----
+### 6. Company Branding
+- [ ] Upload a company logo
+- [ ] Set a primary color
+- [ ] Verify that the branding is applied correctly
 
-## Part 2: Company Admin User Journey
+## Testing Instructions
 
-**Objective:** Verify that the company admin can manage their own company's settings and users.
+### 1. Authentication
+1.  Register a new employee user.
+2.  Log in and out with the new user.
+3.  Create a new super admin user and a new company admin user.
+4.  Log in with each user and verify that they can only access the routes that they are authorized to access.
 
-| # | Test Case | Expected Result | Status |
-| :-- | :--- | :--- | :--- |
-| 2.1 | **Login:** Log in as the company admin. | Successfully redirected to the company admin dashboard for the correct company. | ☐ PASS / ☐ FAIL |
-| 2.2 | **View Employees:** Navigate to the "Employees" page. | Only employees belonging to the correct company are visible. | ☐ PASS / ☐ FAIL |
-| 2.3 | **Manage Benefits:** Go to the "Benefits" page and verify you can view and compare benefit plans. | All benefit-related features work correctly. | ☐ PASS / ☐ FAIL |
-| 2.4 | **HRIS Integration:** Navigate to "Settings > Integrations" and connect a Google Workspace account. | The OAuth flow completes successfully and a test user sync can be initiated. | ☐ PASS / ☐ FAIL |
-| 2.5 | **Data Isolation:** Attempt to access a super admin URL (e.g., `/super-admin/companies`). | Access is denied, and the user is redirected or shown a "Forbidden" error. | ☐ PASS / ☐ FAIL |
+### 2. Super Admin
+1.  Log in as a super admin.
+2.  Create a new company.
+3.  Create a new user and assign them the company admin role.
+4.  Upload a document.
+5.  View the analytics dashboard and verify that the data is correct.
 
----
+### 3. Company Admin
+1.  Log in as a company admin.
+2.  Verify that you can view the employees, benefit plans, and enrollments for your company.
 
-## Part 3: Employee User Journey
+### 4. Chat
+1.  Log in as an employee.
+2.  Send a message to the chatbot.
+3.  Verify that you receive a response.
+4.  View your chat history.
+5.  Create a new chat.
 
-**Objective:** Verify that employees can use the chat and self-service features correctly.
+### 5. Document Processing
+1.  Log in as a super admin.
+2.  Upload a document.
+3.  Go to the Firestore console and verify that a new document has been created in the `documents` collection.
+4.  Verify that the document contains the correct text and embeddings.
 
-| # | Test Case | Expected Result | Status |
-| :-- | :--- | :--- | :--- |
-| 3.1 | **Login:** Log in as a regular employee. | Successfully redirected to the main chat interface. | ☐ PASS / ☐ FAIL |
-| 3.2 | **Chat with RAG:** Ask the chatbot a question that can only be answered by the document uploaded by the super admin. | The chatbot provides a correct and relevant answer based on the document's content. | ☐ PASS / ☐ FAIL |
-| 3.3 | **View Benefits:** Ask the chatbot to show your current benefits or navigate to the benefits page. | The correct benefits for the employee are displayed. | ☐ PASS / ☐ FAIL |
-| 3.4 | **Data Isolation:** Attempt to access an admin URL (e.g., `/company-admin/employees`). | Access is denied, and the user is redirected or shown a "Forbidden" error. | ☐ PASS / ☐ FAIL |
-
----
-
-## Part 4: Technical & Security Checks
-
-**Objective:** Verify the technical health and security of the live application.
-
-| # | Test Case | Expected Result | Status |
-| :-- | :--- | :--- | :--- |
-| 4.1 | **Check Console Logs:** Open the browser's developer tools and check for any console errors while navigating the app. | No critical errors are present. | ☐ PASS / ☐ FAIL |
-| 4.2 | **Check Network Requests:** Monitor the network tab for any failing API requests (4xx or 5xx status codes). | All API requests are successful. | ☐ PASS / ☐ FAIL |
-| 4.3 | **Test In-App Guide:** Navigate to the `/guide` page as each user role. | The correct guide is displayed for each role. | ☐ PASS / ☐ FAIL |
-
-By completing this testing checklist, you can be confident that your application is fully functional and ready for users.
+### 6. Company Branding
+1.  Log in as a super admin.
+2.  Go to the branding page for a company.
+3.  Upload a logo and set a primary color.
+4.  Log in as an employee of that company and verify that the branding is applied correctly.

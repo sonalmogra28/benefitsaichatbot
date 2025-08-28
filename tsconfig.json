@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,20 +23,55 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "next/*": ["./node_modules/next/*"]
+      "@/*": [
+        "./*"
+      ],
+      "next/*": [
+        "./node_modules/next/*"
+      ]
     }
   },
   "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "context/**/*.ts",
+    "context/**/*.tsx",
+    "hooks/**/*.ts",
+    "hooks/**/*.tsx",
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    "middleware.ts",
     "next-env.d.ts",
     "types/**/*.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "next.config.js",
-    "scripts/**/*.ts"
+    ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "vitest.config.ts", "**/*.test.ts", "**/*.spec.ts"],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out",
+    "dist",
+    "build",
+    "coverage",
+    "vitest.config.ts",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "tests",
+    "__tests__",
+    "scripts",
+    "functions",
+    "artifacts",
+    "archive",
+    "gemini",
+    "dataconnect",
+    ".development_protocol",
+    ".husky",
+    ".idx",
+    ".github",
+    ".vscode",
+    "public"
+  ],
   "ts-node": {
     "compilerOptions": {
       "module": "CommonJS"

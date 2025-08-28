@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { withPlatformAdmin } from '@/lib/auth/api-middleware';
+import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
 import { z } from 'zod';
 
@@ -21,7 +21,7 @@ const exportSchema = z.object({
 const superAdminService = new SuperAdminService();
 
 // POST /api/super-admin/export - Export system data
-export const POST = withPlatformAdmin(async (request: NextRequest) => {
+export const POST = requireSuperAdmin(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const validated = exportSchema.parse(body);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import useSWR, { mutate } from 'swr';
 import {
   Card,
   CardContent,
@@ -69,12 +70,12 @@ interface EmployeeListProps {
   companyName?: string;
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export function EmployeeList({
   companyId,
   companyName = 'Your Company',
 }: EmployeeListProps) {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -90,48 +91,20 @@ export function EmployeeList({
   });
   const { toast } = useToast();
 
-  // Fetch employees from API
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({
-          search: searchQuery,
-          role: filterRole,
-          status: filterStatus,
-        });
+  const { data, error, isLoading } = useSWR(
+    `/api/company-admin/employees?companyId=${companyId}&search=${searchQuery}&role=${filterRole}&status=${filterStatus}`,
+    fetcher
+  );
 
-        const response = await fetch(`/api/company-admin/employees?${params}`);
-        if (!response.ok) throw new Error('Failed to fetch employees');
-
-        const data = await response.json();
-        setEmployees(
-          data.employees.map((emp: any) => ({
-            ...emp,
-            lastActive: emp.lastActive ? new Date(emp.lastActive) : undefined,
-            createdAt: new Date(emp.createdAt),
-          })),
-        );
-      } catch (error) {
-        console.error('Error fetching employees:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load employees',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEmployees();
-  }, [companyId, searchQuery, filterRole, filterStatus, toast]);
-
-  const filteredEmployees = employees;
+  const employees: Employee[] = data?.employees.map((emp: any) => ({
+    ...emp,
+    lastActive: emp.lastActive ? new Date(emp.lastActive) : undefined,
+    createdAt: new Date(emp.createdAt),
+  })) || [];
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedEmployees(filteredEmployees.map((e) => e.id));
+      setSelectedEmployees(employees.map((e) => e.id));
     } else {
       setSelectedEmployees([]);
     }
@@ -172,8 +145,7 @@ export function EmployeeList({
         lastName: '',
       });
 
-      // Refresh the employee list
-      window.location.reload();
+      mutate(`/api/company-admin/employees?companyId=${companyId}&search=${searchQuery}&role=${filterRole}&status=${filterStatus}`);
     } catch (error) {
       toast({
         title: 'Error',
@@ -201,8 +173,7 @@ export function EmployeeList({
           description: 'The employee has been deactivated successfully',
         });
 
-        // Refresh the list
-        window.location.reload();
+        mutate(`/api/company-admin/employees?companyId=${companyId}&search=${searchQuery}&role=${filterRole}&status=${filterStatus}`);
       } else if (action === 'send-email') {
         // TODO: Implement email sending
         toast({
@@ -296,13 +267,26 @@ export function EmployeeList({
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center h-64">
           <div className="text-center">
             <Activity className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">Loading employees...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-4" />
+            <p className="text-red-500">Failed to load employees</p>
           </div>
         </CardContent>
       </Card>
@@ -441,8 +425,8 @@ export function EmployeeList({
                   <th className="text-left p-4">
                     <Checkbox
                       checked={
-                        selectedEmployees.length === filteredEmployees.length &&
-                        filteredEmployees.length > 0
+                        selectedEmployees.length === employees.length &&
+                        employees.length > 0
                       }
                       onCheckedChange={handleSelectAll}
                     />
@@ -457,7 +441,7 @@ export function EmployeeList({
                 </tr>
               </thead>
               <tbody>
-                {filteredEmployees.map((employee) => (
+                {employees.map((employee) => (
                   <tr key={employee.id} className="border-b hover:bg-muted/50">
                     <td className="p-4">
                       <Checkbox
@@ -548,7 +532,7 @@ export function EmployeeList({
             </table>
           </div>
 
-          {filteredEmployees.length === 0 && (
+          {employees.length === 0 && (
             <div className="text-center py-8">
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No employees found</h3>
@@ -703,4 +687,3 @@ export function EmployeeList({
     </div>
   );
 }
-

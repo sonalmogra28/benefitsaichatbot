@@ -1,8 +1,7 @@
-import { Resend } from 'resend';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase'; // Assuming your firebase init is in lib/firebase.ts
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
-
+// Interfaces remain the same as they define the public contract of the service
 export interface EmailOptions {
   to: string | string[];
   subject: string;
@@ -33,31 +32,26 @@ export interface NotificationData {
 }
 
 export class EmailService {
-  private fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
+  private fromEmail = process.env.FROM_EMAIL || 'Benefits Chatbot <noreply@yourdomain.com>'; // Update with a real domain
+  private emailsCollection = collection(db, 'pending_emails');
 
-  async sendEmail(
+  private async queueEmail(
     options: EmailOptions,
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      if (!process.env.RESEND_API_KEY) {
-        throw new Error('RESEND_API_KEY environment variable is not set');
-      }
-
-      const result = await resend.emails.send({
+      await addDoc(this.emailsCollection, {
+        to: Array.isArray(options.to) ? options.to : [options.to],
+        message: {
+          subject: options.subject,
+          html: options.html,
+        },
         from: options.from || this.fromEmail,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
+        createdAt: serverTimestamp(),
+        status: 'PENDING',
       });
-
-      if (result.error) {
-        console.error('Resend error:', result.error);
-        return { success: false, error: result.error.message };
-      }
-
       return { success: true };
     } catch (error) {
-      console.error('Email sending failed:', error);
+      console.error('Failed to queue email in Firestore:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -65,6 +59,7 @@ export class EmailService {
     }
   }
 
+  // sendUserInvite now uses queueEmail
   async sendUserInvite(
     data: UserInviteData,
   ): Promise<{ success: boolean; error?: string }> {
@@ -94,9 +89,9 @@ export class EmailService {
             <div class="content">
               <h2>Hi ${data.name}!</h2>
               <p>You've been invited to join the <strong>${data.companyName}</strong> benefits portal. This platform will help you understand and manage your employee benefits.</p>
-              
+
               <div class="role-badge">Role: ${data.role.replace('_', ' ').toUpperCase()}</div>
-              
+
               <p>With this portal, you can:</p>
               <ul>
                 <li>View and compare benefit plans</li>
@@ -104,15 +99,15 @@ export class EmailService {
                 <li>Get AI-powered answers to benefits questions</li>
                 <li>Access important documents and resources</li>
               </ul>
-              
+
               <p>Click the button below to set up your account:</p>
               <a href="${data.inviteLink}" class="button">Accept Invitation</a>
-              
+
               <p>If the button doesn't work, copy and paste this link into your browser:</p>
               <p style="word-break: break-all; color: #667eea;">${data.inviteLink}</p>
-              
+
               <p>If you have any questions, feel free to reach out to your HR team.</p>
-              
+
               <p>Best regards,<br>The ${data.companyName} Team</p>
             </div>
             <div class="footer">
@@ -123,13 +118,14 @@ export class EmailService {
       </html>
     `;
 
-    return this.sendEmail({
+    return this.queueEmail({
       to: data.email,
       subject: `Welcome to ${data.companyName} Benefits Portal`,
       html,
     });
   }
 
+  // sendPasswordReset now uses queueEmail
   async sendPasswordReset(
     data: PasswordResetData,
   ): Promise<{ success: boolean; error?: string }> {
@@ -159,21 +155,21 @@ export class EmailService {
             <div class="content">
               <h2>Hi ${data.name}!</h2>
               <p>We received a request to reset your password for your benefits portal account.</p>
-              
+
               <div class="warning">
                 <strong>Security Notice:</strong> If you didn't request this password reset, please ignore this email. Your password will remain unchanged.
               </div>
-              
+
               <p>To reset your password, click the button below:</p>
               <a href="${data.resetLink}" class="button">Reset Password</a>
-              
+
               <p>If the button doesn't work, copy and paste this link into your browser:</p>
               <p style="word-break: break-all; color: #dc2626;">${data.resetLink}</p>
-              
+
               <p><strong>This link will expire in 24 hours</strong> for security reasons.</p>
-              
+
               <p>If you continue to have problems, contact your HR team for assistance.</p>
-              
+
               <p>Best regards,<br>The Benefits Portal Team</p>
             </div>
             <div class="footer">
@@ -184,13 +180,14 @@ export class EmailService {
       </html>
     `;
 
-    return this.sendEmail({
+    return this.queueEmail({
       to: data.email,
       subject: 'Reset Your Benefits Portal Password',
       html,
     });
   }
-
+  
+  // sendNotification now uses queueEmail
   async sendNotification(
     data: NotificationData,
   ): Promise<{ success: boolean; error?: string }> {
@@ -221,7 +218,7 @@ export class EmailService {
               <div style="font-size: 16px; margin: 20px 0;">
                 ${data.message}
               </div>
-              
+
               ${
                 data.actionUrl
                   ? `
@@ -229,7 +226,7 @@ export class EmailService {
               `
                   : ''
               }
-              
+
               <p>Best regards,<br>The Benefits Portal Team</p>
             </div>
             <div class="footer">
@@ -240,7 +237,7 @@ export class EmailService {
       </html>
     `;
 
-    return this.sendEmail({
+    return this.queueEmail({
       to: data.email,
       subject: data.title,
       html,

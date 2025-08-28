@@ -1,47 +1,19 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/app/(auth)/stack-auth';
-import { db } from '@/lib/db';
-import { users, benefitEnrollments, benefitPlans } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { withAuth } from '@/lib/auth/admin-middleware';
+import { USER_ROLES } from '@/lib/constants/roles';
+import { benefitService } from '@/lib/firebase/services/benefit.service';
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(USER_ROLES.EMPLOYEE, async (request: NextRequest, context, user) => {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.stackUserId, session.user.id));
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const enrollments = await db
-      .select()
-      .from(benefitEnrollments)
-      .innerJoin(benefitPlans, eq(benefitEnrollments.benefitPlanId, benefitPlans.id))
-      .where(eq(benefitEnrollments.userId, user.id));
-
-    const healthPlanEnrollment = enrollments.find(e => e.benefit_plans.type === 'health');
+    const enrollments = await benefitService.getBenefitEnrollments(user.uid);
 
     const summary = {
-      healthPlan: healthPlanEnrollment ? {
-        name: healthPlanEnrollment.benefit_plans.name,
-        type: healthPlanEnrollment.benefit_plans.category,
-        deductibleUsed: 500, // Mock data
-        deductibleTotal: healthPlanEnrollment.benefit_plans.deductibleIndividual,
-        outOfPocketUsed: 1200, // Mock data
-        outOfPocketMax: healthPlanEnrollment.benefit_plans.outOfPocketMaxIndividual,
-      } : undefined,
+      healthPlan: undefined, // TODO: Implement health plan summary
       coverageTypes: enrollments.map(e => ({
-        type: e.benefit_plans.type,
-        status: e.benefit_enrollments.status,
-        monthlyPremium: e.benefit_enrollments.monthlyCost,
-        coverageLevel: e.benefit_enrollments.coverageType,
+        type: 'health', // TODO: Get type from benefit plan
+        status: e.status,
+        monthlyPremium: e.monthlyCost,
+        coverageLevel: e.coverageType,
       })),
       upcomingDeadlines: [
         {
@@ -64,4 +36,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

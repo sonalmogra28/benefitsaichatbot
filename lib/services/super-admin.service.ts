@@ -1,552 +1,357 @@
-import { db } from '@/lib/db';
-import {
-  companies,
-  users,
-  knowledgeBaseDocuments,
-  chats,
-  messages,
-} from '@/lib/db/schema';
-import {
-  eq,
-  sql,
-  desc,
-  and,
-  gte,
-  count,
-  sum,
-} from 'drizzle-orm';
-import { emailService } from '@/lib/services/email.service';
-import type {
-  CompanyCreateInput,
-  CompanyUpdateInput,
-  CompanyWithStats,
-  UserWithCompany,
-  BulkUserCreateInput,
-  SystemAnalytics,
-  AuditLog,
-  DataExportRequest,
-  SystemSettings,
-  AuditAction,
-} from '@/lib/types/super-admin';
+import { db } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
-export class SuperAdminService {
-  // Company Management
-  async createCompany(
-    input: Omit<CompanyCreateInput, 'features'> & { features: string[] },
-  ): Promise<CompanyWithStats> {
-    const [company] = await db
-      .insert(companies)
-      .values({
-        name: input.name,
-        domain: input.domain,
-        stackOrgId: `temp-org-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID until Stack Auth creates real one
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
+export interface DashboardStats {
+  totalCompanies: number;
+  totalUsers: number;
+  totalDocuments: number;
+  activeChats: number;
+  monthlyGrowth: number;
+  systemHealth: 'healthy' | 'degraded' | 'down';
+  apiUsage: number;
+  storageUsed: number;
+}
 
-    // Create admin user for the company
-    if (input.adminEmail) {
-      await db.insert(users).values({
-        stackUserId: `temp-user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID until Stack Auth creates real one
-        email: input.adminEmail,
-        firstName: input.adminEmail.split('@')[0],
-        lastName: '',
-        role: 'company_admin',
-        companyId: company.id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+export interface ActivityLog {
+  id: string;
+  type: 'company_added' | 'user_enrolled' | 'document_uploaded' | 'plan_created';
+  message: string;
+  timestamp: Date;
+  metadata?: Record<string, any>;
+}
+
+class SuperAdminService {
+  /**
+   * Get dashboard statistics
+   */
+  async getDashboardStats(): Promise<DashboardStats> {
+    try {
+      // Fetch companies count
+      const companiesSnapshot = await db.collection('companies').get();
+      const totalCompanies = companiesSnapshot.size;
+
+      // Fetch users count
+      const usersSnapshot = await db.collection('users').get();
+      const totalUsers = usersSnapshot.size;
+
+      // Fetch documents count
+      const documentsSnapshot = await db.collection('documents').get();
+      const totalDocuments = documentsSnapshot.size;
+
+      // Fetch active chats (created in last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const activeChatsSnapshot = await db
+        .collection('chats')
+        .where('createdAt', '>=', thirtyDaysAgo)
+        .get();
+      const activeChats = activeChatsSnapshot.size;
+
+      // Calculate monthly growth (compare to previous month)
+      const sixtyDaysAgo = new Date();
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      
+      const lastMonthCompanies = await db
+        .collection('companies')
+        .where('createdAt', '>=', sixtyDaysAgo)
+        .where('createdAt', '<', thirtyDaysAgo)
+        .get();
+      
+      const thisMonthCompanies = await db
+        .collection('companies')
+        .where('createdAt', '>=', thirtyDaysAgo)
+        .get();
+      
+      const monthlyGrowth = lastMonthCompanies.size > 0
+        ? ((thisMonthCompanies.size - lastMonthCompanies.size) / lastMonthCompanies.size) * 100
+        : 0;
+
+      // Check system health (simplified)
+      const systemHealth = await this.checkSystemHealth();
+
+      // Get API usage (from logs or monitoring)
+      const apiUsage = await this.getApiUsage();
+
+      // Get storage usage
+      const storageUsed = await this.getStorageUsage();
+
+      return {
+        totalCompanies,
+        totalUsers,
+        totalDocuments,
+        activeChats,
+        monthlyGrowth: Math.round(monthlyGrowth * 10) / 10,
+        systemHealth,
+        apiUsage,
+        storageUsed,
+      };
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      // Return default values on error
+      return {
+        totalCompanies: 0,
+        totalUsers: 0,
+        totalDocuments: 0,
+        activeChats: 0,
+        monthlyGrowth: 0,
+        systemHealth: 'degraded',
+        apiUsage: 0,
+        storageUsed: 0,
+      };
     }
-
-    await this.logAudit('company.created', 'company', company.id, {
-      name: input.name,
-      domain: input.domain,
-      billingPlan: input.billingPlan,
-    });
-
-    return this.getCompanyWithStats(company.id);
   }
 
-  async updateCompany(
-    id: string,
-    input: Omit<CompanyUpdateInput, 'features'> & { features?: string[] },
-  ): Promise<CompanyWithStats> {
-    const [updated] = await db
-      .update(companies)
-      .set({
-        ...input,
-        updatedAt: new Date(),
-      })
-      .where(eq(companies.id, id))
-      .returning();
+  /**
+   * Get recent activity logs
+   */
+  async getRecentActivity(limit = 10): Promise<ActivityLog[]> {
+    try {
+      const logsSnapshot = await db
+        .collection('activity_logs')
+        .orderBy('timestamp', 'desc')
+        .limit(limit)
+        .get();
 
-    await this.logAudit('company.updated', 'company', id, input);
-
-    return this.getCompanyWithStats(id);
-  }
-
-  async deleteCompany(id: string): Promise<void> {
-    // Soft delete - mark as inactive
-    await db
-      .update(companies)
-      .set({
-        isActive: false,
-        updatedAt: new Date(),
-      })
-      .where(eq(companies.id, id));
-
-    await this.logAudit('company.deleted', 'company', id, {});
-  }
-
-  async getCompanyWithStats(id: string): Promise<CompanyWithStats> {
-    const [company] = await db
-      .select()
-      .from(companies)
-      .where(eq(companies.id, id))
-      .limit(1);
-
-    const stats = await this.getCompanyStats(id);
-
-    return {
-      ...company,
-      ...stats,
-    };
-  }
-
-  async listCompanies(
-    page = 1,
-    limit = 20,
-    includeDeleted = false,
-  ): Promise<{ companies: CompanyWithStats[]; total: number }> {
-    const offset = (page - 1) * limit;
-
-    const whereClause = includeDeleted
-      ? undefined
-      : eq(companies.isActive, true);
-
-    const companiesList = await db
-      .select()
-      .from(companies)
-      .where(whereClause)
-      .orderBy(desc(companies.createdAt))
-      .limit(limit)
-      .offset(offset);
-
-    const companiesWithStats = await Promise.all(
-      companiesList.map(async (company) => {
-        const stats = await this.getCompanyStats(company.id);
-        return { ...company, ...stats };
-      }),
-    );
-
-    const totalQuery = whereClause
-      ? await db.select({ total: count() }).from(companies).where(whereClause)
-      : await db.select({ total: count() }).from(companies);
-    const [{ total }] = totalQuery;
-
-    return { companies: companiesWithStats, total };
-  }
-
-  private async getCompanyStats(companyId: string) {
-    const [userStats] = await db
-      .select({ count: count() })
-      .from(users)
-      .where(eq(users.companyId, companyId));
-
-    const [docStats] = await db
-      .select({ count: count() })
-      .from(knowledgeBaseDocuments)
-      .where(eq(knowledgeBaseDocuments.companyId, companyId));
-
-    const [chatStats] = await db
-      .select({ count: count() })
-      .from(chats)
-      .innerJoin(users, eq(chats.userId, users.id))
-      .where(eq(users.companyId, companyId));
-
-    // Calculate storage (simplified - would need actual file sizes)
-    const storageUsed = docStats.count * 1024 * 1024; // Assume 1MB per doc
-
-    // Get last activity
-    const [lastActivity] = await db
-      .select({ lastActive: sql`MAX(${messages.createdAt})` })
-      .from(messages)
-      .innerJoin(chats, eq(messages.chatId, chats.id))
-      .innerJoin(users, eq(chats.userId, users.id))
-      .where(eq(users.companyId, companyId));
-
-    // Monthly active users (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    const [mauStats] = await db
-      .select({ count: count() })
-      .from(users)
-      .innerJoin(chats, eq(users.id, chats.userId))
-      .where(
-        and(
-          eq(users.companyId, companyId),
-          gte(chats.createdAt, thirtyDaysAgo),
-        ),
-      );
-
-    return {
-      userCount: userStats.count,
-      documentCount: docStats.count,
-      chatCount: chatStats.count,
-      lastActivity: lastActivity?.lastActive
-        ? new Date(lastActivity.lastActive as any)
-        : undefined,
-      storageUsed,
-      monthlyActiveUsers: mauStats.count,
-    };
-  }
-
-  // User Management
-  async createBulkUsers(
-    input: BulkUserCreateInput,
-  ): Promise<(typeof users.$inferSelect)[]> {
-    // Get company details for email invitations
-    const [company] = await db
-      .select()
-      .from(companies)
-      .where(eq(companies.id, input.companyId))
-      .limit(1);
-
-    if (!company) {
-      throw new Error('Company not found');
-    }
-
-    const newUsers = await db
-      .insert(users)
-      .values(
-        input.users.map((user) => ({
-          stackUserId: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID until Stack Auth creates real one
-          email: user.email,
-          firstName: user.name.split(' ')[0] || '',
-          lastName: user.name.split(' ').slice(1).join(' ') || '',
-          role: user.type,
-          companyId: input.companyId,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })),
-      )
-      .returning();
-
-    await this.logAudit('user.created', 'user', '', {
-      count: newUsers.length,
-      companyId: input.companyId,
-    });
-
-    // Send invitation emails if requested
-    if (input.sendInvites) {
-      const emailPromises = newUsers.map(async (user) => {
-        // Generate invite link (this would typically include a secure token)
-        const inviteLink = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/auth/setup?token=${user.id}&email=${encodeURIComponent(user.email)}`;
-
-        const result = await emailService.sendUserInvite({
-          email: user.email,
-          name: `${user.firstName} ${user.lastName}`.trim(),
-          companyName: company.name,
-          inviteLink,
-          role: user.role,
-        });
-
-        if (!result.success) {
-          console.error(
-            `Failed to send invite email to ${user.email}:`,
-            result.error,
-          );
-          // Log the failure but don't fail the entire operation
-          await this.logAudit('email.failed', 'user', user.id, {
-            email: user.email,
-            error: result.error,
-          });
-        } else {
-          await this.logAudit('email.sent', 'user', user.id, {
-            email: user.email,
-            type: 'invitation',
-          });
-        }
-
-        return result;
-      });
-
-      // Wait for all emails to be sent
-      await Promise.all(emailPromises);
-    }
-
-    return newUsers;
-  }
-
-  async listAllUsers(
-    page = 1,
-    limit = 50,
-    companyId?: string,
-  ): Promise<{ users: UserWithCompany[]; total: number }> {
-    const offset = (page - 1) * limit;
-
-    const whereClause = companyId ? eq(users.companyId, companyId) : undefined;
-
-    const usersList = await db
-      .select({
-        user: users,
-        company: companies,
-      })
-      .from(users)
-      .leftJoin(companies, eq(users.companyId, companies.id))
-      .where(whereClause)
-      .orderBy(desc(users.createdAt))
-      .limit(limit)
-      .offset(offset);
-
-    const usersWithStats = await Promise.all(
-      usersList.map(async (row) => {
-        const [chatCount] = await db
-          .select({ count: count() })
-          .from(chats)
-          .where(eq(chats.userId, row.user.id));
-
+      return logsSnapshot.docs.map(doc => {
+        const data = doc.data();
         return {
-          ...row.user,
-          company: row.company ?? undefined,
-          chatCount: chatCount.count,
-          documentCount: 0, // TODO: Implement document ownership
-        } as UserWithCompany;
-      }),
-    );
-
-    const [{ total }] = await db
-      .select({ total: count() })
-      .from(users)
-      .where(whereClause);
-
-    return { users: usersWithStats, total };
+          id: doc.id,
+          type: data.type,
+          message: data.message,
+          timestamp: data.timestamp?.toDate() || new Date(),
+          metadata: data.metadata,
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching activity logs:', error);
+      return [];
+    }
   }
 
-  async updateUserRole(userId: string, newType: string): Promise<void> {
-    const [oldUser] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
+  /**
+   * Create a new company
+   */
+  async createCompany(companyData: {
+    name: string;
+    domain?: string;
+    employeeLimit?: number;
+    adminEmail: string;
+  }) {
+    try {
+      const companyRef = db.collection('companies').doc();
+      
+      const newCompany = {
+        id: companyRef.id,
+        name: companyData.name,
+        domain: companyData.domain || null,
+        employeeLimit: companyData.employeeLimit || 1000,
+        adminEmail: companyData.adminEmail,
+        status: 'active',
+        employeeCount: 0,
+        planCount: 0,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        settings: {
+          allowSelfRegistration: false,
+          requireEmailVerification: true,
+          defaultRole: 'employee',
+        },
+      };
 
-    await db
-      .update(users)
-      .set({ role: newType, updatedAt: new Date() })
-      .where(eq(users.id, userId));
+      await companyRef.set(newCompany);
 
-    await this.logAudit('user.role_changed', 'user', userId, {
-      oldRole: oldUser.role,
-      newRole: newType,
-    });
+      // Log the activity
+      await this.logActivity({
+        type: 'company_added',
+        message: `New company "${companyData.name}" registered`,
+        metadata: { companyId: companyRef.id },
+      });
+
+      return { id: companyRef.id, ...newCompany };
+    } catch (error) {
+      console.error('Error creating company:', error);
+      throw error;
+    }
   }
 
-  async suspendUser(userId: string): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        isActive: false,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, userId));
+  /**
+   * Get all companies with pagination
+   */
+  async getCompanies(limit = 20, startAfter?: string) {
+    try {
+      let query = db
+        .collection('companies')
+        .orderBy('createdAt', 'desc')
+        .limit(limit);
 
-    await this.logAudit('user.suspended', 'user', userId, {});
-  }
+      if (startAfter) {
+        const startDoc = await db.collection('companies').doc(startAfter).get();
+        query = query.startAfter(startDoc);
+      }
 
-  // System Analytics
-  async getSystemAnalytics(): Promise<SystemAnalytics> {
-    // Company metrics
-    const [companyStats] = await db
-      .select({
-        total: count(),
-        active: sum(
-          sql`CASE WHEN ${companies.isActive} = true THEN 1 ELSE 0 END`,
-        ),
-      })
-      .from(companies);
+      const snapshot = await query.get();
 
-    // User metrics
-    const [userStats] = await db.select({ total: count() }).from(users);
-
-    const now = new Date();
-    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    // Active users
-    const [dailyActive] = await db
-      .select({ count: count() })
-      .from(users)
-      .innerJoin(chats, eq(users.id, chats.userId))
-      .where(gte(chats.createdAt, dayAgo));
-
-    const [weeklyActive] = await db
-      .select({ count: count() })
-      .from(users)
-      .innerJoin(chats, eq(users.id, chats.userId))
-      .where(gte(chats.createdAt, weekAgo));
-
-    const [monthlyActive] = await db
-      .select({ count: count() })
-      .from(users)
-      .innerJoin(chats, eq(users.id, chats.userId))
-      .where(gte(chats.createdAt, monthAgo));
-
-    // Usage metrics
-    const [usageStats] = await db
-      .select({
-        totalChats: count(chats.id),
-        totalMessages: count(messages.id),
-        totalDocuments: count(knowledgeBaseDocuments.id),
-      })
-      .from(chats)
-      .leftJoin(messages, eq(chats.id, messages.chatId))
-      .leftJoin(knowledgeBaseDocuments, sql`true`);
-
-    // Storage by company
-    const storageByCompany = await db
-      .select({
-        companyId: companies.id,
-        name: companies.name,
-        docCount: count(knowledgeBaseDocuments.id),
-      })
-      .from(companies)
-      .leftJoin(
-        knowledgeBaseDocuments,
-        eq(companies.id, knowledgeBaseDocuments.companyId),
-      )
-      .groupBy(companies.id, companies.name)
-      .orderBy(desc(count(knowledgeBaseDocuments.id)))
-      .limit(10);
-
-    return {
-      totalCompanies: Number(companyStats.total),
-      activeCompanies: Number(companyStats.active || 0),
-      totalUsers: userStats.total,
-      activeUsers: {
-        daily: dailyActive.count,
-        weekly: weeklyActive.count,
-        monthly: monthlyActive.count,
-      },
-      storage: {
-        total: 100 * 1024 * 1024 * 1024, // 100GB total
-        used: storageByCompany.reduce(
-          (acc, c) => acc + c.docCount * 1024 * 1024,
-          0,
-        ),
-        byCompany: storageByCompany.map((c) => ({
-          companyId: c.companyId,
-          name: c.name,
-          used: c.docCount * 1024 * 1024, // Assume 1MB per doc
+      return {
+        companies: snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
         })),
-      },
-      usage: {
-        totalChats: usageStats.totalChats,
-        totalMessages: usageStats.totalMessages,
-        totalDocuments: usageStats.totalDocuments,
-        averageChatsPerUser:
-          userStats.total > 0
-            ? Math.round((usageStats.totalChats / userStats.total) * 10) / 10
-            : 0,
-        peakHours: [], // TODO: Implement hourly usage tracking
-      },
-      revenue: {
-        mrr: 0, // TODO: Implement billing integration
-        arr: 0,
-        byPlan: [],
-        churnRate: 0,
-      },
-    };
-  }
-
-  // Audit Logging
-  private async logAudit(
-    action: AuditAction,
-    resourceType: AuditLog['resourceType'],
-    resourceId: string,
-    details: Record<string, any>,
-  ): Promise<void> {
-    // TODO: Get current user from context
-    const userId = 'system';
-    const userEmail = 'system@platform';
-
-    // In production, this would write to a dedicated audit log table
-  }
-
-  // Data Export
-  async exportData(request: DataExportRequest): Promise<any> {
-    const exports: Record<string, any[]> = {};
-
-    if (request.includeTypes.includes('companies')) {
-      const { companies } = await this.listCompanies(1, 10000, true);
-      exports.companies = companies;
+        hasMore: snapshot.size === limit,
+        lastDoc: snapshot.docs[snapshot.docs.length - 1]?.id,
+      };
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+      return { companies: [], hasMore: false, lastDoc: null };
     }
-
-    if (request.includeTypes.includes('users')) {
-      const { users } = await this.listAllUsers(1, 10000, request.companyId);
-      exports.users = users;
-    }
-
-    if (request.includeTypes.includes('documents')) {
-      const docs = await db
-        .select()
-        .from(knowledgeBaseDocuments)
-        .where(
-          request.companyId
-            ? eq(knowledgeBaseDocuments.companyId, request.companyId)
-            : undefined,
-        );
-      exports.documents = docs;
-    }
-
-    // TODO: Add date range filtering
-    // TODO: Add format conversion (CSV, Excel)
-
-    await this.logAudit('data.exported', 'system', '', {
-      types: request.includeTypes,
-      companyId: request.companyId,
-      format: request.format,
-    });
-
-    return exports;
   }
 
-  // System Settings
-  async getSystemSettings(): Promise<SystemSettings> {
-    // In production, this would be stored in a database
-    return {
-      maintenanceMode: false,
-      signupsEnabled: true,
-      defaultBillingPlan: 'starter',
-      maxCompaniesPerDomain: 5,
-      emailSettings: {
-        provider: 'sendgrid',
-        fromEmail: 'noreply@platform.com',
-        fromName: 'Benefits Platform',
-      },
-      storageSettings: {
-        provider: 's3',
-        maxFileSizeMB: 50,
-        allowedFileTypes: ['.pdf', '.doc', '.docx', '.txt'],
-      },
-      aiSettings: {
-        provider: 'openai',
-        model: 'gpt-4',
-        maxTokensPerRequest: 4000,
-        rateLimitPerMinute: 60,
-      },
-      featureFlags: {
-        newOnboarding: true,
-        advancedAnalytics: false,
-        apiAccess: true,
-      },
-    };
+  /**
+   * Update company status
+   */
+  async updateCompanyStatus(companyId: string, status: 'active' | 'suspended' | 'inactive') {
+    try {
+      await db.collection('companies').doc(companyId).update({
+        status,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      await this.logActivity({
+        type: 'company_added',
+        message: `Company status updated to ${status}`,
+        metadata: { companyId, status },
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error updating company status:', error);
+      return false;
+    }
   }
 
-  async updateSystemSettings(settings: Partial<SystemSettings>): Promise<void> {
-    await this.logAudit('settings.updated', 'system', '', settings);
-    // TODO: Implement actual settings storage
+  /**
+   * Get platform-wide analytics
+   */
+  async getAnalytics(timeRange: 'day' | 'week' | 'month' | 'year' = 'month') {
+    try {
+      const now = new Date();
+      let startDate = new Date();
+      
+      switch (timeRange) {
+        case 'day':
+          startDate.setDate(now.getDate() - 1);
+          break;
+        case 'week':
+          startDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          startDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'year':
+          startDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+
+      // Fetch various metrics
+      const [chats, messages, documents, users] = await Promise.all([
+        db.collection('chats').where('createdAt', '>=', startDate).get(),
+        db.collection('messages').where('createdAt', '>=', startDate).get(),
+        db.collection('documents').where('uploadedAt', '>=', startDate).get(),
+        db.collection('users').where('createdAt', '>=', startDate).get(),
+      ]);
+
+      return {
+        timeRange,
+        metrics: {
+          totalChats: chats.size,
+          totalMessages: messages.size,
+          documentsUploaded: documents.size,
+          newUsers: users.size,
+        },
+        // Add more detailed analytics as needed
+      };
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check system health
+   */
+  private async checkSystemHealth(): Promise<'healthy' | 'degraded' | 'down'> {
+    try {
+      // Simple health check - try to read from Firestore
+      const testRead = await db.collection('companies').limit(1).get();
+      
+      if (testRead) {
+        return 'healthy';
+      }
+      return 'degraded';
+    } catch (error) {
+      console.error('System health check failed:', error);
+      return 'down';
+    }
+  }
+
+  /**
+   * Get API usage metrics
+   */
+  private async getApiUsage(): Promise<number> {
+    try {
+      // This would typically come from a monitoring service
+      // For now, return a mock value
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const apiLogsSnapshot = await db
+        .collection('api_logs')
+        .where('timestamp', '>=', thirtyDaysAgo)
+        .get();
+      
+      return apiLogsSnapshot.size || 0;
+    } catch (error) {
+      console.error('Error fetching API usage:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Get storage usage
+   */
+  private async getStorageUsage(): Promise<number> {
+    try {
+      // This would typically come from Firebase Storage API
+      // For now, calculate based on document count
+      const documentsSnapshot = await db.collection('documents').get();
+      
+      // Assume average document size of 0.5MB
+      const estimatedSizeGB = (documentsSnapshot.size * 0.5) / 1024;
+      
+      return Math.round(estimatedSizeGB * 10) / 10;
+    } catch (error) {
+      console.error('Error fetching storage usage:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Log activity
+   */
+  private async logActivity(activity: Omit<ActivityLog, 'id' | 'timestamp'>) {
+    try {
+      const logRef = db.collection('activity_logs').doc();
+      
+      await logRef.set({
+        id: logRef.id,
+        ...activity,
+        timestamp: FieldValue.serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error logging activity:', error);
+    }
   }
 }
+
+export const superAdminService = new SuperAdminService();
+export { SuperAdminService };

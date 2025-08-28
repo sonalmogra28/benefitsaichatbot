@@ -1,52 +1,24 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/app/(auth)/stack-auth';
-import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { withAuth } from '@/lib/auth/admin-middleware';
+import { USER_ROLES } from '@/lib/constants/roles';
+import { userService, userMetadataSchema } from '@/lib/firebase/services/user.service';
 import { z } from 'zod';
 
-const updateProfileSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  department: z.string().optional(),
-  employeeId: z.string().optional(),
-  hireDate: z.string().optional(), // YYYY-MM-DD format
+const updateProfileSchema = userMetadataSchema.pick({
+  department: true,
+  hireDate: true,
 });
 
 // GET /api/employee/profile - Get employee profile
-export async function GET(request: NextRequest) {
+export const GET = withAuth(USER_ROLES.EMPLOYEE, async (request: NextRequest, context, user) => {
   try {
-    const session = await auth();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const profile = await userService.getUserFromFirestore(user.uid);
 
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, session.user.id))
-      .limit(1);
-
-    if (!user) {
+    if (!profile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Return user profile data
-    return NextResponse.json({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      department: user.department,
-      role: user.role,
-      companyId: user.companyId,
-      employeeId: user.employeeId,
-      hireDate: user.hireDate,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    });
+    return NextResponse.json(profile);
   } catch (error) {
     console.error('Error fetching profile:', error);
     return NextResponse.json(
@@ -54,42 +26,17 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // PATCH /api/employee/profile - Update employee profile
-export async function PATCH(request: NextRequest) {
+export const PATCH = withAuth(USER_ROLES.EMPLOYEE, async (request: NextRequest, context, user) => {
   try {
-    const session = await auth();
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await request.json();
     const validated = updateProfileSchema.parse(body);
 
-    // Update user profile
-    const [updatedUser] = await db
-      .update(users)
-      .set({
-        ...validated,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, session.user.id))
-      .returning();
+    await userService.updateUserMetadata(user.uid, validated);
 
-    return NextResponse.json({
-      success: true,
-      profile: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName,
-        department: updatedUser.department,
-        employeeId: updatedUser.employeeId,
-        hireDate: updatedUser.hireDate,
-      }
-    });
+    return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -104,4 +51,4 @@ export async function PATCH(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

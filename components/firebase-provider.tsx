@@ -1,14 +1,7 @@
 'use client';
 
-import { app } from '@/lib/firebase';
-import { AuthProvider } from 'react-firebase-hooks/auth';
-import { getAuth } from 'firebase/auth';
+import { AuthProvider } from '@/lib/firebase/auth-context';
 
-export function FirebaseProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const auth = getAuth(app);
-  return <AuthProvider sdk={auth}>{children}</AuthProvider>;
+export function FirebaseProvider({ children }: { children: React.ReactNode }) {
+  return <AuthProvider>{children}</AuthProvider>;
 }

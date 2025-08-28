@@ -1,76 +1,47 @@
-import { cookies } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
-
-import { auth } from '@/app/(auth)/stack-auth';
+import { notFound } from 'next/navigation';
 import { Chat } from '@/components/chat';
-import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
-import { DataStreamHandler } from '@/components/data-stream-handler';
-import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
-import { convertToUIMessages } from '@/lib/utils';
+import { auth } from '@/lib/firebase/admin';
+import { getConversation } from '@/lib/firebase/services/conversation.service';
 
-export default async function Page(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
-  const { id } = params;
-  const chat = await getChatById({ id });
+interface ChatPageProps {
+  params: {
+    id: string;
+  };
+}
 
-  if (!chat) {
+export async function generateMetadata({ params }: ChatPageProps) {
+  return {
+    title: 'Benefits Chat',
+    description: 'Chat with your AI benefits assistant'
+  };
+}
+
+export default async function ChatPage({ params }: ChatPageProps) {
+  // Get the current user session
+  const session = await auth.verifyIdToken(
+    // TODO: Get token from cookies/headers
+    ''
+  ).catch(() => null);
+
+  if (!session) {
     notFound();
   }
 
-  const session = await auth();
-
-  if (!session) {
-    redirect('/api/auth/guest');
-  }
-
-  if (chat.visibility === 'private') {
-    if (!session.user) {
-      return notFound();
-    }
-
-    if (session.user.id !== chat.userId) {
-      return notFound();
-    }
-  }
-
-  const messagesFromDb = await getMessagesByChatId({
-    id,
-  });
-
-  const uiMessages = convertToUIMessages(messagesFromDb);
-
-  const cookieStore = await cookies();
-  const chatModelFromCookie = cookieStore.get('chat-model');
-
-  if (!chatModelFromCookie) {
-    return (
-      <>
-        <Chat
-          id={chat.id}
-          initialMessages={uiMessages}
-          initialChatModel={DEFAULT_CHAT_MODEL}
-          initialVisibilityType={chat.visibility}
-          isReadonly={session?.user?.id !== chat.userId}
-          session={session}
-          autoResume={true}
-        />
-        <DataStreamHandler />
-      </>
-    );
+  // Verify the user has access to this conversation
+  const conversation = await getConversation(params.id, session.uid);
+  
+  if (!conversation) {
+    notFound();
   }
 
   return (
-    <>
-      <Chat
-        id={chat.id}
-        initialMessages={uiMessages}
-        initialChatModel={chatModelFromCookie.value}
-        initialVisibilityType={chat.visibility}
-        isReadonly={session?.user?.id !== chat.userId}
-        session={session}
-        autoResume={true}
-      />
-      <DataStreamHandler />
-    </>
+    <Chat 
+      id={params.id}
+      initialMessages={conversation.messages || []}
+      initialChatModel="gemini-2.0-flash-exp"
+      initialVisibilityType="private"
+      isReadonly={false}
+      autoResume={false}
+    />
   );
 }

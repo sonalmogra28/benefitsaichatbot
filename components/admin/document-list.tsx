@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import useSWR from 'swr';
 import { FileText, Download, Trash2, Eye, Clock, CheckCircle, AlertCircle, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,17 +56,29 @@ export interface Document {
 }
 
 interface DocumentListProps {
-  documents: Document[];
-  onDocumentDeleted?: (documentId: string) => void;
+  companyId: string;
   onDocumentView?: (document: Document) => void;
 }
 
-export function DocumentList({ documents, onDocumentDeleted, onDocumentView }: DocumentListProps) {
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const { data, error, isLoading } = useSWR(
+    `/api/company-admin/documents?companyId=${companyId}`,
+    fetcher
+  );
+
+  const documents: Document[] = data?.documents.map((doc: any) => ({
+    ...doc,
+    processedAt: doc.processedAt ? new Date(doc.processedAt) : undefined,
+    createdAt: new Date(doc.createdAt),
+  })) || [];
 
   // Filter documents
   const filteredDocuments = documents.filter(doc => {
@@ -94,9 +107,8 @@ export function DocumentList({ documents, onDocumentDeleted, onDocumentView }: D
         description: 'The document has been removed from the knowledge base.',
       });
 
-      if (onDocumentDeleted) {
-        onDocumentDeleted(documentId);
-      }
+      // Mutate the SWR cache to reflect the deletion
+      mutate(`/api/company-admin/documents?companyId=${companyId}`);
     } catch (error) {
       toast({
         title: 'Delete failed',
@@ -146,6 +158,14 @@ export function DocumentList({ documents, onDocumentDeleted, onDocumentView }: D
     // You could add different icons for different file types
     return <FileText className="h-4 w-4" />;
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading documents</div>;
+  }
 
   return (
     <div className="space-y-4">

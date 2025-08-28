@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { withPlatformAdmin } from '@/lib/auth/api-middleware';
+import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
 import { z } from 'zod';
 
@@ -30,7 +30,7 @@ const settingsSchema = z.object({
 const superAdminService = new SuperAdminService();
 
 // GET /api/super-admin/settings - Get system settings
-export const GET = withPlatformAdmin(async (request: NextRequest) => {
+export const GET = requireSuperAdmin(async (request: NextRequest) => {
   try {
     const settings = await superAdminService.getSystemSettings();
     return NextResponse.json(settings);
@@ -44,7 +44,7 @@ export const GET = withPlatformAdmin(async (request: NextRequest) => {
 });
 
 // PATCH /api/super-admin/settings - Update system settings
-export const PATCH = withPlatformAdmin(async (request: NextRequest) => {
+export const PATCH = requireSuperAdmin(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const validated = settingsSchema.parse(body);

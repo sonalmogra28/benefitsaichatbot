@@ -1,8 +1,4 @@
-import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { stackServerApp } from '@/stack';
-import { userSyncService } from './user-sync.service';
+import { userService } from '@/lib/firebase/services/user.service';
 import { emailService } from './email.service';
 
 export interface OnboardingData {
@@ -22,42 +18,20 @@ export class OnboardingService {
     data: OnboardingData
   ): Promise<void> {
     try {
-      // Get Stack user
-      const stackUser = await stackServerApp.getUser({ or: 'throw' });
-      if (stackUser.id !== userId) {
-        throw new Error(`User ID mismatch - expected ${userId}, got ${stackUser.id}`);
-      }
-
       // Update user metadata with onboarding selections
       const metadata = {
-        ...stackUser.clientMetadata,
-        department: data.department,
-        location: data.location,
-        hireDate: data.hireDate,
-        benefitsInterests: data.benefitsInterests,
+        ...data,
         onboardingCompleted: true,
         onboardingCompletedAt: new Date().toISOString(),
       };
 
-      await stackUser.update({
-        clientMetadata: metadata,
-      });
-
-      // Update local database
-      await db
-        .update(users)
-        .set({
-          department: data.department,
-          hireDate: data.hireDate || null,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.stackUserId, userId));
-
-      // Sync with Stack Auth
-      await userSyncService.syncCurrentUserToDb(stackUser);
+      await userService.updateUserMetadata(userId, metadata);
 
       // Send welcome email
-      await this.sendWelcomeEmail(stackUser.primaryEmail || '', stackUser.displayName || '');
+      const user = await userService.getUserFromFirestore(userId);
+      if (user) {
+        await this.sendWelcomeEmail(user.email || '', user.displayName || '');
+      }
 
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
@@ -74,12 +48,12 @@ export class OnboardingService {
     completedAt?: string;
   }> {
     try {
-      const stackUser = await stackServerApp.getUser({ or: 'throw' });
-      if (stackUser.id !== userId) {
-        throw new Error(`User ID mismatch - expected ${userId}, got ${stackUser.id}`);
+      const user = await userService.getUserFromFirestore(userId);
+      if (!user) {
+        throw new Error('User not found');
       }
 
-      const metadata = stackUser.clientMetadata || {};
+      const metadata = user.metadata || {};
       const completed = metadata.onboardingCompleted === true;
 
       if (completed) {
@@ -112,24 +86,22 @@ export class OnboardingService {
     data: any
   ): Promise<void> {
     try {
-      const stackUser = await stackServerApp.getUser({ or: 'throw' });
-      if (stackUser.id !== userId) {
-        throw new Error(`User ID mismatch - expected ${userId}, got ${stackUser.id}`);
+      const user = await userService.getUserFromFirestore(userId);
+      if (!user) {
+        throw new Error('User not found');
       }
 
       // Save progress in metadata
-      const onboardingProgress = stackUser.clientMetadata?.onboardingProgress || {};
+      const onboardingProgress = user.metadata?.onboardingProgress || {};
       onboardingProgress[step] = {
         data,
         completedAt: new Date().toISOString(),
       };
 
-      await stackUser.update({
-        clientMetadata: {
-          ...stackUser.clientMetadata,
-          onboardingProgress,
-          lastOnboardingStep: step,
-        },
+      await userService.updateUserMetadata(userId, {
+        ...user.metadata,
+        onboardingProgress,
+        lastOnboardingStep: step,
       });
 
     } catch (error) {
@@ -170,30 +142,20 @@ export class OnboardingService {
    */
   async resetOnboarding(userId: string): Promise<void> {
     try {
-      const stackUser = await stackServerApp.getUser({ or: 'throw' });
-      if (stackUser.id !== userId) {
-        throw new Error(`User ID mismatch - expected ${userId}, got ${stackUser.id}`);
+      const user = await userService.getUserFromFirestore(userId);
+      if (!user) {
+        throw new Error('User not found');
       }
 
       // Clear onboarding metadata
-      const metadata = { ...stackUser.clientMetadata };
+      const metadata = { ...user.metadata };
       metadata.onboardingCompleted = undefined;
       metadata.onboardingCompletedAt = undefined;
       metadata.onboardingProgress = undefined;
       metadata.lastOnboardingStep = undefined;
       metadata.benefitsInterests = undefined;
 
-      await stackUser.update({
-        clientMetadata: metadata,
-      });
-
-      // Update local database
-      await db
-        .update(users)
-        .set({
-          updatedAt: new Date(),
-        })
-        .where(eq(users.stackUserId, userId));
+      await userService.updateUserMetadata(userId, metadata);
 
     } catch (error) {
       console.error('Failed to reset onboarding:', error);

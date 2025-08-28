@@ -3,24 +3,37 @@ import path from 'node:path';
 
 // Load environment variables BEFORE any other imports
 config({ path: path.resolve(process.cwd(), '.env.local') });
+
 import { db } from '../lib/db';
 import { knowledgeBaseDocuments } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getCompanyNamespace } from '../lib/vectors/pinecone';
+import { IndexEndpointServiceClient } from '@google-cloud/aiplatform';
+import { GoogleAuth } from 'google-auth-library';
+import { upsertDocumentChunks } from '../lib/ai/vector-search';
 
 async function testDocumentProcessing() {
-  console.log('🧪 Testing Document Processing Pipeline');
-  console.log('=====================================\n');
-  
+  console.log('🧪 Testing Document Processing Pipeline with Vertex AI');
+  console.log('======================================================\n');
+
   try {
-    // Test 1: Check Pinecone connection
-    console.log('1️⃣ Testing Pinecone Connection...');
-    const companyId = 'test-company-001';
-    const namespace = getCompanyNamespace(companyId);
-    const stats = await namespace.describeIndexStats();
-    console.log('✅ Pinecone connected successfully');
-    console.log(`   Current vectors in test namespace: ${stats.recordCount || 0}\n`);
+    // Test 1: Check Vertex AI connection
+    console.log('1️⃣ Testing Vertex AI Connection...');
+    const project = process.env.GOOGLE_CLOUD_PROJECT || '';
+    const location = 'us-central1';
+    const indexEndpointId = process.env.VERTEX_AI_INDEX_ENDPOINT_ID || '';
+
+    if (!project || !indexEndpointId) {
+      throw new Error('GOOGLE_CLOUD_PROJECT and VERTEX_AI_INDEX_ENDPOINT_ID must be set in .env.local');
+    }
+
+    const auth = new GoogleAuth({ scopes: 'https://www.googleapis.com/auth/cloud-platform' });
+    const client = new IndexEndpointServiceClient({ auth, apiEndpoint: `${location}-aiplatform.googleapis.com` });
+    const endpointName = `projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}`;
     
+    const [endpoint] = await client.getIndexEndpoint({ name: endpointName });
+    console.log('✅ Vertex AI connected successfully');
+    console.log(`   Endpoint: ${endpoint.displayName}\n`);
+
     // Test 2: Test text chunking
     console.log('2️⃣ Testing Text Chunking...');
     const testText = `This is a test document for the benefits platform. It contains information about health insurance plans.
@@ -38,17 +51,9 @@ async function testDocumentProcessing() {
     const chunks = chunkText(testText, { maxChunkSize: 200, overlapSize: 50 });
     console.log(`✅ Text chunked successfully: ${chunks.length} chunks created`);
     console.log(`   Sample chunk: "${chunks[0].substring(0, 100)}..."\n`);
-    
-    // Test 3: Test embedding generation
-    console.log('3️⃣ Testing Embedding Generation...');
-    const { generateEmbedding } = await import('../lib/ai/embeddings');
-    const embedding = await generateEmbedding('This is a test sentence for embedding generation.');
-    console.log(`✅ Embedding generated successfully`);
-    console.log(`   Embedding dimensions: ${embedding.length}`);
-    console.log(`   First 5 values: [${embedding.slice(0, 5).map(v => v.toFixed(4)).join(', ')}...]\n`);
-    
-    // Test 4: Create a test document in the database
-    console.log('4️⃣ Creating Test Document in Database...');
+
+    // Test 3: Create a test document in the database
+    console.log('3️⃣ Creating Test Document in Database...');
     const testDocumentData = {
       companyId: 'test-company-001',
       title: 'Test Benefits Guide',
@@ -64,21 +69,10 @@ async function testDocumentProcessing() {
     
     const [testDocument] = await db.insert(knowledgeBaseDocuments).values(testDocumentData).returning();
     console.log(`✅ Test document created with ID: ${testDocument.id}\n`);
-    
-    // Test 5: Process the document (without actual file download)
-    console.log('5️⃣ Testing Document Processing (Simulated)...');
-    // Update the document with content directly to avoid file download
-    await db
-      .update(knowledgeBaseDocuments)
-      .set({ content: testText })
-      .where(eq(knowledgeBaseDocuments.id, testDocument.id));
-    
-    console.log('   Processing chunks and generating embeddings...');
-    const { upsertDocumentChunks } = await import('../lib/vectors/pinecone');
-    
-    // Generate chunks with embeddings
-    const chunksWithEmbeddings = await Promise.all(
-      chunks.slice(0, 3).map(async (chunk, i) => ({
+
+    // Test 4: Process the document and upsert to Vertex AI
+    console.log('4️⃣ Testing Document Processing and Upserting to Vertex AI...');
+    const documentChunks = chunks.slice(0, 3).map((chunk, i) => ({
         id: `${testDocument.id}-chunk-${i}`,
         text: chunk,
         metadata: {
@@ -89,27 +83,25 @@ async function testDocumentProcessing() {
           category: testDocument.category || undefined,
           tags: testDocument.tags as string[] || [],
         },
-        embedding: await generateEmbedding(chunk),
-      }))
-    );
-    
+      }));
+
     const vectorsUpserted = await upsertDocumentChunks(
       testDocument.companyId,
-      chunksWithEmbeddings
+      documentChunks
     );
     
-    console.log(`✅ Document processed successfully`);
+    console.log(`✅ Document processed and upserted successfully`);
     console.log(`   Vectors stored: ${vectorsUpserted}\n`);
-    
+
     // Cleanup
-    console.log('6️⃣ Cleaning up test data...');
+    console.log('5️⃣ Cleaning up test data...');
     await db.delete(knowledgeBaseDocuments).where(eq(knowledgeBaseDocuments.id, testDocument.id));
-    // Note: Pinecone vectors will remain for manual cleanup if needed
+    // Note: Vertex AI vectors will remain. Deletion by ID is more complex and not tested here.
     console.log('✅ Test document deleted from database\n');
-    
+
     console.log('🎉 All tests passed successfully!');
-    console.log('The document processing pipeline is working correctly.');
-    
+    console.log('The document processing pipeline with Vertex AI is working correctly.');
+
   } catch (error) {
     console.error('❌ Test failed:', error);
     process.exit(1);

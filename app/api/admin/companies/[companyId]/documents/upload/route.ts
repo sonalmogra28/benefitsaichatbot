@@ -1,42 +1,25 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/app/(auth)/stack-auth';
-import { db } from '@/lib/db';
-import { knowledgeBaseDocuments } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { uploadDocument, validateFile } from '@/lib/storage/blob';
+import { withAuth } from '@/lib/auth/admin-middleware';
+import { USER_ROLES } from '@/lib/constants/roles';
+import { documentService, documentSchema } from '@/lib/firebase/services/document.service';
+import { uploadDocument, validateFile } from '@/lib/storage/firebase-storage';
 import { z } from 'zod';
 
 // Schema for upload metadata
-const uploadMetadataSchema = z.object({
-  title: z.string().min(1).max(255),
-  documentType: z.enum(['policy', 'guide', 'faq', 'form', 'other']),
-  category: z.string().optional(),
-  tags: z.array(z.string()).optional(),
+const uploadMetadataSchema = documentSchema.pick({
+  title: true,
+  documentType: true,
+  category: true,
+  tags: true,
 });
 
-export async function POST(
+export const POST = withAuth(USER_ROLES.COMPANY_ADMIN, async (
   request: NextRequest,
-  { params }: { params: Promise<{ companyId: string }> }
-) {
-  const { companyId } = await params;
+  { params }: { params: { companyId: string } },
+  user
+) => {
   try {
-    // Authenticate user
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    // Check if user has admin rights
-    if (session.user.type !== 'platform_admin' && 
-        session.user.type !== 'company_admin' && 
-        session.user.type !== 'hr_admin') {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
-    }
-    
-    // Verify user belongs to this company (unless platform admin)
-    if (session.user.type !== 'platform_admin' && session.user.companyId !== companyId) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
+    const { companyId } = params;
     
     // Parse form data
     const formData = await request.formData();
@@ -69,23 +52,17 @@ export async function POST(
     
     // Upload to Vercel Blob
     const uploadResult = await uploadDocument(file, companyId, {
-      uploadedBy: session.user.id,
+      uploadedBy: user.uid,
       documentType: parsedMetadata.documentType,
     });
     
     // Create database record
-    const [document] = await db.insert(knowledgeBaseDocuments).values({
-      companyId: companyId,
-      title: parsedMetadata.title,
-      content: '', // Will be populated by processing job
-      documentType: parsedMetadata.documentType,
-      category: parsedMetadata.category,
-      tags: parsedMetadata.tags || [],
+    const documentId = await documentService.createDocument(companyId, {
+      ...parsedMetadata,
       fileUrl: uploadResult.url,
       fileType: file.type,
-      createdBy: session.user.id,
       isPublic: false,
-    }).returning();
+    }, user.uid);
     
     // TODO: Queue document processing job
     // For now, we'll return success and process can be triggered separately
@@ -93,11 +70,10 @@ export async function POST(
     return NextResponse.json({
       success: true,
       document: {
-        id: document.id,
-        title: document.title,
-        fileUrl: document.fileUrl,
+        id: documentId,
+        title: parsedMetadata.title,
+        fileUrl: uploadResult.url,
         status: 'pending_processing',
-        uploadedAt: document.createdAt,
       },
     });
     
@@ -108,31 +84,18 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+});
 
 // Get list of documents for a company
-export async function GET(
+export const GET = withAuth(USER_ROLES.COMPANY_ADMIN, async (
   request: NextRequest,
-  { params }: { params: Promise<{ companyId: string }> }
-) {
-  const { companyId } = await params;
+  { params }: { params: { companyId: string } },
+  user
+) => {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { companyId } = params;
     
-    // Verify access
-    if (session.user.type !== 'platform_admin' && session.user.companyId !== companyId) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-    
-    // Fetch documents
-    const documents = await db
-      .select()
-      .from(knowledgeBaseDocuments)
-      .where(eq(knowledgeBaseDocuments.companyId, companyId))
-      .orderBy(knowledgeBaseDocuments.createdAt);
+    const documents = await documentService.listDocuments(companyId);
     
     return NextResponse.json({
       documents: documents.map(doc => ({
@@ -145,7 +108,7 @@ export async function GET(
         fileType: doc.fileType,
         processedAt: doc.processedAt,
         createdAt: doc.createdAt,
-        status: doc.processedAt ? 'processed' : 'pending_processing',
+        status: doc.status,
       })),
     });
     
@@ -156,4 +119,4 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+});

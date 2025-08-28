@@ -3,21 +3,17 @@
  * TODO: Add proper error tracking service (e.g., Sentry) when available
  */
 
+import { logger } from '@/lib/services/logger.service';
+
 export function handleError(error: unknown): {
   message: string;
   statusCode: number;
 } {
-  console.error('Error occurred:', error);
+  // Use logger service instead of console
+  logger.error('Error occurred', error instanceof Error ? error : new Error(String(error)));
 
   // Basic error handling without Sentry for now
   if (error instanceof Error) {
-    // Log to console instead of Sentry
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString(),
-    });
-
     return {
       message: error.message || 'An unexpected error occurred',
       statusCode: 500,
@@ -31,9 +27,11 @@ export function handleError(error: unknown): {
 }
 
 export function logError(error: unknown, context?: Record<string, any>): void {
-  console.error('Error logged:', {
-    error,
-    context,
-    timestamp: new Date().toISOString(),
+  const errorInstance = error instanceof Error ? error : new Error(String(error));
+  logger.error('Error logged', errorInstance, {
+    metadata: {
+      ...context,
+      timestamp: new Date().toISOString(),
+    },
   });
 }

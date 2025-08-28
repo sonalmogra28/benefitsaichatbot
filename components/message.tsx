@@ -14,7 +14,7 @@ const ToolLoading = ({ message }: { message: string }) => (
       transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
       className="size-8 border-3 border-primary border-t-transparent rounded-full"
     />
-    <span className="text-sm font-medium">{message}</span>
+    <span className="text-base font-semibold">{message}</span>
   </div>
 );
 

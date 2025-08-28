@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { EmailService } from '@/lib/services/email.service';
-import { withPlatformAdmin } from '@/lib/auth/api-middleware';
+import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
 
 const emailService = new EmailService();
 
 // POST /api/test/email - Send a test email
-export const POST = withPlatformAdmin(async (request: NextRequest) => {
+export const POST = requireSuperAdmin(async (request: NextRequest) => {
   try {
     const { to, subject, text } = await request.json();
 

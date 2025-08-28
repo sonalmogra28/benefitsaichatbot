@@ -1,366 +1,332 @@
-import { db } from '@/lib/db';
-import { chatAnalytics, analyticsEvents, chats, messages, users } from '@/lib/db/schema';
-import { eq, and, gte, lte, sql, desc, count, countDistinct } from 'drizzle-orm';
+import { db } from '@/lib/firebase';
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  orderBy, 
+  limit,
+  Timestamp,
+  DocumentData
+} from 'firebase/firestore';
 
-export interface ChatAnalyticsData {
-  // Usage metrics
+export interface AnalyticsData {
+  totalUsers: number;
+  totalCompanies: number;
   totalConversations: number;
-  totalMessages: number;
-  uniqueUsers: number;
-  avgMessagesPerConversation: number;
-  
-  // Performance metrics
-  avgResponseTime: number;
-  avgTokensPerResponse: number;
-  errorRate: number;
-  
-  // Quality metrics
-  positiveFeedback: number;
-  negativeFeedback: number;
-  neutralFeedback: number;
-  feedbackRate: number;
-  
-  // Cost metrics
-  totalCost: number;
-  avgCostPerConversation: number;
-  costByModel: Record<string, number>;
-  
-  // Tool usage
-  toolUsageCount: Record<string, number>;
-  
-  // Time-based metrics
-  messagesByHour: Array<{ hour: number; count: number }>;
-  messagesByDay: Array<{ date: string; count: number }>;
+  totalDocuments: number;
+  activeUsers: number;
+  chatMessages: number;
+  apiCalls: number;
+  storageUsed: number;
 }
 
-export interface DateRange {
-  startDate: Date;
-  endDate: Date;
-}
-
-/**
- * Get comprehensive chat analytics for a company
- */
-export async function getChatAnalytics(
-  companyId: string,
-  dateRange?: DateRange
-): Promise<ChatAnalyticsData> {
-  const conditions = [eq(chatAnalytics.companyId, companyId)];
-  
-  if (dateRange) {
-    conditions.push(
-      gte(chatAnalytics.createdAt, dateRange.startDate),
-      lte(chatAnalytics.createdAt, dateRange.endDate)
-    );
-  }
-
-  // Get basic counts
-  const [basicStats] = await db
-    .select({
-      totalMessages: count(chatAnalytics.id),
-      uniqueUsers: countDistinct(chatAnalytics.userId),
-      totalErrors: count(sql`CASE WHEN ${chatAnalytics.errorOccurred} THEN 1 END`),
-      positiveFeedback: count(sql`CASE WHEN ${chatAnalytics.feedback} = 'positive' THEN 1 END`),
-      negativeFeedback: count(sql`CASE WHEN ${chatAnalytics.feedback} = 'negative' THEN 1 END`),
-      neutralFeedback: count(sql`CASE WHEN ${chatAnalytics.feedback} = 'neutral' THEN 1 END`),
-      totalFeedback: count(sql`CASE WHEN ${chatAnalytics.feedback} IS NOT NULL THEN 1 END`),
-    })
-    .from(chatAnalytics)
-    .where(and(...conditions));
-
-  // Get conversation count
-  const conversationConditions = [eq(chats.companyId, companyId)];
-  if (dateRange) {
-    conversationConditions.push(
-      gte(chats.createdAt, dateRange.startDate),
-      lte(chats.createdAt, dateRange.endDate)
-    );
-  }
-
-  const [conversationStats] = await db
-    .select({
-      totalConversations: count(chats.id),
-    })
-    .from(chats)
-    .where(and(...conversationConditions));
-
-  // Get performance metrics
-  const [performanceStats] = await db
-    .select({
-      avgResponseTime: sql<number>`avg(${chatAnalytics.responseTime})::float`,
-      avgTokensPerResponse: sql<number>`avg(${chatAnalytics.tokensUsed})::float`,
-      totalCost: sql<number>`sum(${chatAnalytics.cost})::float`,
-    })
-    .from(chatAnalytics)
-    .where(and(...conditions));
-
-  // Get tool usage
-  const toolUsage = await db
-    .select({
-      toolName: chatAnalytics.toolName,
-      count: count(),
-    })
-    .from(chatAnalytics)
-    .where(and(
-      ...conditions,
-      eq(chatAnalytics.eventType, 'tool_used'),
-      sql`${chatAnalytics.toolName} IS NOT NULL`
-    ))
-    .groupBy(chatAnalytics.toolName);
-
-  // Get messages by hour
-  const messagesByHour = await db
-    .select({
-      hour: sql<number>`extract(hour from ${chatAnalytics.createdAt})::int`,
-      count: count(),
-    })
-    .from(chatAnalytics)
-    .where(and(...conditions, eq(chatAnalytics.eventType, 'message_sent')))
-    .groupBy(sql`extract(hour from ${chatAnalytics.createdAt})`)
-    .orderBy(sql`extract(hour from ${chatAnalytics.createdAt})`);
-
-  // Get messages by day (last 30 days)
-  const last30Days = new Date();
-  last30Days.setDate(last30Days.getDate() - 30);
-  
-  const messagesByDay = await db
-    .select({
-      date: sql<string>`date(${chatAnalytics.createdAt})`,
-      count: count(),
-    })
-    .from(chatAnalytics)
-    .where(and(
-      eq(chatAnalytics.companyId, companyId),
-      eq(chatAnalytics.eventType, 'message_sent'),
-      gte(chatAnalytics.createdAt, last30Days)
-    ))
-    .groupBy(sql`date(${chatAnalytics.createdAt})`)
-    .orderBy(sql`date(${chatAnalytics.createdAt})`);
-
-  // Calculate derived metrics
-  const avgMessagesPerConversation = conversationStats.totalConversations > 0
-    ? basicStats.totalMessages / conversationStats.totalConversations
-    : 0;
-
-  const errorRate = basicStats.totalMessages > 0
-    ? (basicStats.totalErrors / basicStats.totalMessages) * 100
-    : 0;
-
-  const feedbackRate = basicStats.totalMessages > 0
-    ? (basicStats.totalFeedback / basicStats.totalMessages) * 100
-    : 0;
-
-  const avgCostPerConversation = conversationStats.totalConversations > 0
-    ? performanceStats.totalCost / conversationStats.totalConversations
-    : 0;
-
-  // Convert tool usage to object
-  const toolUsageCount: Record<string, number> = {};
-  toolUsage.forEach(t => {
-    if (t.toolName) {
-      toolUsageCount[t.toolName] = t.count;
-    }
-  });
-
-  return {
-    totalConversations: conversationStats.totalConversations,
-    totalMessages: basicStats.totalMessages,
-    uniqueUsers: basicStats.uniqueUsers,
-    avgMessagesPerConversation,
-    avgResponseTime: performanceStats.avgResponseTime || 0,
-    avgTokensPerResponse: performanceStats.avgTokensPerResponse || 0,
-    errorRate,
-    positiveFeedback: basicStats.positiveFeedback,
-    negativeFeedback: basicStats.negativeFeedback,
-    neutralFeedback: basicStats.neutralFeedback,
-    feedbackRate,
-    totalCost: performanceStats.totalCost || 0,
-    avgCostPerConversation,
-    costByModel: {}, // TODO: Implement when we track model info
-    toolUsageCount,
-    messagesByHour: messagesByHour as any,
-    messagesByDay: messagesByDay as any,
-  };
-}
-
-/**
- * Get top questions asked
- */
-export async function getTopQuestions(
-  companyId: string,
-  limit = 10,
-  dateRange?: DateRange
-): Promise<Array<{ question: string; count: number }>> {
-  const conditions = [
-    eq(messages.role, 'user'),
-    eq(chats.companyId, companyId),
-  ];
-
-  if (dateRange) {
-    conditions.push(
-      gte(messages.createdAt, dateRange.startDate),
-      lte(messages.createdAt, dateRange.endDate)
-    );
-  }
-
-  // This is a simplified version - in production, you might want to:
-  // 1. Use NLP to group similar questions
-  // 2. Extract key topics
-  // 3. Use vector similarity for clustering
-  const questions = await db
-    .select({
-      content: messages.parts,
-      chatId: messages.chatId,
-    })
-    .from(messages)
-    .innerJoin(chats, eq(chats.id, messages.chatId))
-    .where(and(...conditions))
-    .limit(1000); // Sample recent messages
-
-  // Simple frequency count of exact messages
-  const questionCounts = new Map<string, number>();
-  
-  questions.forEach(q => {
-    // Extract text from parts structure
-    const text = Array.isArray(q.content) && q.content[0]?.text || '';
-    if (text && text.length > 10) { // Filter out very short messages
-      const normalized = text.toLowerCase().trim();
-      questionCounts.set(normalized, (questionCounts.get(normalized) || 0) + 1);
-    }
-  });
-
-  // Sort by frequency and return top N
-  return Array.from(questionCounts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit)
-    .map(([question, count]) => ({ question, count }));
-}
-
-/**
- * Track a generic analytics event
- */
-export async function trackEvent(event: {
+export interface CompanyAnalytics {
   companyId: string;
-  userId?: string;
-  eventType: string;
-  eventData?: any;
-  sessionId?: string;
-  ipAddress?: string;
-  userAgent?: string;
-}) {
-  await db.insert(analyticsEvents).values(event);
+  employeeCount: number;
+  activeEmployees: number;
+  documentsCount: number;
+  conversationsCount: number;
+  monthlyChats: number;
+  enrollmentRate: number;
+  averageCostPerEmployee: number;
 }
 
-/**
- * Get user activity summary
- */
-export async function getUserActivity(
-  userId: string,
-  companyId: string,
-  days = 30
-): Promise<{
+export interface UserActivity {
+  userId: string;
+  userName: string;
+  lastActive: Date;
+  conversationCount: number;
+  messageCount: number;
+  documentsViewed: number;
+}
+
+export interface ChatAnalytics {
   totalChats: number;
-  totalMessages: number;
-  lastActive: Date | null;
-  favoriteTools: string[];
-}> {
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - days);
-
-  const [stats] = await db
-    .select({
-      totalChats: countDistinct(chatAnalytics.chatId),
-      totalMessages: count(chatAnalytics.id),
-      lastActive: sql<Date>`max(${chatAnalytics.createdAt})`,
-    })
-    .from(chatAnalytics)
-    .where(and(
-      eq(chatAnalytics.userId, userId),
-      eq(chatAnalytics.companyId, companyId),
-      gte(chatAnalytics.createdAt, startDate)
-    ));
-
-  const toolUsage = await db
-    .select({
-      toolName: chatAnalytics.toolName,
-      count: count(),
-    })
-    .from(chatAnalytics)
-    .where(and(
-      eq(chatAnalytics.userId, userId),
-      eq(chatAnalytics.companyId, companyId),
-      eq(chatAnalytics.eventType, 'tool_used'),
-      sql`${chatAnalytics.toolName} IS NOT NULL`,
-      gte(chatAnalytics.createdAt, startDate)
-    ))
-    .groupBy(chatAnalytics.toolName)
-    .orderBy(desc(count()))
-    .limit(5);
-
-  return {
-    totalChats: stats.totalChats,
-    totalMessages: stats.totalMessages,
-    lastActive: stats.lastActive,
-    favoriteTools: toolUsage.map(t => t.toolName!).filter(Boolean),
-  };
+  averageMessagesPerChat: number;
+  topQuestions: string[];
+  peakHours: { hour: number; count: number }[];
+  averageResponseTime: number;
+  satisfactionRate: number;
 }
 
-/**
- * Calculate cost breakdown
- */
-export async function getCostBreakdown(
-  companyId: string,
-  dateRange?: DateRange
-): Promise<{
-  daily: Array<{ date: string; cost: number }>;
-  byUser: Array<{ userId: string; userEmail: string; cost: number }>;
-  total: number;
-}> {
-  const conditions = [eq(chatAnalytics.companyId, companyId)];
-  
-  if (dateRange) {
-    conditions.push(
-      gte(chatAnalytics.createdAt, dateRange.startDate),
-      lte(chatAnalytics.createdAt, dateRange.endDate)
-    );
+class AnalyticsService {
+  async getPlatformAnalytics(): Promise<AnalyticsData> {
+    try {
+      // Get total users
+      const usersQuery = query(collection(db, 'users'));
+      const usersSnapshot = await getDocs(usersQuery);
+      const totalUsers = usersSnapshot.size;
+
+      // Get total companies
+      const companiesQuery = query(collection(db, 'companies'));
+      const companiesSnapshot = await getDocs(companiesQuery);
+      const totalCompanies = companiesSnapshot.size;
+
+      // Get total conversations
+      const conversationsQuery = query(collection(db, 'conversations'));
+      const conversationsSnapshot = await getDocs(conversationsQuery);
+      const totalConversations = conversationsSnapshot.size;
+
+      // Get total documents
+      const documentsQuery = query(collection(db, 'documents'));
+      const documentsSnapshot = await getDocs(documentsQuery);
+      const totalDocuments = documentsSnapshot.size;
+
+      // Get active users (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const activeUsersQuery = query(
+        collection(db, 'users'),
+        where('lastActive', '>=', Timestamp.fromDate(thirtyDaysAgo))
+      );
+      const activeUsersSnapshot = await getDocs(activeUsersQuery);
+      const activeUsers = activeUsersSnapshot.size;
+
+      // Calculate chat messages and other metrics
+      let chatMessages = 0;
+      conversationsSnapshot.forEach(doc => {
+        const data = doc.data();
+        chatMessages += data.messages?.length || 0;
+      });
+
+      return {
+        totalUsers,
+        totalCompanies,
+        totalConversations,
+        totalDocuments,
+        activeUsers,
+        chatMessages,
+        apiCalls: 0, // TODO: Implement API call tracking
+        storageUsed: 0 // TODO: Implement storage tracking
+      };
+    } catch (error) {
+      console.error('Error fetching platform analytics:', error);
+      throw error;
+    }
   }
 
-  // Daily costs
-  const dailyCosts = await db
-    .select({
-      date: sql<string>`date(${chatAnalytics.createdAt})`,
-      cost: sql<number>`sum(${chatAnalytics.cost})::float`,
-    })
-    .from(chatAnalytics)
-    .where(and(...conditions))
-    .groupBy(sql`date(${chatAnalytics.createdAt})`)
-    .orderBy(sql`date(${chatAnalytics.createdAt})`);
+  async getCompanyAnalytics(companyId: string): Promise<CompanyAnalytics> {
+    try {
+      // Get company users
+      const usersQuery = query(
+        collection(db, 'users'),
+        where('companyId', '==', companyId)
+      );
+      const usersSnapshot = await getDocs(usersQuery);
+      const employeeCount = usersSnapshot.size;
 
-  // Cost by user
-  const userCosts = await db
-    .select({
-      userId: chatAnalytics.userId,
-      userEmail: users.email,
-      cost: sql<number>`sum(${chatAnalytics.cost})::float`,
-    })
-    .from(chatAnalytics)
-    .leftJoin(users, eq(users.id, chatAnalytics.userId))
-    .where(and(...conditions))
-    .groupBy(chatAnalytics.userId, users.email)
-    .orderBy(desc(sql`sum(${chatAnalytics.cost})`))
-    .limit(20);
+      // Get active employees (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      let activeEmployees = 0;
+      usersSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.lastActive && data.lastActive.toDate() >= thirtyDaysAgo) {
+          activeEmployees++;
+        }
+      });
 
-  // Total cost
-  const [totalCost] = await db
-    .select({
-      total: sql<number>`sum(${chatAnalytics.cost})::float`,
-    })
-    .from(chatAnalytics)
-    .where(and(...conditions));
+      // Get company documents
+      const documentsQuery = query(
+        collection(db, 'documents'),
+        where('companyId', '==', companyId)
+      );
+      const documentsSnapshot = await getDocs(documentsQuery);
+      const documentsCount = documentsSnapshot.size;
 
-  return {
-    daily: dailyCosts as any,
-    byUser: userCosts as any,
-    total: totalCost.total || 0,
-  };
+      // Get company conversations
+      const conversationsQuery = query(
+        collection(db, 'conversations'),
+        where('companyId', '==', companyId)
+      );
+      const conversationsSnapshot = await getDocs(conversationsQuery);
+      const conversationsCount = conversationsSnapshot.size;
+
+      // Calculate monthly chats
+      const thisMonth = new Date();
+      thisMonth.setDate(1);
+      thisMonth.setHours(0, 0, 0, 0);
+      
+      let monthlyChats = 0;
+      conversationsSnapshot.forEach(doc => {
+        const data = doc.data();
+        if (data.createdAt && data.createdAt.toDate() >= thisMonth) {
+          monthlyChats++;
+        }
+      });
+
+      // Calculate enrollment rate
+      const enrollmentRate = employeeCount > 0 
+        ? Math.round((activeEmployees / employeeCount) * 100)
+        : 0;
+
+      return {
+        companyId,
+        employeeCount,
+        activeEmployees,
+        documentsCount,
+        conversationsCount,
+        monthlyChats,
+        enrollmentRate,
+        averageCostPerEmployee: 0 // TODO: Implement cost tracking
+      };
+    } catch (error) {
+      console.error('Error fetching company analytics:', error);
+      throw error;
+    }
+  }
+
+  async getUserActivity(userId?: string, companyId?: string): Promise<UserActivity[]> {
+    try {
+      let usersQuery;
+      
+      if (userId) {
+        usersQuery = query(
+          collection(db, 'users'),
+          where('uid', '==', userId)
+        );
+      } else if (companyId) {
+        usersQuery = query(
+          collection(db, 'users'),
+          where('companyId', '==', companyId),
+          orderBy('lastActive', 'desc'),
+          limit(50)
+        );
+      } else {
+        usersQuery = query(
+          collection(db, 'users'),
+          orderBy('lastActive', 'desc'),
+          limit(100)
+        );
+      }
+
+      const usersSnapshot = await getDocs(usersQuery);
+      const activities: UserActivity[] = [];
+
+      for (const userDoc of usersSnapshot.docs) {
+        const userData = userDoc.data();
+        
+        // Get user's conversations
+        const conversationsQuery = query(
+          collection(db, 'conversations'),
+          where('userId', '==', userDoc.id)
+        );
+        const conversationsSnapshot = await getDocs(conversationsQuery);
+        
+        let messageCount = 0;
+        conversationsSnapshot.forEach(doc => {
+          const data = doc.data();
+          messageCount += data.messages?.length || 0;
+        });
+
+        activities.push({
+          userId: userDoc.id,
+          userName: userData.displayName || userData.email || 'Unknown',
+          lastActive: userData.lastActive?.toDate() || new Date(),
+          conversationCount: conversationsSnapshot.size,
+          messageCount,
+          documentsViewed: userData.documentsViewed || 0
+        });
+      }
+
+      return activities;
+    } catch (error) {
+      console.error('Error fetching user activity:', error);
+      throw error;
+    }
+  }
+
+  async getChatAnalytics(companyId?: string): Promise<ChatAnalytics> {
+    try {
+      let conversationsQuery;
+      
+      if (companyId) {
+        conversationsQuery = query(
+          collection(db, 'conversations'),
+          where('companyId', '==', companyId)
+        );
+      } else {
+        conversationsQuery = query(collection(db, 'conversations'));
+      }
+
+      const conversationsSnapshot = await getDocs(conversationsQuery);
+      
+      let totalMessages = 0;
+      const topQuestions: { [key: string]: number } = {};
+      const hourlyActivity: { [key: number]: number } = {};
+      
+      conversationsSnapshot.forEach(doc => {
+        const data = doc.data();
+        const messages = data.messages || [];
+        totalMessages += messages.length;
+        
+        // Analyze messages for top questions
+        messages.forEach((msg: any) => {
+          if (msg.role === 'user' && msg.content) {
+            const question = msg.content.substring(0, 100);
+            topQuestions[question] = (topQuestions[question] || 0) + 1;
+          }
+          
+          // Track hourly activity
+          if (msg.createdAt) {
+            const hour = new Date(msg.createdAt).getHours();
+            hourlyActivity[hour] = (hourlyActivity[hour] || 0) + 1;
+          }
+        });
+      });
+
+      // Get top 5 questions
+      const sortedQuestions = Object.entries(topQuestions)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([question]) => question);
+
+      // Format peak hours
+      const peakHours = Object.entries(hourlyActivity)
+        .map(([hour, count]) => ({
+          hour: parseInt(hour),
+          count
+        }))
+        .sort((a, b) => a.hour - b.hour);
+
+      const averageMessagesPerChat = conversationsSnapshot.size > 0
+        ? Math.round(totalMessages / conversationsSnapshot.size)
+        : 0;
+
+      return {
+        totalChats: conversationsSnapshot.size,
+        averageMessagesPerChat,
+        topQuestions: sortedQuestions,
+        peakHours,
+        averageResponseTime: 0, // TODO: Implement response time tracking
+        satisfactionRate: 0 // TODO: Implement satisfaction tracking
+      };
+    } catch (error) {
+      console.error('Error fetching chat analytics:', error);
+      throw error;
+    }
+  }
+
+  async getSystemMetrics() {
+    try {
+      // Get Firebase usage metrics
+      // This would typically come from Firebase Admin SDK or monitoring APIs
+      return {
+        firestoreReads: 0,
+        firestoreWrites: 0,
+        storageBytes: 0,
+        functionInvocations: 0,
+        authUsers: 0,
+        bandwidthBytes: 0
+      };
+    } catch (error) {
+      console.error('Error fetching system metrics:', error);
+      throw error;
+    }
+  }
 }
+
+export const analyticsService = new AnalyticsService();

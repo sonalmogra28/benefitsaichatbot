@@ -52,8 +52,32 @@
       "Bash(npm run:*)",
       "Bash(npm install:*)",
       "Bash(npx tsc:*)",
-      "Bash(pnpm typecheck:*)"
+      "Bash(pnpm typecheck:*)",
+      "Bash(git rm:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run build)",
+      "Bash(export NODE_OPTIONS=\"--max-old-space-size=4096\")",
+      "Bash(curl:*)",
+      "Bash(firebase emulators:start:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(firebase functions:list:*)",
+      "Bash(firebase auth:import:*)",
+      "Bash(firebase projects:list:*)",
+      "Bash(firebase auth:export:*)",
+      "Bash(firebase apps:list:*)",
+      "Bash(firebase login:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=6144\" npm run build)",
+      "Bash(export NODE_OPTIONS=\"--max-old-space-size=6144\")",
+      "Bash(pnpm import:*)",
+      "Bash(gcloud config set:*)",
+      "Bash(gcloud run deploy:*)",
+      "Bash(gcloud builds list:*)",
+      "Bash(gcloud builds log:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=6144\" pnpm build)",
+      "Bash(gcloud auth:*)",
+      "Bash(export NODE_OPTIONS=\"--max-old-space-size=8192\")"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

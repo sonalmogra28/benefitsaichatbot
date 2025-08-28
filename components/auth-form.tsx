@@ -1,24 +1,66 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/firebase/auth-context';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Button } from './ui/button';
+import { USER_ROLES } from '@/lib/constants/roles';
 
 export function AuthForm({
-  action,
-  children,
+  setMfaResolver,
   defaultEmail = '',
+  isLogin = true,
 }: {
-  action: (email: string, password: string) => Promise<void>;
-  children: React.ReactNode;
+  setMfaResolver: (resolver: any) => void;
   defaultEmail?: string;
+  isLogin?: boolean;
 }) {
   const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { signIn, signUp, role } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await action(email, password);
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await signIn(email, password);
+        
+        // Wait a moment for role to be set
+        setTimeout(() => {
+          // Redirect based on role
+          const userRole = role;
+          if (userRole === USER_ROLES.SUPER_ADMIN) {
+            router.push('/super-admin');
+          } else if (userRole === USER_ROLES.PLATFORM_ADMIN) {
+            router.push('/admin');
+          } else if (userRole === USER_ROLES.COMPANY_ADMIN || userRole === USER_ROLES.HR_ADMIN) {
+            router.push('/company-admin');
+          } else {
+            router.push('/');
+          }
+        }, 500);
+      } else {
+        await signUp(email, password);
+        router.push('/');
+      }
+    } catch (err: any) {
+      if (err.code === 'auth/multi-factor-required') {
+        setMfaResolver(err.resolver);
+      } else {
+        console.error('Authentication error:', err);
+        setError(err.message || 'Authentication failed');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -33,7 +75,6 @@ export function AuthForm({
         >
           Email Address
         </Label>
-
         <Input
           id="email"
           name="email"
@@ -55,7 +96,6 @@ export function AuthForm({
         >
           Password
         </Label>
-
         <Input
           id="password"
           name="password"
@@ -63,11 +103,15 @@ export function AuthForm({
           type="password"
           required
           value={password}
-          onChange={(e) => setPassword(e.targe.value)}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
+      
+      <Button type="submit" disabled={loading}>
+        {loading ? 'Loading...' : isLogin ? 'Login' : 'Register'}
+      </Button>
 
-      {children}
+      {error && <p className="text-red-500 mt-2">{error}</p>}
     </form>
   );
 }

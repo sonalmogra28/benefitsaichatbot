@@ -1,180 +1,282 @@
+import { db } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
-import { db } from '@/lib/db';
-import { companies, users } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
+// This service was for Stack Auth integration, now replaced with Firebase Auth
+// Keeping minimal functionality for migration compatibility
 
-export interface CreateOrganizationData {
+export interface Organization {
+  id: string;
   name: string;
   domain?: string;
+  slug?: string;
   metadata?: Record<string, any>;
+  createdAt: any;
+  updatedAt: any;
 }
 
-export class StackOrgService {
+class StackOrgService {
   /**
-   * Create a new organization in Stack Auth and sync with our database
+   * Create an organization (company)
    */
-  async createOrganization(
-    companyId: string,
-    data: CreateOrganizationData
-  ): Promise<any> {
+  async createOrganization(data: {
+    name: string;
+    domain?: string;
+    slug?: string;
+    metadata?: Record<string, any>;
+  }): Promise<Organization> {
     try {
-      // Note: Creating organizations programmatically may not be supported
-      // This would typically be done through the Stack Auth dashboard
+      const orgRef = db.collection('organizations').doc();
       
-      // For now, return a mock response
-      const mockOrgId = `org_${companyId}`;
+      const organization = {
+        id: orgRef.id,
+        ...data,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      };
       
-      // Update company with Stack org ID
-      await db
-        .update(companies)
-        .set({
-          stackOrgId: mockOrgId,
-          updatedAt: new Date(),
-        })
-        .where(eq(companies.id, companyId));
-
-      return { id: mockOrgId, displayName: data.name };
-
+      await orgRef.set(organization);
+      
+      // Also create in companies collection for compatibility
+      await db.collection('companies').doc(orgRef.id).set({
+        id: orgRef.id,
+        name: data.name,
+        domain: data.domain,
+        slug: data.slug,
+        metadata: data.metadata,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      
+      return {
+        ...organization,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
     } catch (error) {
-      console.error('Failed to create Stack organization:', error);
+      console.error('Failed to create organization:', error);
       throw error;
     }
   }
 
   /**
-   * Sync existing companies with Stack Auth organizations
+   * Get organization by ID
    */
-  async syncExistingCompanies(): Promise<void> {
+  async getOrganization(orgId: string): Promise<Organization | null> {
     try {
-      // Get companies without Stack org ID
-      const companiesWithoutOrg = await db
-        .select()
-        .from(companies)
-        .where(eq(companies.stackOrgId, ''));
-
-
-      for (const company of companiesWithoutOrg) {
-        try {
-          await this.createOrganization(company.id, {
-            name: company.name,
-            domain: company.domain || undefined,
-            metadata: {
-              subscriptionTier: company.subscriptionTier,
-              settings: company.settings,
-            },
-          });
-        } catch (error) {
-          console.error(`Failed to create org for company ${company.id}:`, error);
-        }
+      // Try organizations collection first
+      let doc = await db.collection('organizations').doc(orgId).get();
+      
+      if (!doc.exists) {
+        // Fall back to companies collection
+        doc = await db.collection('companies').doc(orgId).get();
       }
+      
+      if (!doc.exists) {
+        return null;
+      }
+      
+      return {
+        id: doc.id,
+        ...doc.data(),
+      } as Organization;
     } catch (error) {
-      console.error('Failed to sync existing companies:', error);
-      throw error;
+      console.error('Failed to get organization:', error);
+      return null;
     }
   }
 
   /**
-   * Add user to organization (update in database)
+   * Update organization
+   */
+  async updateOrganization(
+    orgId: string,
+    updates: Partial<Organization>
+  ): Promise<boolean> {
+    try {
+      const updateData = {
+        ...updates,
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      
+      // Update both collections for compatibility
+      const batch = db.batch();
+      
+      batch.update(db.collection('organizations').doc(orgId), updateData);
+      batch.update(db.collection('companies').doc(orgId), updateData);
+      
+      await batch.commit();
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to update organization:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete organization
+   */
+  async deleteOrganization(orgId: string): Promise<boolean> {
+    try {
+      const batch = db.batch();
+      
+      // Delete from both collections
+      batch.delete(db.collection('organizations').doc(orgId));
+      batch.delete(db.collection('companies').doc(orgId));
+      
+      // Also delete associated users
+      const usersSnapshot = await db
+        .collection('users')
+        .where('companyId', '==', orgId)
+        .get();
+      
+      usersSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+      
+      await batch.commit();
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to delete organization:', error);
+      return false;
+    }
+  }
+
+  /**
+   * List organizations
+   */
+  async listOrganizations(limit = 100): Promise<Organization[]> {
+    try {
+      const snapshot = await db
+        .collection('companies')
+        .orderBy('createdAt', 'desc')
+        .limit(limit)
+        .get();
+      
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Organization));
+    } catch (error) {
+      console.error('Failed to list organizations:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get organization by domain
+   */
+  async getOrganizationByDomain(domain: string): Promise<Organization | null> {
+    try {
+      const snapshot = await db
+        .collection('companies')
+        .where('domain', '==', domain)
+        .limit(1)
+        .get();
+      
+      if (snapshot.empty) {
+        return null;
+      }
+      
+      const doc = snapshot.docs[0];
+      return {
+        id: doc.id,
+        ...doc.data(),
+      } as Organization;
+    } catch (error) {
+      console.error('Failed to get organization by domain:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get organization users
+   */
+  async getOrganizationUsers(orgId: string) {
+    try {
+      const snapshot = await db
+        .collection('users')
+        .where('companyId', '==', orgId)
+        .get();
+      
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    } catch (error) {
+      console.error('Failed to get organization users:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Add user to organization
    */
   async addUserToOrganization(
     userId: string,
-    companyId: string
-  ): Promise<void> {
+    orgId: string,
+    role = 'employee'
+  ): Promise<boolean> {
     try {
-      // Update user's company assignment
-      await db
-        .update(users)
-        .set({
-          companyId,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, userId));
-
-
+      await db.collection('users').doc(userId).update({
+        companyId: orgId,
+        organizationId: orgId, // For backward compatibility
+        role,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      
+      return true;
     } catch (error) {
       console.error('Failed to add user to organization:', error);
-      throw error;
+      return false;
     }
   }
 
   /**
    * Remove user from organization
    */
-  async removeUserFromOrganization(userId: string): Promise<void> {
+  async removeUserFromOrganization(userId: string): Promise<boolean> {
     try {
-      // Remove user's company assignment
-      await db.execute(sql`
-        UPDATE users 
-        SET 
-          company_id = NULL,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${userId}
-      `);
-
-
+      await db.collection('users').doc(userId).update({
+        companyId: null,
+        organizationId: null,
+        role: 'employee',
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      
+      return true;
     } catch (error) {
       console.error('Failed to remove user from organization:', error);
-      throw error;
+      return false;
     }
   }
 
   /**
-   * Update organization details
+   * Get organization statistics
    */
-  async updateOrganization(
-    companyId: string,
-    updates: Partial<CreateOrganizationData>
-  ): Promise<void> {
+  async getOrganizationStats(orgId: string) {
     try {
-      // Update company details
-      await db
-        .update(companies)
-        .set({
-          name: updates.name || undefined,
-          domain: updates.domain,
-          updatedAt: new Date(),
-        })
-        .where(eq(companies.id, companyId));
-
-
-    } catch (error) {
-      console.error('Failed to update organization:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * List users in organization
-   */
-  async listOrganizationUsers(companyId: string): Promise<any[]> {
-    try {
-      // Get users from database
-      const companyUsers = await db
-        .select()
-        .from(users)
-        .where(eq(users.companyId, companyId));
+      const [usersSnapshot, docsSnapshot, chatsSnapshot] = await Promise.all([
+        db.collection('users').where('companyId', '==', orgId).get(),
+        db.collection('documents').where('companyId', '==', orgId).get(),
+        db.collection('chats').where('companyId', '==', orgId).get(),
+      ]);
       
-      return companyUsers;
-
+      return {
+        totalUsers: usersSnapshot.size,
+        totalDocuments: docsSnapshot.size,
+        totalChats: chatsSnapshot.size,
+      };
     } catch (error) {
-      console.error('Failed to list organization users:', error);
-      throw error;
+      console.error('Failed to get organization stats:', error);
+      return {
+        totalUsers: 0,
+        totalDocuments: 0,
+        totalChats: 0,
+      };
     }
-  }
-
-  /**
-   * Check if company has Stack organization
-   */
-  async hasStackOrganization(companyId: string): Promise<boolean> {
-    const company = await db
-      .select()
-      .from(companies)
-      .where(eq(companies.id, companyId))
-      .limit(1);
-
-    return company.length > 0 && !!company[0].stackOrgId && company[0].stackOrgId !== '';
   }
 }
 
-// Export singleton instance
 export const stackOrgService = new StackOrgService();

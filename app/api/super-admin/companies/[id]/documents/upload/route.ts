@@ -1,28 +1,15 @@
 // app/api/super-admin/companies/[id]/documents/upload/route.ts
 import { type NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
-import { auth } from '@/app/(auth)/stack-auth';
-import { getUser } from '@/lib/db/queries';
+import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
 
 const storage = new Storage();
 const bucketName = process.env.GCS_BUCKET_NAME as string;
 
-export async function POST(
+export const POST = requireSuperAdmin(async (
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
-  const session = await auth();
-
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const user = await getUser({ id: session.user.id });
-
-  if (user?.role !== 'super_admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
+) => {
   const formData = await request.formData();
   const file = formData.get('file') as File;
 
@@ -45,4 +32,4 @@ export async function POST(
       reject(NextResponse.json({ error: err.message }, { status: 500 }));
     });
   });
-}
+});

@@ -15,16 +15,16 @@ import { cn } from '@/lib/utils';
 
 import { CheckCircleFillIcon, ChevronDownIcon } from './icons';
 import { entitlementsByUserType } from '@/lib/ai/entitlements';
-import type { AuthSession } from '@/app/(auth)/stack-auth';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 
 export function ModelSelector({
-  session,
   selectedModelId,
   className,
 }: {
-  session: AuthSession;
   selectedModelId: string;
 } & React.ComponentProps<typeof Button>) {
+  const [user] = useAuthState(auth);
   const [open, setOpen] = useState(false);
   const [optimisticModelId, setOptimisticModelId] =
     useOptimistic(selectedModelId);

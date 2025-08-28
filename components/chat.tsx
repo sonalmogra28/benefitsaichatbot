@@ -16,7 +16,6 @@ import { useArtifactSelector } from '@/hooks/use-artifact';
 import { unstable_serialize } from 'swr/infinite';
 import { getChatHistoryPaginationKey } from './sidebar-history';
 import { toast } from './toast';
-import type { AuthSession } from '@/app/(auth)/stack-auth';
 import { useSearchParams } from 'next/navigation';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 import { useAutoResume } from '@/hooks/use-auto-resume';
@@ -24,6 +23,8 @@ import { ChatSDKError } from '@/lib/errors';
 import type { Attachment, ChatMessage } from '@/lib/types';
 import { useDataStream } from './data-stream-provider';
 import { motion } from 'framer-motion';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 
 export function Chat({
   id,
@@ -31,7 +32,6 @@ export function Chat({
   initialChatModel,
   initialVisibilityType,
   isReadonly,
-  session,
   autoResume,
 }: {
   id: string;
@@ -39,9 +39,9 @@ export function Chat({
   initialChatModel: string;
   initialVisibilityType: VisibilityType;
   isReadonly: boolean;
-  session: AuthSession;
   autoResume: boolean;
 }) {
+  const [user] = useAuthState(auth);
   const { visibilityType } = useChatVisibility({
     chatId: id,
     initialVisibilityType,
@@ -136,7 +136,7 @@ export function Chat({
           selectedModelId={initialChatModel}
           selectedVisibilityType={initialVisibilityType}
           isReadonly={isReadonly}
-          session={session}
+          session={{ user }}
         />
 
         <Messages
@@ -159,10 +159,10 @@ export function Chat({
               transition={{ duration: 0.5 }}
               className="text-center mb-8"
             >
-              <h1 className="text-3xl font-bold mb-2">Welcome to Benefits AI Assistant!</h1>
-              <p className="text-muted-foreground">I&apos;m here to help you understand and choose your employee benefits.</p>
+              <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4" style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>WELCOME TO BENEFITS AI ASSISTANT</h1>
+              <p className="text-lg md:text-xl" style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>I'm here to help you understand and choose your employee benefits.</p>
             </motion.div>
-            <BenefitsQuickActions 
+            <BenefitsQuickActions
               onActionClick={(prompt) => {
                 // Set the input to show what's being sent
                 setInput(prompt);

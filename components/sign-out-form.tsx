@@ -1,13 +1,18 @@
 'use client';
 
-import { useUser } from '@stackframe/stack';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
 
 export const SignOutForm = () => {
-  const user = useUser();
+  const router = useRouter();
 
   const handleSignOut = async () => {
-    if (user) {
-      await user.signOut();
+    try {
+      await signOut(auth);
+      router.push('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
 

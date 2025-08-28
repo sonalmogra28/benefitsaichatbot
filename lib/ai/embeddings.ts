@@ -62,3 +62,6 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   
   return embeddings;
 }
+
+// Alias for backward compatibility
+export const getEmbedding = generateEmbedding;

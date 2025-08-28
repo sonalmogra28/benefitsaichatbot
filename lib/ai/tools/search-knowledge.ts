@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { searchVectors } from '@/lib/vectors/pinecone';
+import { searchVectors } from '@/lib/ai/vector-search';
 import { buildKnowledgeContext } from '@/lib/ai/prompts';
 
 export const searchKnowledge = tool({

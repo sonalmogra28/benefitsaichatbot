@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/lib/config/env';
 import { RATE_LIMITS } from '@/lib/config';
 import { MemoryRateLimiter } from './memory';
-import { RedisRateLimiter } from './redis';
+import { FirestoreRateLimiter, InMemoryRateLimiter } from './firestore-limiter';
+import { adminAuth } from '../firebase/admin';
 
 /**
  * Rate limiter interface
@@ -36,13 +37,13 @@ export interface RateLimitError {
  * Get the appropriate rate limiter based on environment
  */
 function getRateLimiter(): RateLimiter {
-  // Use Redis if available, otherwise fall back to in-memory
-  if (env.REDIS_URL) {
-    return new RedisRateLimiter(env.REDIS_URL);
+  // Use Firestore for production, in-memory for development
+  if (process.env.NODE_ENV === 'production') {
+    return new FirestoreRateLimiter();
   }
   
-  console.warn('No Redis URL provided, using in-memory rate limiter. This is not recommended for production.');
-  return new MemoryRateLimiter();
+  // Use in-memory rate limiter for development
+  return new InMemoryRateLimiter();
 }
 
 // Singleton rate limiter instance
@@ -164,12 +165,16 @@ export function withRateLimit(
   return async (request: NextRequest, context?: any): Promise<Response> => {
     // Get user ID if available from auth
     let userId: string | undefined;
-    try {
-      const { auth } = await import('@/app/(auth)/stack-auth');
-      const session = await auth();
-      userId = session?.user?.id;
-    } catch {
-      // Auth not available
+    const authHeader = request.headers.get('Authorization');
+    const idToken = authHeader?.split('Bearer ')[1];
+
+    if (idToken) {
+      try {
+        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        userId = decodedToken.uid;
+      } catch {
+        // Auth not available
+      }
     }
     
     const path = request.nextUrl.pathname;

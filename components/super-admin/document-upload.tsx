@@ -1,102 +1,98 @@
-// components/super-admin/document-upload.tsx
 'use client';
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import useSWR from 'swr';
-import { fetcher } from '@/lib/utils';
-import type { Company } from '@/lib/db/schema';
+import { Progress } from '@/components/ui/progress';
 
 export function DocumentUpload() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const { data: companies } = useSWR<Company[]>('/api/super-admin/companies', fetcher);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [embeddings, setEmbeddings] = useState<number[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!selectedCompany || !file) {
-      return;
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFile(file);
     }
+  };
 
-    const formData = new FormData();
-    formData.append('file', file);
+  const handleUpload = async () => {
+    if (file) {
+      setIsUploading(true);
+      setError(null);
 
-    await fetch(`/api/super-admin/companies/${selectedCompany}/documents/upload`, {
-      method: 'POST',
-      body: formData,
-    });
+      try {
+        // 1. Get a signed URL from our API
+        const response = await fetch('/api/super-admin/documents/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ fileName: file.name, contentType: file.type }),
+        });
+        const { url } = await response.json();
 
-    setIsOpen(false);
+        // 2. Upload the file to the signed URL
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', url, true);
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const progress = (event.loaded / event.total) * 100;
+            setProgress(progress);
+          }
+        };
+        xhr.onload = async () => {
+          if (xhr.status === 200) {
+            setIsUploading(false);
+            setIsProcessing(true);
+            const gcsUri = `gs://benefitschatbotac-383.appspot.com/documents/${file.name}`;
+            const processResponse = await fetch('/api/super-admin/documents/process', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ gcsUri, contentType: file.type }),
+            });
+            const data = await processResponse.json();
+            setEmbeddings(data.embeddings);
+            setIsProcessing(false);
+          } else {
+            setError('Failed to upload file.');
+            setIsUploading(false);
+          }
+        };
+        xhr.onerror = () => {
+          setError('Failed to upload file.');
+          setIsUploading(false);
+        };
+        xhr.send(file);
+      } catch (error) {
+        setError('Failed to get signed URL.');
+        setIsUploading(false);
+      }
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button>Upload Document</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Upload a new document</DialogTitle>
-          <DialogDescription>
-            Select a company and a file to upload.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="company" className="text-right">
-                Company
-              </Label>
-              <Select onValueChange={setSelectedCompany}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select a company" />
-                </SelectTrigger>
-                <SelectContent>
-                  {companies?.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="file" className="text-right">
-                File
-              </Label>
-              <Input
-                id="file"
-                type="file"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit">Upload</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <div>
+      <h1 className="text-2xl font-bold">Upload Documents</h1>
+      <div className="space-y-6">
+        <div>
+          <Label htmlFor="file">Choose a file</Label>
+          <Input id="file" type="file" onChange={handleFileChange} />
+        </div>
+        <Button onClick={handleUpload} disabled={!file || isUploading || isProcessing}>
+          {isUploading ? 'Uploading...' : isProcessing ? 'Processing...' : 'Upload and Process'}
+        </Button>
+        {isUploading && <Progress value={progress} />}
+        {error && <p className="text-red-500">{error}</p>}
+        {embeddings && <p>Embeddings generated successfully!</p>}
+      </div>
+    </div>
   );
 }

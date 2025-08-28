@@ -129,13 +129,6 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
         return updated;
       });
 
-      // Trigger document processing
-      await fetch('/api/cron/process-documents', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId: result.document.id }),
-      });
-
       // Mark as complete
       setFiles(prev => {
         const updated = [...prev];

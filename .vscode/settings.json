@@ -11,12 +11,20 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "eslint.workingDirectories": [
-    { "pattern": "app/*" },
-    { "pattern": "packages/*" }
+    {
+      "pattern": "app/*"
+    },
+    {
+      "pattern": "packages/*"
+    }
   ],
+  "IDX.agenticWorkspace": true,
   "chat.renderRelatedFiles": true,
   "chat.tools.autoApprove": true,
   "inlineChat.lineEmptyHint": true,
   "biome.enabled": false,
-  "git.branchRandomName.enable": true
+  "git.branchRandomName.enable": true,
+  "telemetry.feedback.enabled": true,
+  "git.allowForcePush": true,
+  "git.autofetch": false
 }

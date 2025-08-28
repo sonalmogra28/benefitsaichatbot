@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import useSWR from 'swr';
 import {
   Card,
   CardContent,
@@ -34,32 +35,31 @@ import { DocumentUpload } from './document-upload';
 import { BenefitsManagement } from './benefits-management';
 
 interface CompanyDashboardProps {
-  stats: {
-    employees: number;
-    activePlans: number;
-    activeEnrollments: number;
-    documentCount: number;
-    totalCost: number;
-    utilisationRate: number;
-  };
-  recentActivity: Array<{
-    id: string;
-    type: 'enrollment' | 'document' | 'employee' | 'plan';
-    description: string;
-    timestamp: Date;
-    status: 'success' | 'pending' | 'failed';
-  }>;
   companyName: string;
   companyId?: string;
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export function CompanyDashboard({
-  stats,
-  recentActivity,
   companyName,
   companyId,
 }: CompanyDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
+
+  const { data: stats, error: statsError } = useSWR(
+    companyId ? `/api/company-admin/stats?companyId=${companyId}` : null,
+    fetcher
+  );
+
+  const { data: recentActivity, error: recentActivityError } = useSWR(
+    companyId ? `/api/company-admin/activity?companyId=${companyId}` : null,
+    fetcher
+  );
+
+  if (!stats || !recentActivity) {
+    return <div>Loading...</div>;
+  }
 
   const utilizationPercentage = stats.utilisationRate * 100;
   const enrollmentRate =
@@ -227,7 +227,7 @@ export function CompanyDashboard({
                           {activity.description}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(activity.timestamp, {
+                          {formatDistanceToNow(new Date(activity.timestamp), {
                             addSuffix: true,
                           })}
                         </p>

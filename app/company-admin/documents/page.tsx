@@ -1,71 +1,183 @@
-import { auth } from '@/app/(auth)/stack-auth';
-import { redirect } from 'next/navigation';
-import { db } from '@/lib/db';
-import { knowledgeBaseDocuments } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import { DocumentList } from '@/components/admin/document-list';
-import { DocumentUpload } from '@/components/admin/document-upload';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import { useState, useEffect } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { FileText, Upload, Search, Download, Trash2, Eye } from 'lucide-react';
+import DocumentUploadSection from '@/components/admin/document-upload-section';
 
-async function getCompanyDocuments(companyId: string) {
-  const documents = await db
-    .select({
-      id: knowledgeBaseDocuments.id,
-      title: knowledgeBaseDocuments.title,
-      documentType: knowledgeBaseDocuments.documentType,
-      category: knowledgeBaseDocuments.category,
-      fileType: knowledgeBaseDocuments.fileType,
-      fileUrl: knowledgeBaseDocuments.fileUrl,
-      tags: knowledgeBaseDocuments.tags,
-      processedAt: knowledgeBaseDocuments.processedAt,
-      createdAt: knowledgeBaseDocuments.createdAt,
-      createdBy: knowledgeBaseDocuments.createdBy,
-    })
-    .from(knowledgeBaseDocuments)
-    .where(eq(knowledgeBaseDocuments.companyId, companyId))
-    .orderBy(knowledgeBaseDocuments.createdAt);
-
-  return documents.map(doc => ({
-    ...doc,
-    category: doc.category || undefined,
-    fileType: doc.fileType || undefined,
-    fileUrl: doc.fileUrl || undefined,
-    tags: doc.tags || undefined,
-    processedAt: doc.processedAt || undefined,
-    status: doc.processedAt ? 'processed' as const : 'pending_processing' as const,
-  }));
+interface Document {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: Date;
+  uploadedBy: string;
+  category: string;
 }
 
-export default async function DocumentsPage() {
-  const session = await auth();
+export default function CompanyDocumentsPage() {
+  const [user, loading] = useAuthState(auth);
+  const router = useRouter();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showUpload, setShowUpload] = useState(false);
 
-  if (
-    !session?.user?.companyId ||
-    (session.user.type !== 'company_admin' && session.user.type !== 'hr_admin')
-  ) {
-    redirect('/login');
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    } else if (user) {
+      user.getIdTokenResult().then((idTokenResult) => {
+        if (!idTokenResult.claims.company_admin && !idTokenResult.claims.hr_admin) {
+          router.push('/');
+        }
+      });
+    }
+  }, [user, loading, router]);
+
+  const filteredDocuments = documents.filter(doc =>
+    doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    doc.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  const documents = await getCompanyDocuments(session.user.companyId);
-
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Document Library</h1>
-        <p className="text-muted-foreground">
-          Manage benefits documents and resources for your organization
-        </p>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Document Management</h1>
+          <p className="text-muted-foreground">Manage your company's benefits documentation</p>
+        </div>
+        <Button onClick={() => setShowUpload(!showUpload)}>
+          <Upload className="mr-2 h-4 w-4" />
+          Upload Document
+        </Button>
       </div>
 
-      <div className="space-y-6">
-        <DocumentUpload 
-          companyId={session.user.companyId} 
-          onUploadComplete={() => window.location.reload()} 
-        />
-        <DocumentList
-          documents={documents}
-        />
+      {showUpload && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Upload New Document</CardTitle>
+            <CardDescription>Add benefits documentation for your employees</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DocumentUploadSection companies={[]} />
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Document Library</CardTitle>
+          <div className="flex items-center space-x-2 mt-4">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search documents..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredDocuments.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No documents found</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                {searchTerm ? 'Try adjusting your search' : 'Upload your first document to get started'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="grid grid-cols-12 gap-4 pb-2 border-b text-sm font-medium text-muted-foreground">
+                <div className="col-span-5">Name</div>
+                <div className="col-span-2">Category</div>
+                <div className="col-span-2">Size</div>
+                <div className="col-span-2">Uploaded</div>
+                <div className="col-span-1">Actions</div>
+              </div>
+              {filteredDocuments.map((doc) => (
+                <div key={doc.id} className="grid grid-cols-12 gap-4 py-3 border-b items-center hover:bg-muted/50 transition-colors">
+                  <div className="col-span-5 flex items-center space-x-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{doc.name}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-700">
+                      {doc.category}
+                    </span>
+                  </div>
+                  <div className="col-span-2 text-sm text-muted-foreground">
+                    {formatFileSize(doc.size)}
+                  </div>
+                  <div className="col-span-2 text-sm text-muted-foreground">
+                    {new Date(doc.uploadedAt).toLocaleDateString()}
+                  </div>
+                  <div className="col-span-1 flex space-x-1">
+                    <Button variant="ghost" size="sm">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{documents.length}</div>
+            <p className="text-xs text-muted-foreground">Across all categories</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Storage Used</CardTitle>
+            <Upload className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2.4 GB</div>
+            <p className="text-xs text-muted-foreground">Of 10 GB available</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Recent Uploads</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">12</div>
+            <p className="text-xs text-muted-foreground">This month</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

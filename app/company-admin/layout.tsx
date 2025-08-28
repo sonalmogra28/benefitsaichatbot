@@ -1,36 +1,40 @@
-import { auth } from '@/app/(auth)/stack-auth';
-import { redirect } from 'next/navigation';
-import { getCompanyById } from '@/lib/db/tenant-context';
-import { SidebarProvider } from '@/components/ui/sidebar';
+'use client';
 
-export default async function CompanyAdminLayout({
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
+import { useDocument } from 'react-firebase-hooks/firestore';
+import { doc } from 'firebase/firestore';
+import { db } from '@/lib/firestore';
+
+export default function CompanyAdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-  
-  if (!session?.user) {
-    redirect('/login');
+  const [user, loading] = useAuthState(auth);
+  const router = useRouter();
+
+  const [companyDoc, companyLoading, companyError] = useDocument(
+    user ? doc(db, 'companies', user.uid) : null,
+  );
+
+  if (loading || companyLoading) {
+    return <div>Loading...</div>;
   }
-  
-  // Check if user has admin role
-  if (session.user.type !== 'company_admin' && session.user.type !== 'hr_admin') {
-    redirect('/');
+
+  if (!user) {
+    router.push('/login');
+    return null;
   }
-  
-  if (!session.user.companyId) {
-    redirect('/');
-  }
-  
-  const company = await getCompanyById(session.user.companyId);
-  
+
   return (
     <SidebarProvider>
       <div className="flex h-screen">
         <aside className="w-64 border-r bg-background">
           <div className="p-6 border-b">
-            <h2 className="text-lg font-semibold">{company.name}</h2>
+            <h2 className="text-lg font-semibold">{companyDoc?.data()?.name}</h2>
             <p className="text-sm text-muted-foreground">Admin Portal</p>
           </div>
           <nav className="p-4 space-y-2">

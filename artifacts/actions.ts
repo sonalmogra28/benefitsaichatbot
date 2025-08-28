@@ -1,8 +1,8 @@
 'use server';
 
-import { getSuggestionsByDocumentId } from '@/lib/db/queries';
+import { conversationService } from '@/lib/firebase/services/conversation.service';
 
 export async function getSuggestions({ documentId }: { documentId: string }) {
-  const suggestions = await getSuggestionsByDocumentId({ documentId });
-  return suggestions ?? [];
+  // TODO: Implement getSuggestions in conversationService
+  return [];
 }
