@@ -405,6 +405,77 @@ class SuperAdminService {
 
     return exports;
   }
+
+  /**
+   * Get system settings
+   */
+  async getSystemSettings(): Promise<SystemSettings> {
+    try {
+      const settingsDoc = await db.collection('system').doc('settings').get();
+      
+      if (!settingsDoc.exists) {
+        // Return default settings if not found
+        return this.getDefaultSettings();
+      }
+      
+      return settingsDoc.data() as SystemSettings;
+    } catch (error) {
+      console.error('Error fetching system settings:', error);
+      return this.getDefaultSettings();
+    }
+  }
+
+  /**
+   * Update system settings
+   */
+  async updateSystemSettings(settings: Partial<SystemSettings>): Promise<void> {
+    try {
+      const settingsRef = db.collection('system').doc('settings');
+      
+      await settingsRef.set({
+        ...settings,
+        updatedAt: FieldValue.serverTimestamp(),
+      }, { merge: true });
+
+      await this.logActivity({
+        type: 'company_added',
+        message: 'System settings updated',
+        metadata: { settings },
+      });
+    } catch (error) {
+      console.error('Error updating system settings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get default system settings
+   */
+  private getDefaultSettings(): SystemSettings {
+    return {
+      maintenanceMode: false,
+      signupsEnabled: true,
+      defaultBillingPlan: 'free',
+      maxCompaniesPerDomain: 10,
+      emailSettings: {
+        provider: 'smtp',
+        fromEmail: 'noreply@benefitschatbot.com',
+        fromName: 'Benefits Chatbot',
+      },
+      storageSettings: {
+        provider: 'gcs',
+        maxFileSizeMB: 10,
+        allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'csv'],
+      },
+      aiSettings: {
+        provider: 'openai',
+        model: 'gpt-4',
+        maxTokensPerRequest: 4096,
+        rateLimitPerMinute: 60,
+      },
+      featureFlags: {},
+    };
+  }
 }
 
 export const superAdminService = new SuperAdminService();
