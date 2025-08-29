@@ -3,26 +3,26 @@
   "version": "3.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbo",
-    "build": "NODE_OPTIONS=--max-old-space-size=4096 next build",
-    "start": "next start",
-    "lint": "next lint && biome lint --write --unsafe",
-    "lint:fix": "next lint --fix && biome lint --write --unsafe",
-    "format": "biome format --write",
-    "test": "vitest run --coverage",
+    "dev": "pnpm exec next dev --turbo",
+    "build": "NODE_OPTIONS=--max-old-space-size=8192 pnpm exec next build",
+    "start": "pnpm exec next start",
+    "lint": "pnpm exec next lint && pnpm exec biome lint --write --unsafe",
+    "lint:fix": "pnpm exec next lint --fix && pnpm exec biome lint --write --unsafe",
+    "format": "pnpm exec biome format --write",
+    "test": "pnpm exec tsx vitest run --coverage",
     "test:document-upload": "npx tsx scripts/test-document-upload.ts",
-    "typecheck": "tsc --noEmit",
-    "pre-deploy": "tsx scripts/pre-deploy-check.ts",
+    "typecheck": "pnpm exec tsc --noEmit",
+    "pre-deploy": "pnpm exec tsx scripts/pre-deploy-check.ts",
     "prepare": "husky install",
-    "validate-pow": "node scripts/validate-pow.js",
-    "claude:custom": "claude -p \"$(cat toolsets/claude_custom_instructions.jsonc)\"",
-    "fix-auth": "tsx -r dotenv/config scripts/fix-auth-emergency.ts dotenv_config_path=.env.local",
-    "reset-auth": "tsx -r dotenv/config scripts/reset-auth.ts dotenv_config_path=.env.env.local",
-    "create-admin": "tsx -r dotenv/config scripts/create-platform-admin.ts dotenv_config_path=.env.local",
-    "list-users": "tsx -r dotenv/config scripts/list-users.ts dotenv_config_path=.env.env.local",
-    "assign-super-admin": "tsx -r dotenv/config scripts/assign-super-admin.ts dotenv_config_path=.env.local",
-    "validate-env": "tsx scripts/validate-env.ts",
-    "uat-tests": "tsx -r dotenv/config scripts/uat-tests.ts dotenv_config_path=.env.local"
+    "validate-pow": "pnpm exec node scripts/validate-pow.js",
+    "claude:custom": "pnpm exec claude -p \"$(cat toolsets/claude_custom_instructions.jsonc)\"",
+    "fix-auth": "pnpm exec tsx -r dotenv/config scripts/fix-auth-emergency.ts dotenv_config_path=.env.local",
+    "reset-auth": "pnpm exec tsx -r dotenv/config scripts/reset-auth.ts dotenv_config_path=.env.env.local",
+    "create-admin": "pnpm exec tsx -r dotenv/config scripts/create-platform-admin.ts dotenv_config_path=.env.local",
+    "list-users": "pnpm exec tsx -r dotenv/config scripts/list-users.ts dotenv_config_path=.env.local",
+    "assign-super-admin": "pnpm exec tsx -r dotenv/config scripts/assign-super-admin.ts dotenv_config_path=.env.local",
+    "validate-env": "pnpm exec tsx scripts/validate-env.ts",
+    "uat-tests": "pnpm exec tsx -r dotenv/config scripts/uat-tests.ts dotenv_config_path=.env.local"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.5",
@@ -138,5 +138,5 @@
     "typescript": "^5.6.3",
     "vitest": "^3.2.4"
   },
-  "packageManager": "npm@10.8.1"
+  "packageManager": "pnpm@9.12.3"
 }
