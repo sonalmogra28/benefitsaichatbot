@@ -476,6 +476,74 @@ class SuperAdminService {
       featureFlags: {},
     };
   }
+
+  /**
+   * Update a user
+   */
+  async updateUser(userId: string, updates: any): Promise<any> {
+    try {
+      const userRef = db.collection('users').doc(userId);
+      
+      // Get the user first
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        throw new Error('User not found');
+      }
+
+      // Update the user
+      await userRef.update({
+        ...updates,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+
+      // Also update in Firebase Auth if email is being changed
+      if (updates.email) {
+        await auth().updateUser(userId, {
+          email: updates.email,
+        });
+      }
+
+      await this.logActivity({
+        type: 'user_enrolled',
+        message: `User ${userId} updated`,
+        metadata: { userId, updates },
+      });
+
+      // Return the updated user
+      const updatedDoc = await userRef.get();
+      return { id: updatedDoc.id, ...updatedDoc.data() };
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a user
+   */
+  async deleteUser(userId: string): Promise<void> {
+    try {
+      // Delete from Firestore
+      await db.collection('users').doc(userId).delete();
+      
+      // Delete from Firebase Auth
+      try {
+        await auth().deleteUser(userId);
+      } catch (authError) {
+        console.error('Error deleting user from Auth:', authError);
+        // Continue even if Auth deletion fails
+      }
+
+      await this.logActivity({
+        type: 'user_enrolled',
+        message: `User ${userId} deleted`,
+        metadata: { userId },
+      });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+  }
 }
 
 export const superAdminService = new SuperAdminService();
