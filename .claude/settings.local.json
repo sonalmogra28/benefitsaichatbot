@@ -75,7 +75,8 @@
       "Bash(gcloud builds log:*)",
       "Bash(NODE_OPTIONS=\"--max-old-space-size=6144\" pnpm build)",
       "Bash(gcloud auth:*)",
-      "Bash(export NODE_OPTIONS=\"--max-old-space-size=8192\")"
+      "Bash(export NODE_OPTIONS=\"--max-old-space-size=8192\")",
+      "Bash(npx typescript:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

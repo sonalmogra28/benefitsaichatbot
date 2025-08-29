@@ -1,8 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { EmailService } from '@/lib/services/email.service';
+import { emailService } from '@/lib/services/email.service'; // Import singleton instance
 import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
-
-const emailService = new EmailService();
 
 // POST /api/test/email - Send a test email
 export const POST = requireSuperAdmin(async (request: NextRequest) => {
@@ -16,10 +14,14 @@ export const POST = requireSuperAdmin(async (request: NextRequest) => {
       );
     }
 
-    const result = await emailService.sendEmail({
-      to,
-      subject,
-      html: `<p>${text}</p>`,
+    // Use sendNotification as sendEmail does not exist on EmailService
+    // We will map 'to' to 'email', 'subject' to 'title', and 'text' to 'message'
+    // A placeholder name will be used as it's not provided in the test route input.
+    const result = await emailService.sendNotification({
+      email: to,
+      name: 'Test User', // Placeholder name
+      title: subject,
+      message: `<p>${text}</p>`,
     });
 
     if (result.success) {
