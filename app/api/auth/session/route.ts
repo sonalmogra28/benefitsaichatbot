@@ -34,18 +34,20 @@ export async function POST(req: NextRequest) {
 
       return response;
     } catch (firebaseError: any) {
+      console.error('Firebase Admin SDK session cookie creation error:', firebaseError);
       if (firebaseError.code === 'auth/invalid-id-token') {
         return NextResponse.json(
           { error: 'Invalid authentication token' },
           { status: 401 }
         );
       }
+      // Re-throw if it's not a known Firebase error to be caught by the outer catch block
       throw firebaseError;
     }
   } catch (error) {
-    console.error('Session creation error:', error);
+    console.error('Session creation request handler error:', error);
     return NextResponse.json(
-      { error: 'Failed to create session' },
+      { error: (error as Error).message || 'Failed to create session' },
       { status: 500 }
     );
   }

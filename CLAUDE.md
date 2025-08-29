@@ -41,39 +41,39 @@ This is a Firebase-based Benefits Assistant Chatbot - a multi-tenant, AI-powered
 - **Formatting**: Biome.js
 - **Testing**: Vitest + React Testing Library + Playwright
 - **Deployment**: Firebase CLI
-- **Package Manager**: npm (as specified in package.json)
+- **Package Manager**: pnpm (as specified in package.json)
 
 ## Quick Start Commands
 
 ### Development
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Start development server with Turbo
-npm run dev
+pnpm run dev
 
 # Start development with Firebase emulators
 firebase emulators:start &
-npm run dev
+pnpm run dev
 ```
 
 ### Building & Testing
 ```bash
 # Build application
-npm run build
+pnpm run build
 
 # Type checking
-npm run typecheck
+pnpm run typecheck
 
 # Run tests
-npm test                    # Unit tests with coverage
-npm run test:document-upload # Document processing tests
+pnpm test                    # Unit tests with coverage
+pnpm run test:document-upload # Document processing tests
 
 # Linting & Formatting
-npm run lint                # Next.js + Biome linting
-npm run lint:fix            # Auto-fix linting issues  
-npm run format              # Format code with Biome
+pnpm run lint                # Next.js + Biome linting
+pnpm run lint:fix            # Auto-fix linting issues  
+pnpm run format              # Format code with Biome
 ```
 
 ### Firebase & Deployment
@@ -82,26 +82,26 @@ npm run format              # Format code with Biome
 firebase deploy
 
 # Pre-deployment checks
-npm run pre-deploy
+pnpm run pre-deploy
 
 # Validate production readiness  
-npm run validate-pow
+pnpm run validate-pow
 ```
 
 ### Admin & User Management
 ```bash
 # Create platform admin user
-npm run create-admin
+pnpm run create-admin
 
 # Assign super admin role
-npm run assign-super-admin
+pnpm run assign-super-admin
 
 # List all users
-npm run list-users
+pnpm run list-users
 
 # Emergency auth fixes
-npm run fix-auth
-npm run reset-auth
+pnpm run fix-auth
+pnpm run reset-auth
 ```
 
 ## Architecture Overview
@@ -208,8 +208,8 @@ PINECONE_API_KEY=               # Vector search (migrate to Vertex AI Vector Sea
 
 ### Unit Tests (Vitest)
 ```bash
-npm test                    # Run all unit tests with coverage
-npm test -- --watch        # Watch mode for development
+pnpm test                    # Run all unit tests with coverage
+pnpm test -- --watch        # Watch mode for development
 ```
 
 **Coverage Target**: 80%+ for critical business logic
@@ -281,9 +281,9 @@ For new AI capabilities:
    - Implement feature with TypeScript strict mode
    - Update documentation as needed
 4. **Quality**: 
-   - Run `npm run lint:fix && npm run format`
-   - Ensure tests pass with `npm test`
-   - Check types with `npm run typecheck`
+   - Run `pnpm run lint:fix && pnpm run format`
+   - Ensure tests pass with `pnpm test`
+   - Check types with `pnpm run typecheck`
 5. **Review**: Submit PR with verification evidence
 
 ### Code Standards

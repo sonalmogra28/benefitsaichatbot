@@ -32,13 +32,19 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 async function createSession(idToken: string) {
-  await fetch('/api/auth/session', {
+  const response = await fetch('/api/auth/session', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ idToken }),
   });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.error('Session creation API error:', errorData);
+    throw new Error(errorData.error || 'Failed to create session on server.');
+  }
 }
 
 async function clearSession() {
@@ -57,12 +63,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        const idToken = await firebaseUser.getIdToken();
-        await createSession(idToken);
         try {
+          const idToken = await firebaseUser.getIdToken();
+          await createSession(idToken);
           const idTokenResult = await getIdTokenResult(firebaseUser);
           setClaims(idTokenResult.claims);
-        } catch (error) {
+        } catch (sessionError) {
+          console.error('Error during session creation after sign-in:', sessionError);
+          setError((sessionError as Error).message || 'Session setup failed. Please try again.');
+          // Optionally sign out the user if session creation fails critically
+          await firebaseSignOut(auth);
+          setUser(null);
           setClaims(null);
         }
       } else {
@@ -77,6 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const handleError = (e: any) => {
+    console.error('Authentication error:', e);
     switch (e.code) {
       case 'auth/user-not-found':
       case 'auth/wrong-password':
@@ -85,8 +97,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       case 'auth/email-already-in-use':
         setError('Email already in use.');
         break;
+      case 'auth/popup-blocked':
+        setError('Popup blocked by browser. Please allow popups or try again.');
+        break;
+      case 'auth/invalid-credential':
+        setError('Google Sign-in is not enabled or misconfigured. Please contact support.');
+        break;
+      case 'auth/operation-not-allowed':
+        setError('Email/password sign-in is not enabled. Please contact support.');
+        break;
       default:
-        setError('An unexpected error occurred. Please try again.');
+        setError(e.message || 'An unexpected error occurred. Please try again.');
         break;
     }
   }
@@ -95,7 +116,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      await signInWithEmailAndPassword(auth, email, pass);
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      // Session creation is handled by onIdTokenChanged listener
     } catch (e: any) {
       handleError(e);
     } finally {
@@ -107,7 +129,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      await createUserWithEmailAndPassword(auth, email, pass);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      // Session creation is handled by onIdTokenChanged listener
     } catch (e: any) {
       handleError(e);
     } finally {
@@ -120,6 +143,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       await firebaseSignOut(auth);
+      // Session clearing is handled by onIdTokenChanged listener
     } catch (e: any) {
       handleError(e);
     } finally {
@@ -132,7 +156,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+      // Session creation is handled by onIdTokenChanged listener
     } catch (e: any) {
       handleError(e);
     } finally {
