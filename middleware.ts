@@ -1,35 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from './lib/firebase/admin';
-
-async function verifySessionCookie(sessionCookie: string) {
-  try {
-    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
-    return decodedClaims;
-  } catch (error) {
-    return null;
-  }
-}
-
-function getRole(decodedClaims: any) {
-  if (decodedClaims.super_admin) return 'super_admin';
-  if (decodedClaims.platform_admin) return 'platform_admin';
-  if (decodedClaims.company_admin) return 'company_admin';
-  if (decodedClaims.hr_admin) return 'hr_admin';
-  return 'employee';
-}
-
-function hasAccess(role: string, path: string) {
-  if (path.startsWith('/super-admin')) {
-    return role === 'super_admin';
-  }
-  if (path.startsWith('/admin')) {
-    return ['super_admin', 'platform_admin'].includes(role);
-  }
-  if (path.startsWith('/company-admin')) {
-    return ['super_admin', 'platform_admin', 'company_admin'].includes(role);
-  }
-  return true; // All roles have access to other paths
-}
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -42,45 +11,35 @@ export async function middleware(req: NextRequest) {
   ];
 
   const isPublicPath = publicPaths.some(path => pathname.startsWith(path));
-  const isStaticFile = pathname.includes('.');
+  const isStaticFile = pathname.includes('.'); // Simple check for static files (e.g., .png, .css)
   const isApiAuthRoute = pathname.startsWith('/api/auth');
 
+  // Allow access to public paths, static files, and API auth routes without checking session
   if (isPublicPath || isStaticFile || isApiAuthRoute) {
     return NextResponse.next();
   }
 
+  // If no session cookie, redirect to login for protected routes
   if (!sessionCookie) {
-    if (!pathname.startsWith('/api')) {
-      const url = req.nextUrl.clone();
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
+    // For API routes, return a 401 error
+    if (pathname.startsWith('/api')) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    // For page routes, redirect to login
+    const url = req.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
   }
 
-  const decodedClaims = await verifySessionCookie(sessionCookie);
-
-  if (!decodedClaims) {
-    if (!pathname.startsWith('/api')) {
-      const url = req.nextUrl.clone();
-      url.pathname = '/login';
-      return NextResponse.redirect(url);
-    }
-    return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
-  }
-
-  const role = getRole(decodedClaims);
-  const userHasAccess = hasAccess(role, pathname);
-
-  if (!userHasAccess) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
+  // If a session cookie exists, allow the request to proceed.
+  // Detailed role-based authorization for paths like /admin, /super-admin
+  // must be handled within the respective API routes or server components,
+  // where firebase-admin can be safely used in a Node.js runtime.
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)', // Match all paths except static assets
   ],
 };

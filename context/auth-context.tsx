@@ -1,4 +1,4 @@
-''''use client';
+'use client';
 
 import React, {
   createContext,
@@ -146,4 +146,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-'''

@@ -1,3 +1,4 @@
+// app/(auth)/register/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -13,6 +14,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/ui/icons';
 import { AlertCircle, CheckCircle2, Building2 } from 'lucide-react';
+
+const EMAIL_ALREADY_IN_USE_ERROR = 'auth/email-already-in-use';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -88,12 +91,8 @@ export default function RegisterPage() {
       
     } catch (err: any) {
       console.error('Registration error:', err);
-      if (err.code === 'auth/email-already-in-use') {
-        setError(
-          <span>
-            An account with this email already exists. Please <Link href="/login" className="text-primary hover:underline">sign in</Link> instead.
-          </span>
-        );
+      if (err.code === EMAIL_ALREADY_IN_USE_ERROR) {
+        setError(EMAIL_ALREADY_IN_USE_ERROR); // Store specific string for error
       } else if (err.code === 'auth/weak-password') {
         setError('Password is too weak. Please use a stronger password.');
       } else if (err.code === 'auth/invalid-email') {
@@ -261,7 +260,15 @@ export default function RegisterPage() {
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>
+                  {error === EMAIL_ALREADY_IN_USE_ERROR ? (
+                    <span>
+                      An account with this email already exists. Please <Link href="/login" className="text-primary hover:underline">sign in</Link> instead.
+                    </span>
+                  ) : (
+                    error
+                  )}
+                </AlertDescription>
               </Alert>
             )}
             

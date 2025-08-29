@@ -1,4 +1,4 @@
-'''import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/firebase/admin';
 
 const COOKIE_OPTIONS = {
@@ -61,4 +61,3 @@ export async function DELETE(req: NextRequest) {
 
   return response;
 }
-''

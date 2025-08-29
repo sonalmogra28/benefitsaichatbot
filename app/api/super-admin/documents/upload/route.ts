@@ -1,6 +1,6 @@
 // app/api/super-admin/documents/upload/route.ts
 import { NextResponse } from 'next/server';
-import { getStorage, GetSignedUrlConfig } from 'firebase-admin/storage';
+import { getStorage } from 'firebase-admin/storage';
 import { initializeApp, getApps } from 'firebase-admin/app';
 
 // Initialize Firebase Admin SDK if not already initialized
@@ -21,10 +21,10 @@ export async function POST(request: Request) {
     const bucket = storage.bucket();
     const file = bucket.file(`documents/${fileName}`);
 
-    // Explicitly define the type for the options object
-    const options: GetSignedUrlConfig = {
-      version: 'v4',
-      action: 'write',
+    // The type for options is inferred, no need for explicit GetSignedUrlConfig import
+    const options = {
+      version: 'v4' as const,
+      action: 'write' as const,
       expires: Date.now() + 15 * 60 * 1000, // 15 minutes
       contentType,
     };

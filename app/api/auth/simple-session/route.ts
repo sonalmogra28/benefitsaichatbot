@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase-admin'; // Assuming firebase-admin is configured and exported here
+import { auth as adminAuth } from '@/lib/firebase/admin'; // Corrected import path
 
 export async function POST(req: NextRequest) {
   try {

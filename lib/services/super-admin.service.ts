@@ -1,5 +1,19 @@
 import { db } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import type {
+  CompanyCreateInput,
+  CompanyUpdateInput,
+  CompanyWithStats,
+  UserWithCompany,
+  BulkUserCreateInput,
+  SystemAnalytics,
+  AuditLog,
+  DataExportRequest,
+  SystemSettings,
+  AuditAction,
+} from '@/lib/types/super-admin';
+import { emailService } from '@/lib/services/email.service';
+import { auth } from 'firebase-admin';
 
 export interface DashboardStats {
   totalCompanies: number;
@@ -14,7 +28,7 @@ export interface DashboardStats {
 
 export interface ActivityLog {
   id: string;
-  type: 'company_added' | 'user_enrolled' | 'document_uploaded' | 'plan_created';
+  type: 'company_added' | 'user_enrolled' | 'document_uploaded' | 'plan_created' | 'data.exported';
   message: string;
   timestamp: Date;
   metadata?: Record<string, any>;
@@ -350,6 +364,46 @@ class SuperAdminService {
     } catch (error) {
       console.error('Error logging activity:', error);
     }
+  }
+
+  async exportData(request: DataExportRequest): Promise<any> {
+    const exports: Record<string, any[]> = {};
+
+    if (request.includeTypes.includes('companies')) {
+      const companiesSnapshot = await db.collection('companies')
+        .orderBy('createdAt', 'desc')
+        .get();
+      exports.companies = companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    if (request.includeTypes.includes('users')) {
+      let usersQuery: FirebaseFirestore.Query = db.collection('users');
+      if (request.companyId) {
+        usersQuery = usersQuery.where('companyId', '==', request.companyId);
+      }
+      const usersSnapshot = await usersQuery.orderBy('createdAt', 'desc').get();
+      exports.users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    if (request.includeTypes.includes('documents')) {
+      let documentsQuery: FirebaseFirestore.Query = db.collection('documents');
+      if (request.companyId) {
+        documentsQuery = documentsQuery.where('companyId', '==', request.companyId);
+      }
+      const documentsSnapshot = await documentsQuery.orderBy('uploadedAt', 'desc').get();
+      exports.documents = documentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    // TODO: Add date range filtering
+    // TODO: Add format conversion (CSV, Excel)
+
+    await this.logActivity({
+      type: 'data.exported',
+      message: `Data export initiated for types: ${request.includeTypes.join(', ')}`,
+      metadata: { types: request.includeTypes, companyId: request.companyId, format: request.format },
+    });
+
+    return exports;
   }
 }
 
