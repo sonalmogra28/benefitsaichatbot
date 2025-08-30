@@ -1,4 +1,4 @@
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { adminAuth, adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import { 
   collection, 
   doc, 
@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db as clientDb } from '@/lib/firebase';
 import { z } from 'zod';
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/lib/constants/roles';
 
 // User metadata schema
 export const userMetadataSchema = z.object({
@@ -69,15 +69,15 @@ export class UserService {
           companyId: userData.companyId || null,
           department: userData.department || null,
           role: userData.role || 'employee',
-          createdAt: adminDb.FieldValue.serverTimestamp(),
-          updatedAt: adminDb.FieldValue.serverTimestamp(),
+          createdAt: AdminFieldValue.serverTimestamp(),
+          updatedAt: AdminFieldValue.serverTimestamp(),
           metadata: userData.metadata || {}
         });
       } else {
         // Update existing user
         const updateData: Partial<FirebaseUser> = {
           ...userData,
-          updatedAt: adminDb.FieldValue.serverTimestamp()
+          updatedAt: AdminFieldValue.serverTimestamp()
         };
         await userRef.update(updateData as {[key: string]: any});
       }
@@ -116,7 +116,7 @@ export class UserService {
       // Update role in Firestore
       await adminDb.collection('users').doc(uid).update({
         role,
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
     } catch (error) {
       console.error(`Failed to update role for user ${uid}:`, error);
@@ -139,7 +139,7 @@ export class UserService {
       // Update user with company assignment
       await adminDb.collection('users').doc(uid).update({
         companyId,
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
 
       // Add user to company's users subcollection
@@ -150,7 +150,7 @@ export class UserService {
         .doc(uid)
         .set({
           uid,
-          addedAt: adminDb.FieldValue.serverTimestamp()
+          addedAt: AdminFieldValue.serverTimestamp()
         });
     } catch (error) {
       console.error(`Failed to assign user ${uid} to company ${companyId}:`, error);
@@ -262,7 +262,7 @@ export class UserService {
         // Server-side update using admin SDK
         await adminDb.collection('users').doc(uid).update({
           metadata: validatedMetadata,
-          updatedAt: adminDb.FieldValue.serverTimestamp()
+          updatedAt: AdminFieldValue.serverTimestamp()
         });
       }
     } catch (error) {

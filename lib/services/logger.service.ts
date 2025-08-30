@@ -4,7 +4,7 @@
  */
 
 import { getLoggingConfig, getEnvironment } from '@/config/environments';
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -104,7 +104,7 @@ class Logger {
       // Store logs in Firestore for cloud logging
       await adminDb.collection('logs').add({
         ...entry,
-        timestamp: adminDb.FieldValue.serverTimestamp(),
+        timestamp: AdminFieldValue.serverTimestamp(),
       });
     } catch (error) {
       // Fallback: cloud logging failed, but we can't use console here as it would create a cycle

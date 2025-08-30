@@ -21,6 +21,10 @@ export const adminAuth = admin.auth();
 export const adminDb = admin.firestore();
 export const adminStorage = admin.storage();
 
+// Export Firestore utilities
+export const FieldValue = admin.firestore.FieldValue;
+export const Timestamp = admin.firestore.Timestamp;
+
 // Also export with shorter names for backward compatibility
 export const auth = adminAuth;
 export const db = adminDb;

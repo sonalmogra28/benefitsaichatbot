@@ -1,4 +1,4 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import { z } from 'zod';
 import type { FieldValue } from 'firebase-admin/firestore';
 
@@ -62,8 +62,8 @@ export class CompanyService {
         createdBy,
         status: 'active',
         employeeCount: 0,
-        createdAt: adminDb.FieldValue.serverTimestamp(),
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        createdAt: AdminFieldValue.serverTimestamp(),
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
 
       // Initialize subcollections
@@ -93,7 +93,7 @@ export class CompanyService {
         .doc('_init')
         .set({
           initialized: true,
-          createdAt: adminDb.FieldValue.serverTimestamp()
+          createdAt: AdminFieldValue.serverTimestamp()
         });
 
       // Create initial documents collection
@@ -104,7 +104,7 @@ export class CompanyService {
         .doc('_init')
         .set({
           initialized: true,
-          createdAt: adminDb.FieldValue.serverTimestamp()
+          createdAt: AdminFieldValue.serverTimestamp()
         });
 
       // Initialize users subcollection (empty initially)
@@ -115,7 +115,7 @@ export class CompanyService {
         .doc('_init')
         .set({
           initialized: true,
-          createdAt: adminDb.FieldValue.serverTimestamp()
+          createdAt: AdminFieldValue.serverTimestamp()
         });
     } catch (error) {
       console.error(`Failed to initialize collections for company ${companyId}:`, error);
@@ -159,7 +159,7 @@ export class CompanyService {
       
       await adminDb.collection('companies').doc(companyId).update({
         ...validated,
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -217,7 +217,7 @@ export class CompanyService {
     try {
       await adminDb.collection('companies').doc(companyId).update({
         status,
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
     } catch (error) {
       console.error(`Failed to update status for company ${companyId}:`, error);

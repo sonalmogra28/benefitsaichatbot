@@ -1,4 +1,4 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, FieldValue as AdminFieldValue, Timestamp as AdminTimestamp } from '@/lib/firebase/admin';
 import type { RateLimiter, RateLimitResult } from './index';
 
 /**
@@ -46,8 +46,8 @@ export class FirestoreRateLimiter implements RateLimiter {
         // Update document with new attempts and set TTL
         transaction.set(docRef, {
           attempts,
-          expiresAt: adminDb.Timestamp.fromMillis(now + windowMs),
-          lastUpdated: adminDb.FieldValue.serverTimestamp(),
+          expiresAt: AdminTimestamp.fromMillis(now + windowMs),
+          lastUpdated: AdminFieldValue.serverTimestamp(),
         });
         
         return {
@@ -84,7 +84,7 @@ export class FirestoreRateLimiter implements RateLimiter {
    */
   async cleanupExpired(): Promise<void> {
     try {
-      const now = adminDb.Timestamp.now();
+      const now = AdminTimestamp.now();
       const snapshot = await adminDb
         .collection(this.collection)
         .where('expiresAt', '<', now)

@@ -1,4 +1,4 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import { z } from 'zod';
 import type { FieldValue } from 'firebase-admin/firestore';
 
@@ -100,8 +100,8 @@ export class BenefitsService {
         createdBy,
         status: 'active',
         enrolledCount: 0,
-        createdAt: adminDb.FieldValue.serverTimestamp(),
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        createdAt: AdminFieldValue.serverTimestamp(),
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
 
       return planId;
@@ -195,7 +195,7 @@ export class BenefitsService {
         .doc(planId)
         .update({
           ...validated,
-          updatedAt: adminDb.FieldValue.serverTimestamp()
+          updatedAt: AdminFieldValue.serverTimestamp()
         });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -235,8 +235,8 @@ export class BenefitsService {
         id: enrollmentId,
         ...validated,
         monthlyPremium,
-        createdAt: adminDb.FieldValue.serverTimestamp(),
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        createdAt: AdminFieldValue.serverTimestamp(),
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
 
       // Update enrolled count on the plan
@@ -246,7 +246,7 @@ export class BenefitsService {
         .collection('benefitPlans')
         .doc(validated.planId)
         .update({
-          enrolledCount: adminDb.FieldValue.increment(1)
+          enrolledCount: AdminFieldValue.increment(1)
         });
 
       // Add enrollment to user's subcollection
@@ -332,7 +332,7 @@ export class BenefitsService {
 
       await enrollmentRef.update({
         status,
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
 
       // Update user's enrollment subcollection
@@ -351,7 +351,7 @@ export class BenefitsService {
           .collection('benefitPlans')
           .doc(enrollment.planId)
           .update({
-            enrolledCount: adminDb.FieldValue.increment(-1)
+            enrolledCount: AdminFieldValue.increment(-1)
           });
       }
     } catch (error) {

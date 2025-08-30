@@ -5,6 +5,18 @@ import {
 import { GoogleAuth } from 'google-auth-library';
 import { getEmbedding } from './embeddings';
 
+// Export DocumentChunk type
+export interface DocumentChunk {
+  id: string;
+  text: string;
+  metadata: {
+    documentId: string;
+    companyId: string;
+    chunkIndex: number;
+    [key: string]: any;
+  };
+}
+
 const project = process.env.GOOGLE_CLOUD_PROJECT || '';
 const location = 'us-central1';
 const indexEndpointId = process.env.VERTEX_AI_INDEX_ENDPOINT_ID || '';

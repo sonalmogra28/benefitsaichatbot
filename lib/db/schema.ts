@@ -1,5 +1,5 @@
 import { FieldValue, Timestamp } from 'firebase/firestore';
-import { UserRole } from '../types'; // Assuming UserRole is defined here
+import { UserRole } from '../constants/roles';
 
 // Base interfaces for Firestore documents
 export interface DocumentBase {

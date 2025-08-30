@@ -1,4 +1,4 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import { z } from 'zod';
 import type { FieldValue } from 'firebase-admin/firestore';
 
@@ -61,8 +61,8 @@ export class BenefitService {
         id: planId,
         companyId,
         ...validated,
-        createdAt: adminDb.FieldValue.serverTimestamp(),
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        createdAt: AdminFieldValue.serverTimestamp(),
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
 
       return planId;
@@ -108,8 +108,8 @@ export class BenefitService {
         userId,
         companyId,
         ...validated,
-        createdAt: adminDb.FieldValue.serverTimestamp(),
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        createdAt: AdminFieldValue.serverTimestamp(),
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
 
       return enrollmentId;
@@ -143,7 +143,7 @@ export class BenefitService {
     try {
       await adminDb.collection('users').doc(userId).collection('benefitEnrollments').doc(enrollmentId).update({
         status: 'cancelled',
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
     } catch (error) {
       console.error(`Failed to cancel benefit enrollment ${enrollmentId}:`, error);

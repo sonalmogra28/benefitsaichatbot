@@ -1,6 +1,5 @@
 import { extractText } from 'unpdf';
-import { db } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import {
   upsertDocumentChunks,
   type DocumentChunk,
@@ -13,13 +12,13 @@ import { notificationService } from '@/lib/services/notification.service';
 export async function processDocument(documentId: string) {
   try {
     // Fetch document from Firestore
-    const docRef = await db.collection('documents').doc(documentId).get();
-    const document = docRef.exists ? { id: docRef.id, ...docRef.data() } : null
-      .limit(1);
-
-    if (!document) {
+    const docRef = await adminDb.collection('documents').doc(documentId).get();
+    
+    if (!docRef.exists) {
       throw new Error('Document not found');
     }
+
+    const document = { id: docRef.id, ...docRef.data() } as any;
 
     if (!document.fileUrl) {
       throw new Error('Document has no file URL');
@@ -51,13 +50,11 @@ export async function processDocument(documentId: string) {
     }
 
     // Update document content in database
-    await db
-      .update(knowledgeBaseDocuments)
-      .set({
-        content: extractedText,
-        processedAt: new Date(),
-      })
-      .where(eq(knowledgeBaseDocuments.id, documentId));
+    await adminDb.collection('documents').doc(documentId).update({
+      content: extractedText,
+      processedAt: AdminFieldValue.serverTimestamp(),
+      status: 'processing',
+    });
 
     // Chunk the text
     const chunks = chunkText(extractedText, {
@@ -85,20 +82,22 @@ export async function processDocument(documentId: string) {
     );
 
     // Update document status to processed
-    await db
-      .update(knowledgeBaseDocuments)
-      .set({
-        processedAt: new Date(),
-      })
-      .where(eq(knowledgeBaseDocuments.id, documentId));
+    await adminDb.collection('documents').doc(documentId).update({
+      status: 'processed',
+      processedAt: AdminFieldValue.serverTimestamp(),
+      chunksCount: chunks.length,
+    });
 
     // Send success notification if the document has an associated user
     if (document.createdBy) {
-      await notificationService.sendDocumentProcessedNotification({
-        userId: document.createdBy,
-        documentName: document.title,
-        status: 'processed',
-      });
+      // Check if sendDocumentProcessedNotification exists
+      if (typeof notificationService.sendDocumentProcessedNotification === 'function') {
+        await notificationService.sendDocumentProcessedNotification({
+          userId: document.createdBy,
+          documentName: document.title,
+          status: 'processed',
+        });
+      }
     }
 
     return {
@@ -110,16 +109,15 @@ export async function processDocument(documentId: string) {
     console.error(`❌ Error processing document ${documentId}:`, error);
 
     // Update document with error status
-    await db
-      .update(knowledgeBaseDocuments)
-      .set({
-        processedAt: new Date(),
-        // You might want to add an error field to the schema
-      })
-      .where(eq(knowledgeBaseDocuments.id, documentId));
-
-    // Note: Cannot send notification here as document may not be available
-    // TODO: Implement proper error handling with notification
+    try {
+      await adminDb.collection('documents').doc(documentId).update({
+        status: 'failed',
+        processedAt: AdminFieldValue.serverTimestamp(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    } catch (updateError) {
+      console.error('Failed to update document status:', updateError);
+    }
 
     throw error;
   }
@@ -183,10 +181,17 @@ export function chunkText(
  * Process all pending documents for a company
  */
 export async function processCompanyDocuments(companyId: string) {
-  const pendingDocuments = await db
-    .select()
-    .from(knowledgeBaseDocuments)
-    .where(eq(knowledgeBaseDocuments.companyId, companyId));
+  // Query pending documents for the company
+  const snapshot = await adminDb
+    .collection('documents')
+    .where('companyId', '==', companyId)
+    .where('status', 'in', ['pending', 'uploaded', 'failed'])
+    .get();
+
+  const pendingDocuments = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 
   const results = [];
 

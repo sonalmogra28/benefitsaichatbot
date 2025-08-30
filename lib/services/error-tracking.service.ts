@@ -4,7 +4,7 @@
  */
 
 import { logger } from './logger.service';
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import { getConfig, isProduction } from '@/config/environments';
 
 export interface ErrorContext {
@@ -112,7 +112,7 @@ class ErrorTracker {
         const docRef = adminDb.collection('errors').doc();
         batch.set(docRef, {
           ...error,
-          timestamp: adminDb.FieldValue.serverTimestamp(),
+          timestamp: AdminFieldValue.serverTimestamp(),
         });
       });
 
@@ -227,7 +227,7 @@ class ErrorTracker {
     try {
       await adminDb.collection('critical_errors').add({
         ...error,
-        timestamp: adminDb.FieldValue.serverTimestamp(),
+        timestamp: AdminFieldValue.serverTimestamp(),
         alerted: true,
       });
     } catch (err) {

@@ -1,4 +1,4 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import { z } from 'zod';
 import type { FieldValue } from 'firebase-admin/firestore';
 
@@ -47,8 +47,8 @@ export class DocumentService {
         ...validated,
         createdBy,
         status: 'pending_processing',
-        createdAt: adminDb.FieldValue.serverTimestamp(),
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        createdAt: AdminFieldValue.serverTimestamp(),
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
 
       return documentId;

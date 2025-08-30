@@ -1,4 +1,4 @@
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import { z } from 'zod';
 import type { FieldValue } from 'firebase-admin/firestore';
 
@@ -46,8 +46,8 @@ export class ConversationService {
       await conversationRef.set({
         id: conversationId,
         ...validated,
-        createdAt: adminDb.FieldValue.serverTimestamp(),
-        updatedAt: adminDb.FieldValue.serverTimestamp()
+        createdAt: AdminFieldValue.serverTimestamp(),
+        updatedAt: AdminFieldValue.serverTimestamp()
       });
 
       return conversationId;
@@ -95,11 +95,11 @@ export class ConversationService {
       await messageRef.set({
         id: messageId,
         ...validated,
-        createdAt: adminDb.FieldValue.serverTimestamp(),
+        createdAt: AdminFieldValue.serverTimestamp(),
       });
 
       await adminDb.collection('conversations').doc(conversationId).update({
-        updatedAt: adminDb.FieldValue.serverTimestamp(),
+        updatedAt: AdminFieldValue.serverTimestamp(),
       });
 
       return messageId;
