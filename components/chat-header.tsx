@@ -56,7 +56,6 @@ function PureChatHeader({
 
       {!isReadonly && (
         <ModelSelector
-          session={{ user }}
           selectedModelId={selectedModelId}
           className="order-1 md:order-2"
         />

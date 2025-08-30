@@ -80,7 +80,12 @@ export const requestSuggestions = ({
             };
 
             suggestions.push(suggestion);
-            dataStream.writeSuggestion(suggestion);
+            // Write suggestion as data
+            dataStream.write({
+              type: 'data-suggestion',
+              data: suggestion,
+              transient: false,
+            });
           }
         }
 

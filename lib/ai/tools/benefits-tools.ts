@@ -1,6 +1,6 @@
 // AI Tools for Benefits-Specific Functionality
 import { z } from 'zod';
-import { Tool } from 'ai';
+import { tool } from 'ai';
 
 // Tool schemas using Zod for validation
 const comparePlansSchema = z.object({
@@ -43,12 +43,10 @@ const getEnrollmentDeadlineSchema = z.object({
 });
 
 // Tool implementations
-export const benefitsTools: Tool[] = [
-  {
-    name: 'comparePlans',
-    description: 'Compare multiple benefit plans side by side',
-    parameters: comparePlansSchema,
-    execute: async ({ planIds, comparisonFactors, userProfile }) => {
+export const comparePlans = tool({
+  description: 'Compare multiple benefit plans side by side',
+  parameters: comparePlansSchema,
+  execute: async ({ planIds, comparisonFactors, userProfile }: z.infer<typeof comparePlansSchema>) => {
       // Mock implementation - in production, fetch from Firestore
       const mockComparison = {
         plans: planIds.map(id => ({
@@ -65,14 +63,13 @@ export const benefitsTools: Tool[] = [
       };
       
       return mockComparison;
-    },
   },
-  
-  {
-    name: 'calculateCost',
-    description: 'Calculate total benefits costs including premiums, taxes, and savings',
-    parameters: calculateCostSchema,
-    execute: async ({ planId, annualSalary, coverageLevel, includeHSA, includeFSA, estimatedMedicalExpenses }) => {
+});
+
+export const calculateCost = tool({
+  description: 'Calculate total benefits costs including premiums, taxes, and savings',
+  parameters: calculateCostSchema,
+  execute: async ({ planId, annualSalary, coverageLevel, includeHSA, includeFSA, estimatedMedicalExpenses }: z.infer<typeof calculateCostSchema>) => {
       // Calculate various costs
       const basePremium = {
         employee: 200,
@@ -121,14 +118,13 @@ export const benefitsTools: Tool[] = [
         },
         monthlyEmployeeCost: employeeCost / 12,
       };
-    },
   },
-  
-  {
-    name: 'checkEligibility',
-    description: 'Check eligibility for specific benefits',
-    parameters: checkEligibilitySchema,
-    execute: async ({ benefitType, employeeId, eventType, eventDate }) => {
+});
+
+export const checkEligibility = tool({
+  description: 'Check eligibility for specific benefits',
+  parameters: checkEligibilitySchema,
+  execute: async ({ benefitType, employeeId, eventType, eventDate }: z.infer<typeof checkEligibilitySchema>) => {
       // Mock eligibility check
       const isEligible = true; // In production, check actual eligibility rules
       
@@ -154,14 +150,13 @@ export const benefitsTools: Tool[] = [
           ? '30 days from qualifying event'
           : 'Next open enrollment period',
       };
-    },
   },
-  
-  {
-    name: 'getEnrollmentDeadline',
-    description: 'Get enrollment deadlines for benefits',
-    parameters: getEnrollmentDeadlineSchema,
-    execute: async ({ companyId, benefitType, enrollmentPeriod }) => {
+});
+
+export const getEnrollmentDeadline = tool({
+  description: 'Get enrollment deadlines for benefits',
+  parameters: getEnrollmentDeadlineSchema,
+  execute: async ({ companyId, benefitType, enrollmentPeriod }: z.infer<typeof getEnrollmentDeadlineSchema>) => {
       // Mock deadline calculation
       const today = new Date();
       const deadline = new Date(today);
@@ -189,17 +184,18 @@ export const benefitsTools: Tool[] = [
         status: deadline > today ? 'open' : 'closed',
         reminder: 'Set a reminder to complete enrollment before the deadline',
       };
-    },
   },
-  
-  {
-    name: 'explainBenefit',
-    description: 'Explain a specific benefit term or concept',
-    parameters: z.object({
-      term: z.string(),
-      context: z.enum(['health', 'dental', 'vision', 'retirement', 'general']).optional(),
-    }),
-    execute: async ({ term, context }) => {
+});
+
+const explainBenefitSchema = z.object({
+  term: z.string(),
+  context: z.enum(['health', 'dental', 'vision', 'retirement', 'general']).optional(),
+});
+
+export const explainBenefit = tool({
+  description: 'Explain a specific benefit term or concept',
+  parameters: explainBenefitSchema,
+  execute: async ({ term, context }: z.infer<typeof explainBenefitSchema>) => {
       // Common benefits terms dictionary
       const definitions: Record<string, string> = {
         deductible: 'The amount you pay for covered health care services before your insurance plan starts to pay.',
@@ -223,9 +219,14 @@ export const benefitsTools: Tool[] = [
         context: context || 'general',
         relatedTerms: Object.keys(definitions).filter(t => t !== termLower).slice(0, 3),
       };
-    },
   },
-];
+});
 
-// Export types
-export type BenefitsTool = typeof benefitsTools[number];
+// Export all tools as an array for convenience
+export const benefitsTools = [
+  comparePlans,
+  calculateCost,
+  checkEligibility,
+  getEnrollmentDeadline,
+  explainBenefit,
+];

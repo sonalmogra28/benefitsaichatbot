@@ -19,7 +19,7 @@ export interface SessionUser extends DecodedIdToken {
  */
 export async function getSession(): Promise<SessionUser | null> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     
     // Check for session token in cookies
     const sessionCookie = cookieStore.get('__session');
@@ -84,7 +84,7 @@ export async function getSessionFromHeader(request: Request): Promise<SessionUse
  * @param expiresIn - Session duration in milliseconds (default 5 days)
  */
 export async function setSession(token: string, expiresIn: number = 60 * 60 * 24 * 5 * 1000) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   
   // Create session cookie with secure settings
   cookieStore.set('__session', token, {
@@ -100,7 +100,7 @@ export async function setSession(token: string, expiresIn: number = 60 * 60 * 24
  * Clears the user session by removing cookies
  */
 export async function clearSession() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   
   // Remove all possible session cookies
   cookieStore.delete('__session');

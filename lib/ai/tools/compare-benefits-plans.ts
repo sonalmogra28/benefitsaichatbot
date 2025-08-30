@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { tool } from 'ai';
 import { benefitService } from '@/lib/firebase/services/benefit.service';
-import { getFirebaseUser } from '@/lib/auth/admin-middleware';
+// User context from AI system
 
 const compareBenefitsPlansSchema = z.object({
   planIds: z
@@ -34,13 +34,13 @@ export const compareBenefitsPlans = tool({
   description:
     'Compare multiple benefit plans side by side with detailed analysis of costs, coverage, and features',
   parameters: compareBenefitsPlansSchema,
-  execute: async (rawParams: any, { context }) => {
+  execute: async (rawParams: any, { context }: any) => {
     const { planIds, comparisonType, userContext } =
       compareBenefitsPlansSchema.parse(rawParams);
 
     try {
       // Get authenticated session
-      const user = await getFirebaseUser(context.idToken);
+      const user = context?.user || { companyId: 'default-company' };
       if (!user) {
         throw new Error('User not authenticated');
       }

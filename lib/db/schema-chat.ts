@@ -28,3 +28,38 @@ export interface Conversation {
 export interface MessageDocument extends ChatMessage {
   conversationId: string;
 }
+
+// Vote interface for message voting
+export interface Vote {
+  id?: string;
+  chatId: string;
+  messageId: string;
+  userId: string;
+  isUpvoted: boolean;
+  createdAt?: Timestamp | FieldValue;
+}
+
+// Suggestion interface for AI suggestions
+export interface Suggestion {
+  id: string;
+  title: string;
+  description?: string;
+  content: string;
+}
+
+// Document interface for document artifacts
+export interface Document {
+  id: string;
+  title: string;
+  kind: 'text' | 'code';
+  language?: string;
+  content: string;
+}
+
+// DBMessage type for database messages
+export interface DBMessage extends ChatMessage {
+  id: string;
+  chatId: string;
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
+}

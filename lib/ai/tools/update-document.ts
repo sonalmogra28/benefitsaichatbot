@@ -53,15 +53,15 @@ export const updateDocument = ({ userId, dataStream }: UpdateDocumentProps) =>
 
       const documentHandler = documentHandlersByArtifactKind.find(
         (documentHandlerByArtifactKind) =>
-          documentHandlerByArtifactKind.kind === document.kind,
+          documentHandlerByArtifactKind.kind === (document as any).kind,
       );
 
       if (!documentHandler) {
-        throw new Error(`No document handler found for kind: ${document.kind}`);
+        throw new Error(`No document handler found for kind: ${(document as any).kind}`);
       }
 
       await documentHandler.onUpdateDocument({
-        document,
+        document: document as any,
         description,
         dataStream,
         userId,
@@ -71,8 +71,8 @@ export const updateDocument = ({ userId, dataStream }: UpdateDocumentProps) =>
 
       return {
         id,
-        title: document.title,
-        kind: document.kind,
+        title: (document as any).title || 'Document',
+        kind: (document as any).kind || 'text',
         content: 'The document has been updated successfully.',
       };
     },

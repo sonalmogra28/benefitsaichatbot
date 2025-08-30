@@ -12,10 +12,10 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { fetcher } from '@/lib/utils';
-import type { KnowledgeBaseDocument } from '@/lib/db/schema';
+import type { Document } from '@/lib/db/schema';
 
 export function DocumentList() {
-  const { data: documents, error } = useSWR<KnowledgeBaseDocument[]>(
+  const { data: documents, error } = useSWR<Document[]>(
     '/api/super-admin/documents',
     fetcher
   );

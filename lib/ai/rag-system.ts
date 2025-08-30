@@ -300,6 +300,3 @@ Content: ${chunk.content}
 
 // Export singleton instance
 export const ragSystem = new RAGSystem();
-
-// Export types
-export type { DocumentChunk, SearchResult };

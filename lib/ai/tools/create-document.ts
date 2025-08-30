@@ -2,7 +2,14 @@ import { generateUUID } from '@/lib/utils';
 import { tool } from 'ai';
 import type { UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
-import type { Session } from 'next-auth';
+// Session type defined locally
+type Session = {
+  user?: {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+  };
+};
 import {
   artifactKinds,
   documentHandlersByArtifactKind,
@@ -61,7 +68,7 @@ export const createDocument = ({ session, dataStream }: CreateDocumentProps) =>
         id,
         title,
         dataStream,
-        session,
+        userId: session?.user?.id || 'anonymous',
       });
 
       dataStream.write({ type: 'data-finish', data: null, transient: true });

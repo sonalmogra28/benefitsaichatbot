@@ -1,7 +1,7 @@
 import { initTRPC } from '@trpc/server';
-import { type CreateNextContextOptions } from '@trpc/server/adapters/next';
+import { type FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
 
-export const createContext = ({ req }: CreateNextContextOptions) => ({
+export const createContext = ({ req }: FetchCreateContextFnOptions) => ({
   req,
 });
 

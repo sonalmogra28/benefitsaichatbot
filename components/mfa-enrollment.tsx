@@ -27,6 +27,11 @@ export function MfaEnrollment() {
         size: 'invisible',
       });
 
+      if (!auth.currentUser) {
+        setError('User not authenticated');
+        return;
+      }
+      
       const phoneInfoOptions = {
         phoneNumber,
         session: await auth.currentUser.getIdTokenResult(true),
@@ -42,20 +47,30 @@ export function MfaEnrollment() {
       setSuccess('Verification code sent to your phone.');
       setError(null)
     } catch (error) {
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'An error occurred');
       setSuccess(null)
     }
   };
 
   const handleVerify = async () => {
     try {
+      if (!auth.currentUser) {
+        setError('User not authenticated');
+        return;
+      }
+      
       const cred = PhoneAuthProvider.credential(verificationId, verificationCode);
       const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(cred);
-      await auth.currentUser.multiFactor.enroll(multiFactorAssertion, phoneNumber);
+      const multiFactor = (auth.currentUser as any).multiFactor;
+      if (multiFactor) {
+        await multiFactor.enroll(multiFactorAssertion, phoneNumber);
+      } else {
+        throw new Error('Multi-factor not available');
+      }
       setSuccess('Multi-factor authentication has been enabled.');
       setError(null);
     } catch (error) {
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'An error occurred');
       setSuccess(null)
     }
   };

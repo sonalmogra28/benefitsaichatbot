@@ -31,16 +31,14 @@ export function CompanyBrandingForm({ companyId }: { companyId: string }) {
     try {
       if (file) {
         const storageRef = ref(storage, `logos/${companyId}`);
-        const uploadTask = await uploadFile(storageRef, file, {
-          onTaskStateChanged: (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setProgress(progress);
-          },
-        });
-        if (uploadTask) {
+        const uploadResult = await uploadFile(storageRef, file);
+        if (uploadResult && uploadResult.ref) {
           const companyRef = doc(db, 'companies', companyId);
+          // Get download URL using getDownloadURL from firebase/storage
+          const { getDownloadURL } = await import('firebase/storage');
+          const downloadURL = await getDownloadURL(uploadResult.ref);
           await updateDoc(companyRef, {
-            logoUrl: await uploadTask.ref.getDownloadURL(),
+            logoUrl: downloadURL,
           });
         }
       }

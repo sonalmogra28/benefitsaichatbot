@@ -237,7 +237,6 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         { 
-          uid: userRecord.uid,
           ...userData,
           createdAt: new Date(),
           updatedAt: new Date(),

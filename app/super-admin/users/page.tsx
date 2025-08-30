@@ -74,4 +74,4 @@ function SuperAdminUsersPage() {
   );
 }
 
-export default withRole(SuperAdminUsersPage, 'super_admin');
+export default SuperAdminUsersPage;

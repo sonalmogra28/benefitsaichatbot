@@ -1,5 +1,7 @@
 import { useSWRConfig } from 'swr';
 import { useCopyToClipboard } from 'usehooks-ts';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth } from '@/lib/firebase';
 
 import type { Vote } from '@/lib/db/schema-chat';
 
@@ -28,6 +30,7 @@ export function PureMessageActions({
   isLoading: boolean;
 }) {
   const { mutate } = useSWRConfig();
+  const [user] = useAuthState(auth);
   const [_, copyToClipboard] = useCopyToClipboard();
 
   if (isLoading) return null;
@@ -97,6 +100,7 @@ export function PureMessageActions({
                           {
                             chatId,
                             messageId: message.id,
+                            userId: user?.uid || 'anonymous',
                             isUpvoted: true,
                           },
                         ];
@@ -150,6 +154,7 @@ export function PureMessageActions({
                           {
                             chatId,
                             messageId: message.id,
+                            userId: user?.uid || 'anonymous',
                             isUpvoted: false,
                           },
                         ];

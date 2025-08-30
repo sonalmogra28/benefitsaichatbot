@@ -21,7 +21,7 @@ import {
   SidebarMenu,
   useSidebar,
 } from '@/components/ui/sidebar';
-import type { Chat } from '@/lib/db/schema-chat';
+import type { Conversation as Chat } from '@/lib/db/schema-chat';
 import { fetcher } from '@/lib/utils';
 import { ChatItem } from './sidebar-history-item';
 import useSWRInfinite from 'swr/infinite';
@@ -50,7 +50,10 @@ const groupChatsByDate = (chats: Chat[]): GroupedChats => {
 
   return chats.reduce(
     (groups, chat) => {
-      const chatDate = new Date(chat.createdAt);
+      // Convert Timestamp to Date
+      const chatDate = 'toDate' in chat.createdAt 
+        ? (chat.createdAt as any).toDate() 
+        : new Date();
 
       if (isToday(chatDate)) {
         groups.today.push(chat);
@@ -105,7 +108,7 @@ export function SidebarHistory() {
     isLoading,
     mutate,
   } = useSWRInfinite<ChatHistory>(
-    user ? getChatHistoryPaginationKey : null,
+    user ? (pageIndex: number, previousPageData: ChatHistory | null) => getChatHistoryPaginationKey(pageIndex, previousPageData as ChatHistory) : () => null,
     fetcher,
     {
       fallbackData: [],

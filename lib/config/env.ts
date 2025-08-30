@@ -28,6 +28,48 @@ export const RESEND_API_KEY = process.env.RESEND_API_KEY;
 export const REDIS_URL = process.env.REDIS_URL;
 export const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
 
+// Environment type
+export interface Env {
+  FIREBASE_CONFIG: typeof FIREBASE_CONFIG;
+  FIREBASE_ADMIN_CONFIG: typeof FIREBASE_ADMIN_CONFIG;
+  GOOGLE_GENERATIVE_AI_API_KEY: string | undefined;
+  RESEND_API_KEY: string | undefined;
+  REDIS_URL: string | undefined;
+  PINECONE_API_KEY: string | undefined;
+}
+
+// Export aggregated env object
+export const env: Env = {
+  FIREBASE_CONFIG,
+  FIREBASE_ADMIN_CONFIG,
+  GOOGLE_GENERATIVE_AI_API_KEY,
+  RESEND_API_KEY,
+  REDIS_URL,
+  PINECONE_API_KEY,
+};
+
+// Helper functions
+export const isProduction = process.env.NODE_ENV === 'production';
+
+export const getAppUrl = () => {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return 'http://localhost:3000';
+};
+
+export const isFeatureEnabled = (feature: string): boolean => {
+  const featureFlag = process.env[`FEATURE_${feature.toUpperCase()}`];
+  return featureFlag === 'true' || featureFlag === '1';
+};
+
+export const isMonitoringEnabled = () => {
+  return process.env.ENABLE_MONITORING === 'true';
+};
+
 // Validate that all required environment variables are set
 const requiredEnvVars = [
   'NEXT_PUBLIC_FIREBASE_API_KEY',

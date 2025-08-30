@@ -6,7 +6,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { PhoneAuthProvider } from 'firebase/auth';
 
-export function MfaVerification({ resolver }) {
+export function MfaVerification({ resolver }: { resolver: any }) {
   const [verificationCode, setVerificationCode] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +19,7 @@ export function MfaVerification({ resolver }) {
       const userCredential = await resolver.resolveSignIn(cred);
       // The user is now signed in.
     } catch (error) {
-      setError(error.message);
+      setError(error instanceof Error ? error.message : 'An error occurred');
     }
   };
 

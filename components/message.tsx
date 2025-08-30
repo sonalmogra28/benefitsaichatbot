@@ -353,7 +353,7 @@ const PurePreviewMessage = ({
 
                   return (
                     <div key={toolCallId}>
-                      <PlanComparison plans={output.plans} />
+                      <PlanComparison />
                     </div>
                   );
                 }
@@ -428,7 +428,7 @@ const PurePreviewMessage = ({
 
                   return (
                     <div key={toolCallId}>
-                      <BenefitsDashboard summary={output} />
+                      <BenefitsDashboard />
                     </div>
                   );
                 }
@@ -462,7 +462,7 @@ const PurePreviewMessage = ({
 
                   return (
                     <div key={toolCallId}>
-                      <CostCalculator plans={output.plans} assumptions={output.assumptions} />
+                      <CostCalculator />
                     </div>
                   );
                 }

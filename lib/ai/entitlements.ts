@@ -1,4 +1,4 @@
-import type { UserRole } from '@/lib/types';
+import type { UserRole } from '@/lib/constants/roles';
 import type { ChatModel } from './models';
 
 interface Entitlements {
@@ -8,17 +8,9 @@ interface Entitlements {
 
 export const entitlementsByUserType: Record<UserRole, Entitlements> = {
   /*
-   * For guest users (no company)
-   */
-  guest: {
-    maxMessagesPerDay: 20,
-    availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
-  },
-
-  /*
    * For regular employees
    */
-  employee: {
+  'employee': {
     maxMessagesPerDay: 100,
     availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
   },
@@ -26,7 +18,7 @@ export const entitlementsByUserType: Record<UserRole, Entitlements> = {
   /*
    * For HR administrators
    */
-  hr_admin: {
+  'hr-admin': {
     maxMessagesPerDay: 200,
     availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
   },
@@ -34,7 +26,7 @@ export const entitlementsByUserType: Record<UserRole, Entitlements> = {
   /*
    * For company administrators
    */
-  company_admin: {
+  'company-admin': {
     maxMessagesPerDay: 500,
     availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
   },
@@ -42,7 +34,7 @@ export const entitlementsByUserType: Record<UserRole, Entitlements> = {
   /*
    * For platform administrators
    */
-  platform_admin: {
+  'platform-admin': {
     maxMessagesPerDay: 1000,
     availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
   },
@@ -50,7 +42,7 @@ export const entitlementsByUserType: Record<UserRole, Entitlements> = {
   /*
    * For super administrators
    */
-  super_admin: {
+  'super-admin': {
     maxMessagesPerDay: 1000,
     availableChatModelIds: ['chat-model', 'chat-model-reasoning'],
   },

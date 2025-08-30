@@ -1,7 +1,8 @@
 {pkgs}: {
   channel = "stable-24.05";
   packages = [
-    pkgs.nodejs_20
+    pkgs.nodejs_20,
+    pkgs.pnpm
   ];
   idx.extensions = [
     
@@ -10,14 +11,9 @@
     previews = {
       web = {
         command = [
-          "pnpm"
-          "run"
+          "pnpm",
+          "run",
           "dev"
-          "--"
-          "--port"
-          "$PORT"
-          "--hostname"
-          "0.0.0.0"
         ];
         manager = "web";
       };

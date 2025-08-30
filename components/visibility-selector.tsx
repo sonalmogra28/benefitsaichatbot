@@ -17,7 +17,7 @@ import {
 } from './icons';
 import { useChatVisibility } from '@/hooks/use-chat-visibility';
 
-export type VisibilityType = 'private' | 'public';
+export type VisibilityType = 'private' | 'public' | 'company';
 
 const visibilities: Array<{
   id: VisibilityType;
@@ -30,6 +30,12 @@ const visibilities: Array<{
     label: 'Private',
     description: 'Only you can access this chat',
     icon: <LockIcon />,
+  },
+  {
+    id: 'company',
+    label: 'Company',
+    description: 'Anyone in your company can access this chat',
+    icon: <GlobeIcon />,
   },
   {
     id: 'public',

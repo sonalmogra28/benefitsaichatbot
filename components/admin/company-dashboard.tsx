@@ -209,7 +209,7 @@ export function CompanyDashboard({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {recentActivity.slice(0, 5).map((activity) => (
+                  {recentActivity.slice(0, 5).map((activity: any) => (
                     <div key={activity.id} className="flex items-center gap-3">
                       <div className="flex-shrink-0">
                         {activity.status === 'success' && (

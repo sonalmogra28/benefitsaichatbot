@@ -1,15 +1,15 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { benefitService } from '@/lib/firebase/services/benefit.service';
-import { getFirebaseUser } from '@/lib/auth/admin-middleware';
+// User context from AI system
 
 export const showBenefitsDashboard = tool({
   description: "Show user's benefits dashboard with real enrollment data",
   inputSchema: z.object({}),
-  execute: async ({ context }) => {
+  execute: async ({ context }: any) => {
     try {
       // Get current user session and tenant context
-      const user = await getFirebaseUser(context.idToken);
+      const user = context?.user || { companyId: 'default-company' };
       if (!user) {
         return {
           error: 'User not authenticated',

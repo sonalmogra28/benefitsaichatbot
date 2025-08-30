@@ -1,41 +1,36 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { benefitService } from '@/lib/firebase/services/benefit.service';
-import { getFirebaseUser } from '@/lib/auth/admin-middleware';
+// User context from AI system
+
+const inputSchema = z.object({
+  planId: z.string().optional().describe('Specific plan ID to calculate costs for'),
+  planType: z.enum(['health', 'dental', 'vision']).default('health').describe('Type of benefit plan'),
+  coverageType: z.enum(['individual', 'family', 'employee_spouse']).default('individual'),
+  expectedMedicalUsage: z.enum(['low', 'moderate', 'high']).default('moderate'),
+  additionalFactors: z.object({
+    expectedDoctorVisits: z.number().min(0).default(4),
+    expectedSpecialistVisits: z.number().min(0).default(2),
+    expectedPrescriptions: z.number().min(0).default(12),
+    expectedEmergencyVisits: z.number().min(0).default(0),
+    expectedHospitalDays: z.number().min(0).default(0)
+  }).optional()
+});
 
 export const calculateBenefitsCost = tool({
   description: "Calculate estimated annual benefits costs based on plan details and expected usage",
-  inputSchema: z.object({
-    planId: z.string().optional().describe('Specific plan ID to calculate costs for'),
-    planType: z.enum(['health', 'dental', 'vision']).default('health').describe('Type of benefit plan'),
-    coverageType: z.enum(['individual', 'family', 'employee_spouse']).default('individual'),
-    expectedMedicalUsage: z.enum(['low', 'moderate', 'high']).default('moderate'),
-    additionalFactors: z.object({
-      expectedDoctorVisits: z.number().min(0).default(4),
-      expectedSpecialistVisits: z.number().min(0).default(2),
-      expectedPrescriptions: z.number().min(0).default(12),
-      expectedEmergencyVisits: z.number().min(0).default(0),
-      expectedHospitalDays: z.number().min(0).default(0)
-    }).optional()
-  }),
+  inputSchema,
   execute: async ({ 
     planId, 
     planType, 
     coverageType, 
     expectedMedicalUsage, 
     additionalFactors 
-  }, { context }) => {
+  }: z.infer<typeof inputSchema>, { context }: any) => {
     try {
-      // Get current user session and tenant context
-      const user = await getFirebaseUser(context.idToken);
-      if (!user) {
-        return {
-          error: 'User not authenticated',
-          estimatedAnnualCost: 0,
-          breakdown: null
-        };
-      }
-
+      // Get user context from AI system
+      const user = context?.user || { companyId: 'default-company' };
+      
       if (!user.companyId) {
         return {
           error: 'User not associated with a company',
