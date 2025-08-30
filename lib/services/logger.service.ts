@@ -72,7 +72,7 @@ class Logger {
     return message;
   }
 
-  private async logToConsole(entry: LogEntry): void {
+  private async logToConsole(entry: LogEntry): Promise<void> {
     if (!this.config.enableConsole) return;
 
     const formattedMessage = this.formatMessage(entry);

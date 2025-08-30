@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 
 export const authProcedure = t.procedure.use(async ({ ctx, next }) => {
   const { req } = ctx;
-  const sessionCookie = req.cookies.session;
+  const sessionCookie = (req as any).cookies?.session;
 
   if (!sessionCookie) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });

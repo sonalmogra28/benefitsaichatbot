@@ -88,17 +88,15 @@ export async function processDocument(documentId: string) {
       chunksCount: chunks.length,
     });
 
+    // TODO: Implement document processing notifications
     // Send success notification if the document has an associated user
-    if (document.createdBy) {
-      // Check if sendDocumentProcessedNotification exists
-      if (typeof notificationService.sendDocumentProcessedNotification === 'function') {
-        await notificationService.sendDocumentProcessedNotification({
-          userId: document.createdBy,
-          documentName: document.title,
-          status: 'processed',
-        });
-      }
-    }
+    // if (document.createdBy) {
+    //   await notificationService.sendDocumentProcessedNotification({
+    //     userId: document.createdBy,
+    //     documentName: document.title,
+    //     status: 'processed',
+    //   });
+    // }
 
     return {
       success: true,

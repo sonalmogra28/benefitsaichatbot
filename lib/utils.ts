@@ -78,7 +78,8 @@ export function getDocumentTimestampByIndex(
   if (!documents) return new Date();
   if (index > documents.length) return new Date();
 
-  return documents[index].createdAt;
+  // Documents from schema-chat don't have createdAt, return current date
+  return new Date();
 }
 
 export function getTrailingMessageId({
@@ -101,9 +102,9 @@ export function convertToUIMessages(messages: DBMessage[]): ChatMessage[] {
   return messages.map((message) => ({
     id: message.id,
     role: message.role as 'user' | 'assistant' | 'system',
-    parts: message.parts as UIMessagePart[],
+    content: message.content,
     metadata: {
-      createdAt: formatISO(message.createdAt),
+      createdAt: formatISO(message.createdAt.toDate ? message.createdAt.toDate() : new Date(message.createdAt as any)),
     },
   }));
 }

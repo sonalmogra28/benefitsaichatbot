@@ -119,8 +119,8 @@ export async function listCompanyDocuments(companyId: string) {
         return {
           url: `https://storage.googleapis.com/${bucket.name}/${file.name}`,
           pathname: file.name,
-          size: parseInt(metadata.size || '0'),
-          uploadedAt: new Date(metadata.updated || metadata.timeCreated),
+          size: parseInt(String(metadata.size || '0')),
+          uploadedAt: new Date(metadata.updated || metadata.timeCreated || Date.now()),
           metadata: metadata.metadata || {},
         };
       })
@@ -143,9 +143,9 @@ export async function getDocumentMetadata(pathname: string) {
     const [metadata] = await file.getMetadata();
     
     return {
-      size: parseInt(metadata.size || '0'),
+      size: parseInt(String(metadata.size || '0')),
       contentType: metadata.contentType,
-      uploadedAt: new Date(metadata.updated || metadata.timeCreated),
+      uploadedAt: new Date(metadata.updated || metadata.timeCreated || Date.now()),
       metadata: metadata.metadata || {},
     };
   } catch (error) {

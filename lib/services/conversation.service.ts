@@ -63,8 +63,8 @@ export async function getConversation(chatId: string, userId: string): Promise<C
   }
   
   return {
-    id: chatDoc.id,
     ...chat,
+    id: chatDoc.id,
   };
 }
 

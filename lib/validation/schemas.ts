@@ -9,14 +9,14 @@ export const createUserSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   companyId: z.string().uuid(),
-  role: z.enum(['employee', 'hr_admin', 'company_admin']),
+  role: z.enum(['employee', 'hr-admin', 'company-admin']),
 });
 
 export const updateUserSchema = z.object({
   firstName: z.string().min(1, 'First name is required').optional(),
   lastName: z.string().min(1, 'Last name is required').optional(),
   department: z.string().optional(),
-  role: z.enum(['employee', 'hr_admin', 'company_admin']).optional(),
+  role: z.enum(['employee', 'hr-admin', 'company-admin']).optional(),
 });
 
 // ============================================================================

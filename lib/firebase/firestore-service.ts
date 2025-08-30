@@ -56,7 +56,7 @@ class BaseService<T extends DocumentData> {
       id: docRef.id,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
-    } as T;
+    } as unknown as T;
     
     await setDoc(docRef, document);
     return { ...document, id: docRef.id } as T;
@@ -67,7 +67,7 @@ class BaseService<T extends DocumentData> {
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() } as T;
+      return { id: docSnap.id, ...docSnap.data() } as unknown as T;
     }
     return null;
   }
@@ -88,7 +88,7 @@ class BaseService<T extends DocumentData> {
   async list(constraints: QueryConstraint[] = []): Promise<T[]> {
     const q = query(collection(db, this.collectionName), ...constraints);
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as T));
   }
 
   subscribe(
@@ -97,7 +97,7 @@ class BaseService<T extends DocumentData> {
   ): Unsubscribe {
     const q = query(collection(db, this.collectionName), ...constraints);
     return onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as T));
       callback(items);
     });
   }
@@ -158,7 +158,7 @@ export class UserService extends BaseService<User> {
     
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
-      return { id: doc.id, ...doc.data() } as User;
+      return { id: doc.id, ...doc.data() } as unknown as User;
     }
     return null;
   }
@@ -285,14 +285,14 @@ export class ConversationService {
     return { ...conversation, id: docRef.id } as Conversation;
   }
 
-  async getUserConversations(companyId: string, userId: string, limit = 20): Promise<Conversation[]> {
+  async getUserConversations(companyId: string, userId: string, limitCount = 20): Promise<Conversation[]> {
     const q = query(
       collection(db, this.collectionPath(companyId)),
       where('userId', '==', userId),
       where('status', '!=', 'deleted'),
       orderBy('status'),
       orderBy('updatedAt', 'desc'),
-      limit
+      limit(limitCount)
     );
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
@@ -413,15 +413,15 @@ export class DocumentService extends BaseService<DocType> {
     status: DocType['processing']['status'],
     error?: string
   ): Promise<void> {
-    const updates: Partial<DocType> = {
-      'processing.status': status as any,
-      updatedAt: serverTimestamp() as any
+    const updates: any = {
+      'processing.status': status,
+      updatedAt: serverTimestamp()
     };
     
     if (status === 'completed') {
-      updates['processing.completedAt'] = serverTimestamp() as any;
+      updates['processing.completedAt'] = serverTimestamp();
     } else if (status === 'failed' && error) {
-      updates['processing.error'] = error as any;
+      updates['processing.error'] = error;
     }
     
     await this.update(documentId, updates);

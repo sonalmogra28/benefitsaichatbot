@@ -49,7 +49,7 @@ export function projectWithPositions(
   suggestions: Array<Suggestion>,
 ): Array<UISuggestion> {
   return suggestions.map((suggestion) => {
-    const positions = findPositionsInDoc(doc, suggestion.originalText);
+    const positions = findPositionsInDoc(doc, suggestion.originalText || '');
 
     if (!positions) {
       return {
@@ -105,7 +105,7 @@ export function createSuggestionWidget(
     const textTransaction = view.state.tr.replaceWith(
       suggestion.selectionStart,
       suggestion.selectionEnd,
-      state.schema.text(suggestion.suggestedText),
+      state.schema.text(suggestion.suggestedText || ''),
     );
 
     textTransaction.setMeta('no-debounce', true);

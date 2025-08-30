@@ -4,6 +4,7 @@ import { userService } from '@/lib/firebase/services/user.service';
 import { adminAuth } from '@/lib/firebase/admin';
 import { EmailService } from '@/lib/services/email.service';
 import { createUserSchema } from '@/lib/validation/schemas';
+import { type UserRole } from '@/lib/constants/roles';
 import { z } from 'zod';
 
 const emailService = new EmailService();
@@ -72,7 +73,7 @@ export const POST = requireCompanyAdmin(async (
     });
 
     await userService.assignUserToCompany(newUser.uid, user.companyId);
-    await userService.updateUserRole(newUser.uid, validated.role);
+    await userService.updateUserRole(newUser.uid, validated.role as UserRole);
 
     // TODO: Get company name from Firestore
     const companyName = 'Your Company';

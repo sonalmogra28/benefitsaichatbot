@@ -45,6 +45,8 @@ export interface Suggestion {
   title: string;
   description?: string;
   content: string;
+  originalText?: string;
+  suggestedText?: string;
 }
 
 // Document interface for document artifacts

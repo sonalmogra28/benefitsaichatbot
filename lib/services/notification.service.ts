@@ -265,16 +265,19 @@ class NotificationService {
    */
   async getNotificationStats(companyId?: string) {
     try {
-      let query = db.collection('notification_logs');
+      let collectionRef = db.collection('notification_logs');
+      let queryRef;
       
       if (companyId) {
         // Would need to add companyId to notifications
-        query = query.where('companyId', '==', companyId);
+        queryRef = collectionRef.where('companyId', '==', companyId);
+      } else {
+        queryRef = collectionRef;
       }
       
-      const snapshot = await query.get();
+      const snapshot = await queryRef.get();
       
-      const stats = {
+      const stats: any = {
         total: snapshot.size,
         sent: 0,
         failed: 0,
@@ -288,8 +291,12 @@ class NotificationService {
       
       snapshot.docs.forEach(doc => {
         const data = doc.data();
-        stats[data.status]++;
-        stats.byType[data.type]++;
+        if (data.status && stats[data.status] !== undefined) {
+          stats[data.status]++;
+        }
+        if (data.type && stats.byType[data.type] !== undefined) {
+          stats.byType[data.type]++;
+        }
       });
       
       return stats;

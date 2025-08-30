@@ -32,10 +32,13 @@ if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_FIREBASE_
     if (!auth.emulatorConfig) {
       connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
     }
-    if (!db._settings?.host?.includes('localhost')) {
+    // Use any cast to access internal properties for emulator check
+    const dbAny = db as any;
+    if (!dbAny._settings?.host?.includes('localhost')) {
       connectFirestoreEmulator(db, 'localhost', 8080);
     }
-    if (!storage._host?.includes('localhost')) {
+    const storageAny = storage as any;
+    if (!storageAny._host?.includes('localhost')) {
       connectStorageEmulator(storage, 'localhost', 9199);
     }
   } catch (error) {

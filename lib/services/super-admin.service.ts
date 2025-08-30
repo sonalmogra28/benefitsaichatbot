@@ -182,7 +182,7 @@ class SuperAdminService {
         metadata: { companyId: companyRef.id },
       });
 
-      return { id: companyRef.id, ...newCompany };
+      return { ...newCompany, id: companyRef.id };
     } catch (error) {
       console.error('Error creating company:', error);
       throw error;

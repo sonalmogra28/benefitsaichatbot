@@ -85,7 +85,7 @@ class GoogleWorkspaceService {
           name: user.name?.fullName || '',
           department: user.organizations?.[0]?.department,
           jobTitle: user.organizations?.[0]?.title,
-          manager: user.relations?.find(r => r.type === 'manager')?.value,
+          manager: user.relations?.find((r: any) => r.type === 'manager')?.value,
           photoUrl: user.thumbnailPhotoUrl || undefined,
           isAdmin: user.isAdmin || false,
           createdAt: FieldValue.serverTimestamp(),

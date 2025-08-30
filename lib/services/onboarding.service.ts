@@ -92,7 +92,7 @@ export class OnboardingService {
       }
 
       // Save progress in metadata
-      const onboardingProgress = user.metadata?.onboardingProgress || {};
+      const onboardingProgress: any = user.metadata?.onboardingProgress || {};
       onboardingProgress[step] = {
         data,
         completedAt: new Date().toISOString(),
@@ -100,7 +100,7 @@ export class OnboardingService {
 
       await userService.updateUserMetadata(userId, {
         ...user.metadata,
-        onboardingProgress,
+        onboardingProgress: onboardingProgress as any,
         lastOnboardingStep: step,
       });
 
