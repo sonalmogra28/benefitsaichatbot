@@ -2,7 +2,7 @@ import { Toaster } from 'sonner';
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseProvider } from '@/components/firebase-provider';
-import { AuthProvider } from '@/components/auth-provider'; // Import AuthProvider
+import { AuthProvider } from '@/context/auth-context'; // Corrected import path
 import { TRPCProvider } from '@/components/trpc-provider';
 
 import './globals.css';
@@ -45,10 +45,6 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      // `next-themes` injects an extra classname to the body element to avoid
-      // visual flicker before hydration. Hence the `suppressHydrationWarning`
-      // prop is necessary to avoid the React hydration mismatch warning.
-      // https://github.com/pacocoursey/next-themes?tab=readme-ov-file#with-app
       suppressHydrationWarning
     >
       <head>
@@ -61,7 +57,7 @@ export default async function RootLayout({
       <body className="antialiased">
         <TRPCProvider>
           <FirebaseProvider>
-            <AuthProvider> { /* Add AuthProvider */ }
+            <AuthProvider>
               <ThemeProvider
                 attribute="class"
                 defaultTheme="system"
@@ -71,7 +67,7 @@ export default async function RootLayout({
                 <Toaster position="top-center" />
                 {children}
               </ThemeProvider>
-            </AuthProvider> { /* Close AuthProvider */ }
+            </AuthProvider>
           </FirebaseProvider>
         </TRPCProvider>
       </body>
