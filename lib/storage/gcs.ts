@@ -1,16 +1,19 @@
 // lib/storage/gcs.ts
 import { Storage } from '@google-cloud/storage';
 
-const {
-  GCS_BUCKET_NAME,
-} = process.env;
+// Prioritize GCS_BUCKET_NAME for explicit override, but fall back to the public Firebase one.
+const bucketName = process.env.GCS_BUCKET_NAME || process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
-if (!GCS_BUCKET_NAME) {
-  throw new Error('Missing Google Cloud Storage bucket name.');
+if (!bucketName) {
+  // This log will clearly state what's missing during the build.
+  console.error("GCS bucket name not configured. Set GCS_BUCKET_NAME or NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable.");
+  // We still throw an error because the module is unusable without a bucket.
+  throw new Error('Missing Google Cloud Storage bucket name. Check build logs for configuration details.');
 }
 
+
 const storage = new Storage();
-const bucket = storage.bucket(GCS_BUCKET_NAME);
+const bucket = storage.bucket(bucketName);
 
 export const gcsFileStorage = {
   /**
@@ -23,6 +26,8 @@ export const gcsFileStorage = {
   async upload(destination: string, contents: Buffer): Promise<string> {
     const file = bucket.file(destination);
     await file.save(contents);
+    // Note: publicUrl() only works if the object is public. 
+    // For private objects, use getSignedUrl().
     return file.publicUrl();
   },
 
