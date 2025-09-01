@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { emailService } from '@/lib/services/email.service';
+import { emailService } from '@/lib/services/email.service.server';
 import { adminAuth } from '@/lib/firebase/admin';
 import { z } from 'zod';
 

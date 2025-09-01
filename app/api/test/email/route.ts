@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { emailService } from '@/lib/services/email.service'; // Import singleton instance
+import { emailService } from '@/lib/services/email.service.server'; // Import singleton instance
 import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
 
 // POST /api/test/email - Send a test email

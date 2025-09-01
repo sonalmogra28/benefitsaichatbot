@@ -35,3 +35,4 @@ firebase-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 /coverage/
+service-account.json
