@@ -5,18 +5,24 @@ import { getStorage } from 'firebase-admin/storage';
 
 if (!getApps().length) {
   try {
-    const serviceAccount = JSON.parse(
-      process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
-    );
-    initializeApp({
-      credential: cert(serviceAccount),
-      databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-    });
-    console.log("Firebase Admin SDK initialized successfully.");
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (serviceAccountKey) {
+      const serviceAccount = JSON.parse(serviceAccountKey);
+      initializeApp({
+        credential: cert(serviceAccount),
+        databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+      });
+      console.log("Firebase Admin SDK initialized successfully using service account key.");
+    } else {
+      // This is intended for GCP-hosted environments like Cloud Functions, Cloud Run, App Engine.
+      // It uses the runtime's default service account.
+      initializeApp();
+      console.log("FIREBASE_SERVICE_ACCOUNT_KEY not found. Initializing with Application Default Credentials.");
+    }
   } catch (error) {
-    console.error("Error initializing Firebase Admin SDK:", error);
-    // Prevent further execution if initialization fails
-    throw new Error("Firebase Admin SDK initialization failed");
+    console.error("Critical: Firebase Admin SDK initialization failed.", error);
+    // Throw an error to fail fast if initialization is not possible.
+    throw new Error("Could not initialize Firebase Admin SDK. Check server logs for details.");
   }
 }
 
