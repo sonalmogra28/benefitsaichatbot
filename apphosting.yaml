@@ -1,7 +1,7 @@
 env:
   - variable: FIREBASE_SERVICE_ACCOUNT_KEY
     secret: FIREBASE_SERVICE_ACCOUNT_KEY_SECRET
-    availability: [BUILD, RUN]
+    availability: [BUILD, RUNTIME]
   - variable: GOOGLE_GENERATIVE_AI_API_KEY
     secret: GOOGLE_GENERATIVE_AI_API_KEY_SECRET
-    availability: [BUILD, RUN]
+    availability: [BUILD, RUNTIME]
