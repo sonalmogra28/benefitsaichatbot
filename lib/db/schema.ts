@@ -27,7 +27,7 @@ export interface User extends DocumentBase {
   displayName?: string;
   photoURL?: string;
   companyId?: string;
-  role: UserRole; // e.g., 'employee', 'company_admin', 'super-admin', 'platform_admin', 'hr_admin'
+  role: UserRole; // e.g., 'employee', 'company-admin', 'super-admin', 'platform-admin', 'hr-admin'
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;

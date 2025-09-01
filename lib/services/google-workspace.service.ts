@@ -100,7 +100,7 @@ class GoogleWorkspaceService {
           email: user.primaryEmail,
           displayName: user.name?.fullName || '',
           companyId,
-          role: user.isAdmin ? 'company_admin' : 'employee',
+          role: user.isAdmin ? 'company-admin' : 'employee',
           googleWorkspaceId: user.id,
           updatedAt: FieldValue.serverTimestamp(),
         }, { merge: true });

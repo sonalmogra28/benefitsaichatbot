@@ -5,7 +5,7 @@ export interface SuperAdminProfile {
   id: string;
   email: string;
   name: string;
-  role: 'platform_admin';
+  role: 'platform-admin';
   permissions: SuperAdminPermission[];
   lastAccess: Date;
   twoFactorEnabled: boolean;
@@ -75,7 +75,7 @@ export interface BulkUserCreateInput {
   users: {
     email: string;
     name: string;
-    type: 'employee' | 'hr_admin' | 'company_admin';
+    type: 'employee' | 'hr-admin' | 'company-admin';
   }[];
   sendInvites: boolean;
 }

@@ -22,12 +22,13 @@ export const COLLECTIONS = {
   ANALYTICS: 'analytics_events',
 } as const;
 
-// User Roles
+// User Roles - Use the ones from lib/constants/roles.ts instead
+// This is kept for backward compatibility but should use hyphenated format
 export const USER_ROLES = {
-  SUPER_ADMIN: 'super_admin',
-  PLATFORM_ADMIN: 'platform_admin',
-  COMPANY_ADMIN: 'company_admin',
-  HR_ADMIN: 'hr_admin',
+  SUPER_ADMIN: 'super-admin',
+  PLATFORM_ADMIN: 'platform-admin',
+  COMPANY_ADMIN: 'company-admin',
+  HR_ADMIN: 'hr-admin',
   EMPLOYEE: 'employee',
 } as const;
 

@@ -1,12 +1,15 @@
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { getStorage } from 'firebase-admin/storage';
 
-if (!admin.apps.length) {
+if (!getApps().length) {
   try {
     const serviceAccount = JSON.parse(
       process.env.FIREBASE_SERVICE_ACCOUNT_KEY as string
     );
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+    initializeApp({
+      credential: cert(serviceAccount),
       databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
     });
     console.log("Firebase Admin SDK initialized successfully.");
@@ -17,13 +20,12 @@ if (!admin.apps.length) {
   }
 }
 
-export const adminAuth = admin.auth();
-export const adminDb = admin.firestore();
-export const adminStorage = admin.storage();
+export const adminAuth = getAuth();
+export const adminDb = getFirestore();
+export const adminStorage = getStorage();
 
 // Export Firestore utilities
-export const FieldValue = admin.firestore.FieldValue;
-export const Timestamp = admin.firestore.Timestamp;
+export { FieldValue, Timestamp };
 
 // Also export with shorter names for backward compatibility
 export const auth = adminAuth;

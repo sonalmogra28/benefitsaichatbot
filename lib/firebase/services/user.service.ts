@@ -18,7 +18,7 @@ export const userMetadataSchema = z.object({
   companyId: z.string().optional(),
   department: z.string().max(100).optional(),
   hireDate: z.string().datetime().optional(),
-  userType: z.enum(['employee', 'hr_admin', 'company_admin', 'platform_admin', 'super_admin']).optional(),
+  userType: z.enum(['employee', 'hr-admin', 'company-admin', 'platform-admin', 'super-admin']).optional(),
   location: z.string().max(200).optional(),
   benefitsSelections: z.record(z.any()).optional(),
   onboardingProgress: z.number().min(0).max(100).optional(),

@@ -80,7 +80,9 @@
       "Bash(NODE_OPTIONS=--max-old-space-size=8192 pnpm run build)",
       "Bash(NODE_OPTIONS=--max-old-space-size=8192 timeout 60 pnpm build)",
       "Bash(export NODE_OPTIONS=--max-old-space-size=8192)",
-      "Bash(timeout 600 pnpm run build)"
+      "Bash(timeout 600 pnpm run build)",
+      "Bash(NODE_OPTIONS=--max-old-space-size=8192 timeout 600 pnpm build)",
+      "Bash(NODE_OPTIONS=--max-old-space-size=8192 pnpm build)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
