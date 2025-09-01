@@ -3,5 +3,6 @@
     "deploymentHostingUrl": "https://benefitschatbotac-383.web.app"
   },
   "cloud_run_deploy": {},
-  "gemini_api": {}
+  "gemini_api": {},
+  "secrets_manager": {}
 }
