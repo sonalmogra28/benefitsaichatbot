@@ -82,7 +82,11 @@
       "Bash(export NODE_OPTIONS=--max-old-space-size=8192)",
       "Bash(timeout 600 pnpm run build)",
       "Bash(NODE_OPTIONS=--max-old-space-size=8192 timeout 600 pnpm build)",
-      "Bash(NODE_OPTIONS=--max-old-space-size=8192 pnpm build)"
+      "Bash(NODE_OPTIONS=--max-old-space-size=8192 pnpm build)",
+      "Bash(git reset:*)",
+      "Bash(git restore:*)",
+      "Bash(NODE_OPTIONS=--max-old-space-size=4096 pnpm build)",
+      "Bash(SKIP_ENV_VALIDATION=1 pnpm build)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"
