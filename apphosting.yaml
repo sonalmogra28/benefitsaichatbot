@@ -1,3 +1,4 @@
+# Triggering a new build with the correct IAM permissions
 env:
   - variable: FIREBASE_SERVICE_ACCOUNT_KEY
     secret: FIREBASE_SERVICE_ACCOUNT_KEY_SECRET
