@@ -22,24 +22,45 @@ const location = 'us-central1';
 const indexEndpointId = process.env.VERTEX_AI_INDEX_ENDPOINT_ID || '';
 const deployedIndexId = process.env.VERTEX_AI_DEPLOYED_INDEX_ID || '';
 
-const auth = new GoogleAuth({
-  scopes: 'https://www.googleapis.com/auth/cloud-platform',
-});
+// --- LAZY INITIALIZATION ---
+// Create a singleton pattern to avoid re-initializing clients on every call within the same request lifecycle.
 
-const indexEndpointClient = new IndexEndpointServiceClient({
-  auth,
-  apiEndpoint: `${location}-aiplatform.googleapis.com`,
-});
+let indexEndpointClient: IndexEndpointServiceClient | null = null;
+let matchClient: MatchServiceClient | null = null;
 
-const matchClient = new MatchServiceClient({
-  auth,
-  apiEndpoint: `${location}-aiplatform.googleapis.com`,
-});
+function getIndexEndpointClient() {
+  if (!indexEndpointClient) {
+    const auth = new GoogleAuth({
+      scopes: 'https://www.googleapis.com/auth/cloud-platform',
+    });
+    indexEndpointClient = new IndexEndpointServiceClient({
+      auth,
+      apiEndpoint: `${location}-aiplatform.googleapis.com`,
+    });
+  }
+  return indexEndpointClient;
+}
+
+function getMatchClient() {
+  if (!matchClient) {
+    const auth = new GoogleAuth({
+      scopes: 'https://www.googleapis.com/auth/cloud-platform',
+    });
+    matchClient = new MatchServiceClient({
+      auth,
+      apiEndpoint: `${location}-aiplatform.googleapis.com`,
+    });
+  }
+  return matchClient;
+}
+
+// --- END LAZY INITIALIZATION ---
 
 export async function upsertDocumentChunks(
   companyId: string,
   chunks: Array<{ id: string; text: string; metadata: any }>,
 ) {
+  const client = getIndexEndpointClient(); // Use the lazy-loaded client
   const indexEndpoint = `projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}`;
 
   const datapoints = await Promise.all(
@@ -65,7 +86,7 @@ export async function upsertDocumentChunks(
   };
 
   // @ts-ignore
-  await indexEndpointClient.upsertDatapoints({ request });
+  await client.upsertDatapoints({ request }); // Use the client instance
   return chunks.length;
 }
 
@@ -74,6 +95,7 @@ export async function searchVectors(
   query: string,
   topK = 5,
 ) {
+  const client = getMatchClient(); // Use the lazy-loaded client
   const queryEmbedding = await getEmbedding(query);
 
   const request = {
@@ -96,7 +118,7 @@ export async function searchVectors(
   };
 
   // @ts-ignore
-  const [response] = await matchClient.findNeighbors(request);
+  const [response] = await client.findNeighbors(request); // Use the client instance
 
   if (!response.nearestNeighbors || !response.nearestNeighbors[0]) {
     return [];
@@ -119,6 +141,9 @@ export async function deleteDocumentVectors(
   // This is a placeholder for when that functionality is available.
   // For now, you would need to find all chunk IDs associated with the documentId
   // and delete them individually.
+  
+  // NOTE: When implemented, this function would also call getIndexEndpointClient()
+  
   console.warn(`Deletion for documentId ${documentId} in company ${companyId} is not yet implemented for Vertex AI.`);
   return;
 }
