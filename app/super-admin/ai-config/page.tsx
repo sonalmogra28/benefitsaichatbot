@@ -87,12 +87,12 @@ export default function AiConfigPage() {
                     <FormControl>
                       <Textarea
                         rows={5}
-                        placeholder="Describe the AI's personality..."
+                        placeholder="Describe the AI&apos;s personality..."
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      This is the core instruction that defines the AI's character. 
+                      This is the core instruction that defines the AI&apos;s character. 
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -118,7 +118,7 @@ export default function AiConfigPage() {
                         <SelectItem value="humorous">Humorous</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormDescription>The default tone of the AI's responses.</FormDescription>
+                    <FormDescription>The default tone of the AI&apos;s responses.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
