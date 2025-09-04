@@ -9,7 +9,7 @@ describe('AuthForm', () => {
         onSubmit={async () => {}}
         onGoogleClick={async () => {}}
         loading={false}
-      />
+      />,
     );
 
     expect(screen.getByLabelText('Email')).toBeInTheDocument();

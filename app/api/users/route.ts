@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.split('Bearer ')[1];
     let decodedToken: any;
-    
+
     try {
       decodedToken = await adminAuth.verifyIdToken(token);
     } catch (error) {
@@ -30,8 +30,9 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
 
     // Check permissions
-    const isSuperAdmin = decodedToken.role === USER_ROLES.SUPER_ADMIN || 
-                        decodedToken.role === USER_ROLES.PLATFORM_ADMIN;
+    const isSuperAdmin =
+      decodedToken.role === USER_ROLES.SUPER_ADMIN ||
+      decodedToken.role === USER_ROLES.PLATFORM_ADMIN;
     const isCompanyAdmin = decodedToken.role === USER_ROLES.COMPANY_ADMIN;
     const isHRAdmin = decodedToken.role === USER_ROLES.HR_ADMIN;
 
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     if (role) {
       query = query.where('role', '==', role);
     }
-    
+
     if (status) {
       query = query.where('status', '==', status);
     }
@@ -72,8 +73,8 @@ export async function GET(request: NextRequest) {
 
     // Execute query
     const snapshot = await query.get();
-    
-    const users = snapshot.docs.map(doc => {
+
+    const users = snapshot.docs.map((doc) => {
       const data = doc.data();
       // Remove sensitive data
       const { passwordHash, ...userData } = data;
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching users:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.split('Bearer ')[1];
     let decodedToken: any;
-    
+
     try {
       decodedToken = await adminAuth.verifyIdToken(token);
     } catch (error) {
@@ -118,8 +119,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check permissions - only admins can create users
-    const isSuperAdmin = decodedToken.role === USER_ROLES.SUPER_ADMIN || 
-                        decodedToken.role === USER_ROLES.PLATFORM_ADMIN;
+    const isSuperAdmin =
+      decodedToken.role === USER_ROLES.SUPER_ADMIN ||
+      decodedToken.role === USER_ROLES.PLATFORM_ADMIN;
     const isCompanyAdmin = decodedToken.role === USER_ROLES.COMPANY_ADMIN;
     const isHRAdmin = decodedToken.role === USER_ROLES.HR_ADMIN;
 
@@ -129,13 +131,19 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { email, password, displayName, role, companyId: requestCompanyId } = body;
+    const {
+      email,
+      password,
+      displayName,
+      role,
+      companyId: requestCompanyId,
+    } = body;
 
     // Validate required fields
     if (!email || !password || !displayName) {
       return NextResponse.json(
         { error: 'Email, password, and display name are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -150,10 +158,13 @@ export async function POST(request: NextRequest) {
     const targetRole = role || USER_ROLES.EMPLOYEE;
     if (!isSuperAdmin) {
       // Company admins can't create super admins or platform admins
-      if (targetRole === USER_ROLES.SUPER_ADMIN || targetRole === USER_ROLES.PLATFORM_ADMIN) {
+      if (
+        targetRole === USER_ROLES.SUPER_ADMIN ||
+        targetRole === USER_ROLES.PLATFORM_ADMIN
+      ) {
         return NextResponse.json(
           { error: 'Insufficient permissions to assign this role' },
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
@@ -171,7 +182,7 @@ export async function POST(request: NextRequest) {
       const customClaims: any = {
         role: targetRole,
       };
-      
+
       if (targetCompanyId) {
         customClaims.companyId = targetCompanyId;
       }
@@ -202,7 +213,7 @@ export async function POST(request: NextRequest) {
           .doc(targetCompanyId)
           .collection('users')
           .doc(userRecord.uid);
-        
+
         await companyUserRef.set({
           uid: userRecord.uid,
           email,
@@ -226,7 +237,7 @@ export async function POST(request: NextRequest) {
         id: activityRef.id,
         type: 'user_created',
         message: `New user \"${displayName}\" created`,
-        metadata: { 
+        metadata: {
           userId: userRecord.uid,
           role: targetRole,
           companyId: targetCompanyId,
@@ -236,19 +247,19 @@ export async function POST(request: NextRequest) {
       });
 
       return NextResponse.json(
-        { 
+        {
           ...userData,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
-        { status: 201 }
+        { status: 201 },
       );
     } catch (error: any) {
       console.error('Error creating user:', error);
       if (error.code === 'auth/email-already-exists') {
         return NextResponse.json(
           { error: 'A user with this email already exists' },
-          { status: 400 }
+          { status: 400 },
         );
       }
       throw error;
@@ -257,7 +268,7 @@ export async function POST(request: NextRequest) {
     console.error('Error in user creation:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

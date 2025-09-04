@@ -4,9 +4,22 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, FileText, DollarSign, BarChart3, Upload, UserPlus } from 'lucide-react';
+import {
+  Users,
+  FileText,
+  DollarSign,
+  BarChart3,
+  Upload,
+  UserPlus,
+} from 'lucide-react';
 import Link from 'next/link';
 
 export default function CompanyAdminDashboard() {
@@ -17,7 +30,7 @@ export default function CompanyAdminDashboard() {
     activePlans: 0,
     totalDocuments: 0,
     monthlySpend: 0,
-    enrollmentRate: 0
+    enrollmentRate: 0,
   });
 
   useEffect(() => {
@@ -25,7 +38,10 @@ export default function CompanyAdminDashboard() {
       router.push('/login');
     } else if (user) {
       user.getIdTokenResult().then((idTokenResult) => {
-        if (!idTokenResult.claims.company_admin && !idTokenResult.claims.hr_admin) {
+        if (
+          !idTokenResult.claims.company_admin &&
+          !idTokenResult.claims.hr_admin
+        ) {
           router.push('/');
         }
       });
@@ -33,7 +49,11 @@ export default function CompanyAdminDashboard() {
   }, [user, loading, router]);
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -41,7 +61,9 @@ export default function CompanyAdminDashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Company Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your organization&apos;s benefits</p>
+          <p className="text-muted-foreground">
+            Manage your organization&apos;s benefits
+          </p>
         </div>
         <div className="space-x-2">
           <Link href="/company-admin/employees/new">
@@ -62,11 +84,15 @@ export default function CompanyAdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Employees
+            </CardTitle>
             <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{companyStats.totalEmployees}</div>
+            <div className="text-2xl font-bold">
+              {companyStats.totalEmployees}
+            </div>
             <p className="text-xs text-muted-foreground">Active members</p>
           </CardContent>
         </Card>
@@ -88,7 +114,9 @@ export default function CompanyAdminDashboard() {
             <DollarSign className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${companyStats.monthlySpend.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              ${companyStats.monthlySpend.toLocaleString()}
+            </div>
             <p className="text-xs text-muted-foreground">Current month</p>
           </CardContent>
         </Card>
@@ -99,18 +127,24 @@ export default function CompanyAdminDashboard() {
             <FileText className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{companyStats.totalDocuments}</div>
+            <div className="text-2xl font-bold">
+              {companyStats.totalDocuments}
+            </div>
             <p className="text-xs text-muted-foreground">Uploaded files</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Enrollment Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Enrollment Rate
+            </CardTitle>
             <BarChart3 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{companyStats.enrollmentRate}%</div>
+            <div className="text-2xl font-bold">
+              {companyStats.enrollmentRate}%
+            </div>
             <p className="text-xs text-muted-foreground">Participation</p>
           </CardContent>
         </Card>
@@ -158,17 +192,23 @@ export default function CompanyAdminDashboard() {
           <CardContent className="space-y-3">
             <div className="text-sm">
               <div className="font-medium">New enrollment</div>
-              <div className="text-muted-foreground">John Doe enrolled in Health Plus plan</div>
+              <div className="text-muted-foreground">
+                John Doe enrolled in Health Plus plan
+              </div>
               <div className="text-xs text-muted-foreground">2 hours ago</div>
             </div>
             <div className="text-sm">
               <div className="font-medium">Document uploaded</div>
-              <div className="text-muted-foreground">2025 Benefits Guide added</div>
+              <div className="text-muted-foreground">
+                2025 Benefits Guide added
+              </div>
               <div className="text-xs text-muted-foreground">5 hours ago</div>
             </div>
             <div className="text-sm">
               <div className="font-medium">Plan updated</div>
-              <div className="text-muted-foreground">Dental coverage limits increased</div>
+              <div className="text-muted-foreground">
+                Dental coverage limits increased
+              </div>
               <div className="text-xs text-muted-foreground">1 day ago</div>
             </div>
           </CardContent>
@@ -183,15 +223,21 @@ export default function CompanyAdminDashboard() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <div className="text-sm text-muted-foreground">Average cost per employee</div>
+              <div className="text-sm text-muted-foreground">
+                Average cost per employee
+              </div>
               <div className="text-2xl font-bold">$485/mo</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Most popular plan</div>
+              <div className="text-sm text-muted-foreground">
+                Most popular plan
+              </div>
               <div className="text-2xl font-bold">Health Plus PPO</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">AI chat interactions</div>
+              <div className="text-sm text-muted-foreground">
+                AI chat interactions
+              </div>
               <div className="text-2xl font-bold">342 this month</div>
             </div>
           </div>

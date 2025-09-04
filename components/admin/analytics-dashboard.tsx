@@ -1,33 +1,39 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  BarChart, 
-  Bar, 
-  LineChart, 
-  Line, 
-  PieChart, 
-  Pie, 
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
   Cell,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Area,
-  AreaChart
+  AreaChart,
 } from 'recharts';
 import { format } from 'date-fns';
-import { 
-  DollarSign, 
-  MessageSquare, 
-  Users, 
+import {
+  DollarSign,
+  MessageSquare,
+  Users,
   Clock,
   AlertCircle,
   ThumbsUp,
   ThumbsDown,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
@@ -37,22 +43,36 @@ interface AnalyticsDashboardProps {
   costBreakdown: any;
 }
 
-export default function AnalyticsDashboard({ analytics, topQuestions, costBreakdown }: AnalyticsDashboardProps) {
+export default function AnalyticsDashboard({
+  analytics,
+  topQuestions,
+  costBreakdown,
+}: AnalyticsDashboardProps) {
   // Calculate percentage changes
-  const feedbackScore = analytics.totalMessages > 0 
-    ? ((analytics.positiveFeedback / (analytics.positiveFeedback + analytics.negativeFeedback + analytics.neutralFeedback)) * 100).toFixed(1)
-    : '0';
+  const feedbackScore =
+    analytics.totalMessages > 0
+      ? (
+          (analytics.positiveFeedback /
+            (analytics.positiveFeedback +
+              analytics.negativeFeedback +
+              analytics.neutralFeedback)) *
+          100
+        ).toFixed(1)
+      : '0';
 
   // Format data for charts
   const hourlyData = Array.from({ length: 24 }, (_, i) => ({
     hour: `${i}:00`,
-    messages: analytics.messagesByHour.find((h: any) => h.hour === i)?.count || 0,
+    messages:
+      analytics.messagesByHour.find((h: any) => h.hour === i)?.count || 0,
   }));
 
-  const toolUsageData = Object.entries(analytics.toolUsageCount).map(([tool, count]) => ({
-    name: tool,
-    value: count,
-  }));
+  const toolUsageData = Object.entries(analytics.toolUsageCount).map(
+    ([tool, count]) => ({
+      name: tool,
+      value: count,
+    }),
+  );
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
@@ -69,13 +89,18 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Conversations</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Conversations
+            </CardTitle>
             <MessageSquare className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.totalConversations.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {analytics.totalConversations.toLocaleString()}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {analytics.avgMessagesPerConversation.toFixed(1)} messages per conversation
+              {analytics.avgMessagesPerConversation.toFixed(1)} messages per
+              conversation
             </p>
           </CardContent>
         </Card>
@@ -86,7 +111,9 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
             <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.uniqueUsers.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {analytics.uniqueUsers.toLocaleString()}
+            </div>
             <p className="text-xs text-muted-foreground">
               Unique users in the last 30 days
             </p>
@@ -99,7 +126,9 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
             <Clock className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(analytics.avgResponseTime / 1000).toFixed(2)}s</div>
+            <div className="text-2xl font-bold">
+              {(analytics.avgResponseTime / 1000).toFixed(2)}s
+            </div>
             <p className="text-xs text-muted-foreground">
               Average response time
             </p>
@@ -112,7 +141,9 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
             <DollarSign className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${analytics.totalCost.toFixed(2)}</div>
+            <div className="text-2xl font-bold">
+              ${analytics.totalCost.toFixed(2)}
+            </div>
             <p className="text-xs text-muted-foreground">
               ${analytics.avgCostPerConversation.toFixed(3)} per conversation
             </p>
@@ -124,7 +155,9 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Satisfaction Score</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Satisfaction Score
+            </CardTitle>
             <ThumbsUp className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -148,7 +181,9 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
             <AlertCircle className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.errorRate.toFixed(2)}%</div>
+            <div className="text-2xl font-bold">
+              {analytics.errorRate.toFixed(2)}%
+            </div>
             <p className="text-xs text-muted-foreground">
               Of all messages resulted in errors
             </p>
@@ -161,10 +196,10 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
             <Zap className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{Math.round(analytics.avgTokensPerResponse)}</div>
-            <p className="text-xs text-muted-foreground">
-              Tokens per response
-            </p>
+            <div className="text-2xl font-bold">
+              {Math.round(analytics.avgTokensPerResponse)}
+            </div>
+            <p className="text-xs text-muted-foreground">Tokens per response</p>
           </CardContent>
         </Card>
       </div>
@@ -209,19 +244,23 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={analytics.messagesByDay}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={(date: string) => format(new Date(date), 'MMM d')}
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(date: string) =>
+                      format(new Date(date), 'MMM d')
+                    }
                   />
                   <YAxis />
-                  <Tooltip 
-                    labelFormatter={(date: string) => format(new Date(date), 'MMM d, yyyy')}
+                  <Tooltip
+                    labelFormatter={(date: string) =>
+                      format(new Date(date), 'MMM d, yyyy')
+                    }
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="count" 
-                    stroke="#8884d8" 
-                    fill="#8884d8" 
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#8884d8"
+                    fill="#8884d8"
                     fillOpacity={0.6}
                   />
                 </AreaChart>
@@ -241,9 +280,14 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
             <CardContent>
               <div className="space-y-4">
                 {topQuestions.map((question, index) => (
-                  <div key={`${question.question}-${index}`} className="flex items-center justify-between">
+                  <div
+                    key={`${question.question}-${index}`}
+                    className="flex items-center justify-between"
+                  >
                     <div className="flex-1">
-                      <p className="text-sm font-medium">{index + 1}. {question.question}</p>
+                      <p className="text-sm font-medium">
+                        {index + 1}. {question.question}
+                      </p>
                     </div>
                     <Badge variant="secondary">{question.count} times</Badge>
                   </div>
@@ -279,7 +323,10 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
                     dataKey="value"
                   >
                     {toolUsageData.map((entry, index) => (
-                      <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell
+                        key={`cell-${entry.name}-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -293,27 +340,31 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
           <Card>
             <CardHeader>
               <CardTitle>Daily Cost Trend</CardTitle>
-              <CardDescription>
-                AI usage costs over time
-              </CardDescription>
+              <CardDescription>AI usage costs over time</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={costBreakdown.daily}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={(date: string) => format(new Date(date), 'MMM d')}
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(date: string) =>
+                      format(new Date(date), 'MMM d')
+                    }
                   />
-                  <YAxis tickFormatter={(value: number) => `$${value.toFixed(2)}`} />
-                  <Tooltip 
-                    labelFormatter={(date: string) => format(new Date(date), 'MMM d, yyyy')}
+                  <YAxis
+                    tickFormatter={(value: number) => `$${value.toFixed(2)}`}
+                  />
+                  <Tooltip
+                    labelFormatter={(date: string) =>
+                      format(new Date(date), 'MMM d, yyyy')
+                    }
                     formatter={(value: any) => `$${value.toFixed(2)}`}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="cost" 
-                    stroke="#00C49F" 
+                  <Line
+                    type="monotone"
+                    dataKey="cost"
+                    stroke="#00C49F"
                     strokeWidth={2}
                   />
                 </LineChart>
@@ -330,14 +381,21 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {costBreakdown.byUser.slice(0, 10).map((user: any, index: number) => (
-                  <div key={`${user.userEmail}-${index}`} className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{user.userEmail || 'Unknown User'}</p>
+                {costBreakdown.byUser
+                  .slice(0, 10)
+                  .map((user: any, index: number) => (
+                    <div
+                      key={`${user.userEmail}-${index}`}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">
+                          {user.userEmail || 'Unknown User'}
+                        </p>
+                      </div>
+                      <Badge variant="outline">${user.cost.toFixed(2)}</Badge>
                     </div>
-                    <Badge variant="outline">${user.cost.toFixed(2)}</Badge>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>

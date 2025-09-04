@@ -11,7 +11,11 @@ const ToolLoading = ({ message }: { message: string }) => (
   <div className="flex items-center gap-3 text-muted-foreground p-4 bg-muted/30 rounded-lg">
     <motion.div
       animate={{ rotate: 360 }}
-      transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+      transition={{
+        duration: 2,
+        repeat: Number.POSITIVE_INFINITY,
+        ease: 'linear',
+      }}
       className="size-8 border-3 border-primary border-t-transparent rounded-full"
     />
     <span className="text-base font-semibold">{message}</span>
@@ -388,11 +392,29 @@ const PurePreviewMessage = ({
                   return (
                     <div key={toolCallId}>
                       <Card className="p-4">
-                        <h3 className="font-semibold mb-2">Benefits Cost Analysis</h3>
+                        <h3 className="font-semibold mb-2">
+                          Benefits Cost Analysis
+                        </h3>
                         <div className="space-y-2">
-                          <div>Annual Premium: ${output.annualPremium?.toLocaleString() || output.breakdown?.premiums?.toLocaleString() || 0}</div>
-                          <div>Estimated Out-of-Pocket: ${output.estimatedOutOfPocket?.toLocaleString() || output.breakdown?.estimatedOutOfPocket?.toLocaleString() || 0}</div>
-                          <div className="font-bold">Total Annual Cost: ${output.totalAnnualCost?.toLocaleString() || output.estimatedAnnualCost?.toLocaleString() || output.breakdown?.total?.toLocaleString() || 0}</div>
+                          <div>
+                            Annual Premium: $
+                            {output.annualPremium?.toLocaleString() ||
+                              output.breakdown?.premiums?.toLocaleString() ||
+                              0}
+                          </div>
+                          <div>
+                            Estimated Out-of-Pocket: $
+                            {output.estimatedOutOfPocket?.toLocaleString() ||
+                              output.breakdown?.estimatedOutOfPocket?.toLocaleString() ||
+                              0}
+                          </div>
+                          <div className="font-bold">
+                            Total Annual Cost: $
+                            {output.totalAnnualCost?.toLocaleString() ||
+                              output.estimatedAnnualCost?.toLocaleString() ||
+                              output.breakdown?.total?.toLocaleString() ||
+                              0}
+                          </div>
                         </div>
                       </Card>
                     </div>

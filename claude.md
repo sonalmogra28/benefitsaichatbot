@@ -16,6 +16,17 @@ This is a Firebase-based Benefits Assistant Chatbot - a multi-tenant, AI-powered
 
 We are implementing a Retrieval-Augmented Generation (RAG) system to allow the chatbot to reference an internal knowledge base of benefits documents.
 
+- **Phase 1 details**:
+  - Document loading script ingests source files.
+  - Chunks and embeddings stored in Firestore.
+  - In-memory similarity search retrieves relevant content.
+- **Phase 2 upgrade steps**:
+  - Adopt Vertex AI Vector Search for scalable retrieval.
+  - Write data ingestion script to populate the index.
+  - Update retrieval logic to query the managed service.
+- **Current progress**: Phase 1 pipeline is operational with Firestore-backed storage and in-memory search.
+- **Next steps**: Stand up Vertex AI Vector Search, ingest existing embeddings, and refactor retrieval to use the new index.
+
 ### Phase 1: RAG with Firestore (In Progress)
 
 *   **Goal**: Get a functional end-to-end RAG pipeline working quickly.
@@ -54,13 +65,13 @@ We are implementing a Retrieval-Augmented Generation (RAG) system to allow the c
 - **Database**: Firestore (NoSQL document database)
 - **Storage**: Firebase Cloud Storage
 - **Functions**: Firebase Cloud Functions
-- **AI/ML**: 
+- **AI/ML**:
   - Vertex AI (Google Gemini models)
   - OpenAI GPT-4 (fallback)
   - Anthropic Claude (fallback)
-- **Search**: Vector embeddings in Pinecone (to be replaced with Vertex AI Vector Search)
+- **Search**: Vertex AI Vector Search
 - **Email**: Resend
-- **Caching**: Redis (rate limiting)
+- **Caching**: Firestore-based rate limiting or Firebase Memorystore
 
 ### Development Tools
 - **Linting**: Biome.js (replacing ESLint)

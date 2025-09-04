@@ -118,6 +118,12 @@ substitutions:
 images:
   - '${_GCP_REGION}-docker.pkg.dev/$PROJECT_ID/benefits-chatbot/app:latest'
 
+artifacts:
+  objects:
+    location: 'gs://$PROJECT_ID-coverage'
+    paths:
+      - 'coverage/**'
+
 # Set a timeout for the build
 timeout: '1200s'
 

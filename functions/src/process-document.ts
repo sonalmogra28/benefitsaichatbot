@@ -1,10 +1,9 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { adminDb, adminStorage } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import * as pdf from 'pdf-parse';
-import * as mammoth from 'mammoth';
+import pdf from 'pdf-parse';
+import mammoth from 'mammoth';
 
-const BUCKET_NAME = process.env.GCLOUD_STORAGE_BUCKET || 'your-default-bucket-name';
 
 async function getTextFromPdf(fileBuffer: Buffer): Promise<string> {
   const data = await pdf(fileBuffer);
@@ -16,8 +15,11 @@ async function getTextFromDocx(fileBuffer: Buffer): Promise<string> {
   return value;
 }
 
-export const processDocumentOnUpload = functions.storage.object().onFinalize(async (object) => {
-  const { bucket, name: filePath, contentType } = object;
+export const processDocumentOnUpload = functions.storage
+  .object()
+
+  .onFinalize(async (object: functions.storage.ObjectMetadata) => {
+    const { bucket, name: filePath, contentType } = object;
 
   if (!filePath || !contentType) {
     console.log('File path or content type is missing.');
@@ -55,24 +57,39 @@ export const processDocumentOnUpload = functions.storage.object().onFinalize(asy
     } else {
       console.warn(`Unsupported content type: ${contentType}. Skipping.`);
       await documentRef.update({ status: 'failed', error: 'Unsupported file type', updatedAt: FieldValue.serverTimestamp() });
+
       return;
     }
 
-    if (!content || content.trim().length === 0) {
-      throw new Error('No content extracted from the document.');
+    // For this project, we only care about documents in the 'documents' folder
+    if (!filePath.startsWith('documents/')) {
+      console.log(`File ${filePath} is not in a 'documents' folder, skipping.`);
+      return;
     }
 
-    // Simple chunking strategy
-    const chunks = content.match(/.{1,1500}/gs) || [];
-    const chunksCollectionRef = documentRef.collection('content_chunks');
-    const batch = adminDb.batch();
+    // Find the corresponding document in Firestore
+    const documentsRef = adminDb.collection('documents');
+    const snapshot = await documentsRef
+      .where('storagePath', '==', filePath)
+      .limit(1)
+      .get();
 
-    chunks.forEach((chunk, index) => {
-      const chunkRef = chunksCollectionRef.doc(`chunk_${index}`);
-      batch.set(chunkRef, {
-        content: chunk,
-        chunkNumber: index + 1,
-        charCount: chunk.length,
+    if (snapshot.empty) {
+      console.error(
+        `No Firestore document found for storage path: ${filePath}`,
+      );
+      return;
+    }
+
+    const documentRef = snapshot.docs[0].ref;
+    const documentId = documentRef.id;
+
+
+    try {
+      console.log(`Processing document ${documentId} for file: ${filePath}`);
+      await documentRef.update({
+        status: 'processing',
+        updatedAt: FieldValue.serverTimestamp(),
       });
     });
     await batch.commit();
@@ -91,6 +108,8 @@ export const processDocumentOnUpload = functions.storage.object().onFinalize(asy
       status: 'failed',
       error: (error as Error).message,
       updatedAt: FieldValue.serverTimestamp(),
-    }).catch(err => console.error(`Failed to update document status to "failed":`, err));
+    }).catch((err: unknown) =>
+      console.error('Failed to update document status to "failed":', err),
+    );
   }
-});
+  });

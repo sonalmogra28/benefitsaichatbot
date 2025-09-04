@@ -1,47 +1,86 @@
-import { notFound } from 'next/navigation';
+'use client';
+
+import { useEffect, useState } from 'react';
 import { Chat } from '@/components/chat';
-import { adminAuth } from '@/lib/firebase/admin';
-import { getConversation } from '@/lib/firebase/services/conversation.service';
+import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db } from '@/lib/firebase';
+import { useRouter } from 'next/navigation';
+import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import type { ChatMessage } from '@/lib/types';
 
 interface ChatPageProps {
   params: {
     id: string;
   };
 }
+export default function ChatPage({ params }: ChatPageProps) {
+  const [user, loading] = useAuthState(auth);
+  const router = useRouter();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
 
-export async function generateMetadata({ params }: ChatPageProps) {
-  return {
-    title: 'Benefits Chat',
-    description: 'Chat with your AI benefits assistant'
-  };
-}
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
 
-export default async function ChatPage({ params }: ChatPageProps) {
-  // Get the current user session
-  const session = await adminAuth.verifyIdToken(
-    // TODO: Get token from cookies/headers
-    ''
-  ).catch(() => null);
+  useEffect(() => {
+    if (!user) return;
 
-  if (!session) {
-    notFound();
-  }
+    const fetchMessages = async () => {
+      try {
+        const messagesQuery = query(
+          collection(db, `conversations/${params.id}/messages`),
+          orderBy('createdAt', 'asc')
+        );
+        const snapshot = await getDocs(messagesQuery);
+        const history: ChatMessage[] = snapshot.docs.map((doc) => {
+          const data = doc.data() as any;
+          return {
+            id: data.id || doc.id,
+            role: data.role,
+            parts: [{ type: 'text', text: data.content }],
+            metadata: data.createdAt
+              ? { createdAt: data.createdAt.toDate().toISOString() }
+              : undefined,
+          };
+        });
+        setMessages(history);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    };
 
+    fetchMessages();
+  }, [user, params.id]);
+
+  if (loading || !user || isLoadingMessages) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full size-12 border-b-2 border-primary mx-auto" />
+          <p className="mt-4 text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
   // Verify the user has access to this conversation
   const conversation = await getConversation(params.id, session.uid);
-  
+
   if (!conversation) {
     notFound();
   }
 
   return (
-    <Chat 
+    <Chat
       id={params.id}
-      initialMessages={conversation.messages || []}
-      initialChatModel="gemini-2.0-flash-exp"
+      initialMessages={messages}
+      initialChatModel={DEFAULT_CHAT_MODEL}
       initialVisibilityType="private"
       isReadonly={false}
       autoResume={false}
     />
   );
 }
+
