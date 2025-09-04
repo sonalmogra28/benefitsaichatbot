@@ -65,6 +65,28 @@ export async function POST(request: Request) {
 }
 
 /**
+ * GET handler to retrieve the current session details.
+ */
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+    if (!sessionCookie) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const { uid, email, role, companyId } = decoded as any;
+
+    return NextResponse.json({ uid, email, role, companyId });
+  } catch (error) {
+    console.error('Session retrieval error:', error);
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+}
+
+/**
  * DELETE handler to clear the session cookie.
  */
 export async function DELETE() {
