@@ -126,8 +126,10 @@ To use Vertex AI and Document AI features:
 5. Add the following variables to your `.env.local` file:
    - `GOOGLE_CLOUD_PROJECT`
    - `GOOGLE_CLOUD_LOCATION`
-   - `VERTEX_INDEX_ID`
-   - `VERTEX_ENDPOINT_ID`
+   - `VERTEX_AI_PROJECT_ID`
+   - `VERTEX_AI_LOCATION`
+   - `VERTEX_AI_INDEX_ID`
+   - `VERTEX_AI_INDEX_ENDPOINT_ID`
    - `DOCUMENT_AI_PROCESSOR_ID`
 
 ### Development
