@@ -41,3 +41,7 @@ service-account-key.json
 
 # Downloaded data files
 data/
+
+# sensitive files
+.env
+users.json
