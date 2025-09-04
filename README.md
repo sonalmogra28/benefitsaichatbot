@@ -271,6 +271,9 @@ benefits-chatbot/
 - 80%+ test coverage
 - All PRs must pass CI
 
+### CI Test Process
+Our GitHub Actions pipeline runs `npm test` with coverage on every push and pull request. The build fails if any test fails or if coverage falls below the configured thresholds (lines: 80%, statements: 80%, functions: 80%, branches: 15%). Run `npm test` locally before pushing to verify your changes.
+
 ### Using with Windsurf/Cascade
 When using AI coding assistants:
 1. Always provide full context from claude.md
