@@ -4,10 +4,11 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
 
 ## 🚀 Project Overview
 
-- **Version**: 3.1.0
-- **Deployment**: Firebase/Google Cloud
-- **AI Model**: Vertex AI (with OpenAI and Claude fallbacks)
-- **Migration Status**: PostgreSQL ➜ Firebase
+**Version**: MVP (Single-tenant)  
+**Stack**: Next.js 15, TypeScript, Firestore, Firebase Hosting, Vertex AI SDK
+**Deployment**: Firebase Hosting (Production)
+**AI Model**: Vertex AI Gemini (with xAI Grok-2 and OpenAI GPT-4 fallback ready)
+
 
 ### ✅ Completed Features
 - Basic conversational AI with benefits personality
@@ -55,8 +56,8 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
          └───────────────────────┴─────────────────────────┘
                                  │
                     ┌────────────▼────────────┐
-                    │    Firebase Hosting     │
-                    │   (Auth, CDN, SSL)      │
+                    │  Firebase Hosting/CDN   │
+                    │     (Auth, Routing)     │
                     └────────────┬────────────┘
                                  │
          ┌───────────────────────┴───────────────────────┐
@@ -69,10 +70,16 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
          └───────────────┴───────────────────┴────────────────┘
                                  │
                     ┌────────────▼────────────┐
-                    │    AI Orchestration     │
-                    │  (Multi-Model Routing)  │
+                    │   AI Orchestration     │
+                    │      (Vertex AI)       │
                     └────────────┬────────────┘
                                  │
+                    ┌────────────▼────────────┐
+                    │       Firestore         │
+                    │   (Document Database)   │
+                    └─────────────────────────┘
+```
+
          ┌───────────────────────┴───────────────────────┐
 
          │                       │                       │
@@ -89,6 +96,7 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
 - pnpm >= 8.0.0
 - Firebase CLI
 
+- Google Cloud SDK (for Vertex AI)
 
 ### Environment Setup
 ```bash
@@ -107,16 +115,13 @@ cp .env.example .env.local
 FIREBASE_PROJECT_ID=       # Firebase project identifier
 FIREBASE_CLIENT_EMAIL=     # Service account client email
 FIREBASE_PRIVATE_KEY=      # Base64-encoded private key
-AUTH_SECRET=               # NextAuth secret (generate with: openssl rand -base64 32)
-OPENAI_API_KEY=            # For GPT-4 fallback
-ANTHROPIC_API_KEY=         # For Claude fallback
 ```
 
 #### Google Cloud Setup
 
-To use Vertex AI and Document AI features:
+To use Firestore and Vertex AI features:
 
-1. Enable the Vertex AI and Document AI APIs in your Google Cloud project.
+1. Enable the Firestore, Vertex AI, and Document AI APIs in your Google Cloud project.
 2. Create a Vertex AI index and endpoint, and note their IDs.
 3. Create a Document AI processor for the documents you need to process.
 4. Grant your service account the following IAM roles:
@@ -133,9 +138,6 @@ To use Vertex AI and Document AI features:
 
 ### Development
 ```bash
-# Run database migrations
-pnpm db:migrate
-
 # Start development server
 pnpm dev
 
@@ -149,6 +151,7 @@ pnpm tsc --noEmit
 pnpm lint:fix
 pnpm format
 ```
+
 
 ### Database Management
 ```bash
@@ -192,22 +195,22 @@ pnpm test:e2e           # Run E2E tests with Playwright
 
 ## 🚀 Deployment
 
-### Firebase Deployment
+### Firebase Deployment (Production)
 ```bash
 # Deploy to production
-firebase deploy
+firebase deploy --only hosting
 
-# Deploy to a specific project
-firebase deploy --project <project-id>
+# Deploy to preview channel
+firebase hosting:channel:deploy preview
 
-# Emulate locally
-firebase emulators:start
+# Check deployment status
+firebase hosting:sites:list
 ```
 
 ### Environment Configuration
 - **Development**: Firebase emulators, development API keys
-- **Staging**: Firebase project (staging), test API keys
-- **Production**: Firebase project (production), production API keys
+- **Staging**: Staging Firebase project, test API keys
+- **Production**: Production Firebase project, production API keys
 
 ## 📁 Project Structure
 
@@ -226,10 +229,9 @@ benefits-chatbot/
 │   │   ├── tools/         # AI function tools
 │   │   ├── prompts/       # System prompts
 │   │   └── context/       # Context management
-│   ├── db/                # Database layer
-│   │   ├── schema/        # Database schemas
+│   ├── db/                # Firestore data layer
 │   │   ├── repositories/  # Data access layer
-│   │   └── migrations/    # SQL migrations
+│   │   └── converters/    # Firestore converters and utilities
 │   └── utils/             # Utility functions
 ├── public/                # Static assets
 ├── scripts/               # Build and maintenance scripts
@@ -247,7 +249,7 @@ benefits-chatbot/
 
 ### Data Protection
 - End-to-end encryption (TLS 1.3)
-- Granular access control via Firestore security rules
+- Security rules in Firestore
 - Encrypted environment variables
 - No PII/PHI storage in logs
 
@@ -286,7 +288,8 @@ When using AI coding assistants:
 ## 📊 Monitoring & Analytics
 
 ### Production Monitoring
-- **Firebase Analytics**: Page views, Web Vitals
+
+- **Firebase Analytics**: Page views, performance metrics
 - **Error Tracking**: Sentry (to be configured)
 - **AI Metrics**: Token usage, response times
 - **Business Metrics**: Custom analytics dashboard
@@ -300,15 +303,6 @@ When using AI coding assistants:
 
 ### Common Issues
 
-#### Database Connection Errors
-```bash
-# Check connection
-pnpm exec tsx scripts/check-db.ts
-
-# Reset connection pool
-pnpm db:push --force
-```
-
 #### Build Failures
 ```bash
 # Clear cache
@@ -319,8 +313,6 @@ pnpm build
 
 #### Type Errors
 ```bash
-# Regenerate types
-pnpm db:generate
 pnpm tsc --noEmit
 ```
 
@@ -342,4 +334,4 @@ Proprietary - All rights reserved
 
 ---
 
-**Note**: This is an active development project. Always check [claude.md](./claude.md) for the latest development status and [roadmap-v2.md](./docs/roadmap-v2.md) for upcoming features.
+**Note**: This is an active development project. 
