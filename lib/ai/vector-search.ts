@@ -1,16 +1,22 @@
 // lib/ai/vector-search.ts
+
 import { IndexServiceClient, IndexEndpointServiceClient } from '@google-cloud/aiplatform';
 import { adminDb, FieldValue } from '@/lib/firebase/admin';
 import { generateEmbeddings } from './embeddings';
 
-const PROJECT_ID = process.env.GCLOUD_PROJECT || 'your-gcp-project-id';
-const LOCATION = 'us-central1'; // Or your GCP region
+
+const PROJECT_ID =
+  process.env.VERTEX_AI_PROJECT_ID ||
+  process.env.GOOGLE_CLOUD_PROJECT ||
+  process.env.GCLOUD_PROJECT ||
+  '';
+const LOCATION = process.env.VERTEX_AI_LOCATION || 'us-central1';
+const INDEX_ID = process.env.VERTEX_AI_INDEX_ID || '';
+const INDEX_ENDPOINT_ID = process.env.VERTEX_AI_INDEX_ENDPOINT_ID || '';
 
 class VectorSearchService {
   private indexClient: IndexServiceClient;
   private indexEndpointClient: IndexEndpointServiceClient;
-  private indexId: string = 'your-vector-search-index-id'; // Replace with your Index ID
-  private indexEndpointId: string = 'your-vector-search-index-endpoint-id'; // Replace with your Index Endpoint ID
 
   constructor() {
     const clientOptions = {
@@ -20,14 +26,28 @@ class VectorSearchService {
     this.indexEndpointClient = new IndexEndpointServiceClient(clientOptions);
   }
 
+  private get indexPath() {
+    if (!PROJECT_ID || !INDEX_ID) {
+      throw new Error('Vertex AI project or index ID is not configured');
+    }
+    return `projects/${PROJECT_ID}/locations/${LOCATION}/indexes/${INDEX_ID}`;
+  }
+
+  private get endpointPath() {
+    if (!PROJECT_ID || !INDEX_ENDPOINT_ID) {
+      throw new Error('Vertex AI project or index endpoint ID is not configured');
+    }
+    return `projects/${PROJECT_ID}/locations/${LOCATION}/indexEndpoints/${INDEX_ENDPOINT_ID}`;
+  }
+
   async upsertChunks(chunks: { id: string; embedding: number[] }[]) {
     const datapoints = chunks.map(chunk => ({
-      datapoint_id: chunk.id,
-      feature_vector: chunk.embedding,
+      datapointId: chunk.id,
+      featureVector: chunk.embedding,
     }));
 
     const request = {
-      index: `projects/${PROJECT_ID}/locations/${LOCATION}/indexes/${this.indexId}`,
+      index: this.indexPath,
       datapoints,
     };
 
@@ -41,17 +61,65 @@ class VectorSearchService {
     }
   }
 
-  async findNearestNeighbors(queryEmbedding: number[], numNeighbors: number = 5) {
-    const endpoint = `projects/${PROJECT_ID}/locations/${LOCATION}/indexEndpoints/${this.indexEndpointId}`;
+  async upsertDocumentChunks(
+    companyId: string,
+    chunks: { id: string; text: string; metadata: { documentId: string } }[],
+  ) {
+    try {
+      const embeddings = await generateEmbeddings(chunks.map(c => c.text));
+      const datapoints = chunks.map((chunk, i) => ({
+        datapointId: chunk.id,
+        featureVector: embeddings[i],
+        restricts: [
+          { namespace: 'company_id', allowTokens: [companyId] },
+          { namespace: 'document_id', allowTokens: [chunk.metadata.documentId] },
+        ],
+      }));
 
+      const request = {
+        index: this.indexPath,
+        datapoints,
+      };
+
+      console.log(
+        `Upserting ${datapoints.length} document chunks for company ${companyId}`,
+      );
+      await this.indexClient.upsertDatapoints(request);
+      console.log('Successfully upserted document chunks to Vertex AI.');
+      return datapoints.length;
+    } catch (error) {
+      console.error('Error upserting document chunks to Vertex AI:', error);
+      throw new Error('Failed to upsert document chunks');
+    }
+  }
+
+  async removeDatapoints(datapointIds: string[]) {
     const request = {
-      indexEndpoint: endpoint,
-      queries: [{
-        datapoint: {
-          featureVector: queryEmbedding,
+      index: this.indexPath,
+      datapointIds,
+    };
+
+    try {
+      console.log(`Removing ${datapointIds.length} datapoints from Vertex AI index...`);
+      await this.indexClient.removeDatapoints(request);
+      console.log('Successfully removed datapoints.');
+    } catch (error) {
+      console.error('Error removing datapoints from Vertex AI:', error);
+      throw new Error('Could not remove datapoints from the vector search index.');
+    }
+  }
+
+  async findNearestNeighbors(queryEmbedding: number[], numNeighbors = 5) {
+    const request = {
+      indexEndpoint: this.endpointPath,
+      queries: [
+        {
+          datapoint: {
+            featureVector: queryEmbedding,
+          },
+          neighborCount: numNeighbors,
         },
-        neighborCount: numNeighbors,
-      }],
+      ],
     };
 
     try {
@@ -68,6 +136,7 @@ class VectorSearchService {
 }
 
 export const vectorSearchService = new VectorSearchService();
+
 export async function upsertDocumentChunks(
   companyId: string,
   chunks: { id: string; text: string; metadata?: Record<string, unknown> }[],
@@ -121,3 +190,4 @@ export const deleteDocumentVectors = async (documentId: string) => {
   console.log(`- Deleting vector for document ${documentId}`);
   return Promise.resolve();
 };
+

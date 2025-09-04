@@ -9,7 +9,8 @@ import { knowledgeBaseDocuments } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { IndexEndpointServiceClient } from '@google-cloud/aiplatform';
 import { GoogleAuth } from 'google-auth-library';
-import { upsertDocumentChunks } from '../lib/ai/vector-search';
+import { vectorSearchService } from '../lib/ai/vector-search';
+import { generateEmbeddings } from '../lib/ai/embeddings';
 
 async function testDocumentProcessing() {
   console.log('🧪 Testing Document Processing Pipeline with Vertex AI');
@@ -89,6 +90,7 @@ async function testDocumentProcessing() {
       testDocument.companyId,
       documentChunks
     );
+
 
     console.log(`✅ Document processed and upserted successfully`);
     console.log(`   Status: ${status}`);

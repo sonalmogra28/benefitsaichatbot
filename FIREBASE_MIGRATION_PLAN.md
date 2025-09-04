@@ -262,7 +262,7 @@ export const useAuth = () => {
 ```typescript
 // app/(auth)/login/page.tsx
 'use client';
-import { useAuth } from '@/lib/firebase/auth-context';
+import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { AuthProvider } from '@/lib/firebase/auth-context';
+import { AuthProvider } from '@/context/auth-context';
 
 export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   return <AuthProvider>{children}</AuthProvider>;

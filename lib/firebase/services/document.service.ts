@@ -23,22 +23,31 @@ export type Document = z.infer<typeof documentSchema> & {
 };
 
 /**
- * Service for managing document data in a single-tenant Firestore structure
+ * Service for managing document data in a multi-tenant Firestore structure
  */
 export class DocumentService {
-  private documentCollection = adminDb.collection('documents');
+  /**
+   * Get a reference to a company's documents collection
+   */
+  private getDocumentCollection(companyId: string) {
+    return adminDb
+      .collection('companies')
+      .doc(companyId)
+      .collection('documents');
+  }
 
   /**
-   * Create a new document in the top-level 'documents' collection
+   * Create a new document in `companies/{companyId}/documents`
    */
   async createDocument(
+    companyId: string,
     documentData: z.infer<typeof documentSchema>,
-    createdBy: string
+    createdBy: string,
   ): Promise<string> {
     try {
       const validated = documentSchema.parse(documentData);
-      
-      const documentRef = this.documentCollection.doc();
+
+      const documentRef = this.getDocumentCollection(companyId).doc();
       const documentId = documentRef.id;
 
       await documentRef.set({
@@ -47,7 +56,7 @@ export class DocumentService {
         createdBy,
         status: 'pending_processing',
         createdAt: AdminFieldValue.serverTimestamp(),
-        updatedAt: AdminFieldValue.serverTimestamp()
+        updatedAt: AdminFieldValue.serverTimestamp(),
       });
 
       return documentId;
@@ -62,12 +71,17 @@ export class DocumentService {
   }
 
   /**
-   * Get document by ID from the top-level 'documents' collection
+   * Get document by ID from `companies/{companyId}/documents`
    */
-  async getDocument(documentId: string): Promise<Document | null> {
+  async getDocument(
+    companyId: string,
+    documentId: string,
+  ): Promise<Document | null> {
     try {
-      const documentDoc = await this.documentCollection.doc(documentId).get();
-      
+      const documentDoc = await this.getDocumentCollection(companyId)
+        .doc(documentId)
+        .get();
+
       if (!documentDoc.exists) {
         return null;
       }
@@ -80,14 +94,29 @@ export class DocumentService {
   }
 
   /**
-   * List all documents from the top-level 'documents' collection
+   * List all documents from `companies/{companyId}/documents`
    */
-  async listDocuments(): Promise<Document[]> {
+  async listDocuments(companyId: string): Promise<Document[]> {
     try {
-      const snapshot = await this.documentCollection.get();
-      return snapshot.docs.map(doc => doc.data() as Document);
+      const snapshot = await this.getDocumentCollection(companyId).get();
+      return snapshot.docs.map((doc) => doc.data() as Document);
     } catch (error) {
-      console.error(`Failed to list documents:`, error);
+      console.error(
+        `Failed to list documents for company ${companyId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a document from `companies/{companyId}/documents`
+   */
+  async deleteDocument(companyId: string, documentId: string): Promise<void> {
+    try {
+      await this.getDocumentCollection(companyId).doc(documentId).delete();
+    } catch (error) {
+      console.error(`Failed to delete document ${documentId}:`, error);
       throw error;
     }
   }
