@@ -11,6 +11,7 @@
     "lint:fix": "pnpm biome check --apply .",
     "format": "pnpm biome format --write .",
     "test": "vitest run --coverage",
+    "validate-env": "pnpm tsx scripts/validate-env.ts",
     "test:document-upload": "pnpm tsx scripts/test-document-upload.ts",
     "typecheck": "tsc --noEmit",
     "pre-deploy": "pnpm lint && pnpm typecheck && pnpm test",

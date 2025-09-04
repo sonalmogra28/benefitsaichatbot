@@ -101,13 +101,31 @@ pnpm install
 # Copy environment variables
 cp .env.example .env.local
 
-# Required environment variables:
-POSTGRES_URL=              # Neon PostgreSQL URL
-POSTGRES_URL_NON_POOLING=  # Neon direct connection
-AUTH_SECRET=               # NextAuth secret (generate with: openssl rand -base64 32)
-OPENAI_API_KEY=            # For GPT-4 fallback
-XAI_API_KEY=               # For Grok-2 (primary)
+# Review .env.local and fill in the required variables
+# See .env.local.example for a complete list
+
+# Validate your environment
+pnpm run validate-env
 ```
+
+### Required Environment Variables
+
+The application relies on the following variables:
+
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_FIREBASE_DATABASE_URL`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `RESEND_API_KEY`
+- `GOOGLE_GENERATIVE_AI_API_KEY` (or another AI provider key)
+
+See `.env.example` for the complete list and descriptions.
 
 #### Google Cloud Setup
 

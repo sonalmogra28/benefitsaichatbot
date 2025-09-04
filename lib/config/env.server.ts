@@ -4,7 +4,7 @@
 // It requires specific environment variables to be set in a `.env.local` file.
 
 const serviceAccount = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
+  projectId: process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
   // The private key from the service account JSON, with escaped newlines replaced.
   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -19,5 +19,5 @@ const hasServiceAccount =
 export const FIREBASE_ADMIN_CONFIG = {
   serviceAccount: hasServiceAccount ? serviceAccount : undefined,
   // The databaseURL is often required for the Admin SDK.
-  databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`,
+  databaseURL: `https://${(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)}.firebaseio.com`,
 };
