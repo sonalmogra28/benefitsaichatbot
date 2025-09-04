@@ -1,26 +1,21 @@
-import { OpenAI } from 'openai';
+import { GenerativeModel } from '@google-cloud/vertexai';
+import { getVertexAI, AI_MODELS } from './vertex-config';
 
 // --- LAZY INITIALIZATION ---
-let openai: OpenAI | null = null;
+let embeddingModel: GenerativeModel | null = null;
 
-function getOpenAIClient() {
-  if (!openai) {
-    // This check ensures that the client is only created when the API key is available.
-    // The build process will not fail, and runtime calls will throw a clear error if the key is missing.
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('The OPENAI_API_KEY environment variable is missing or empty.');
-    }
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+function getEmbeddingModel() {
+  if (!embeddingModel) {
+    const vertex = getVertexAI();
+    embeddingModel = vertex.getGenerativeModel({ model: AI_MODELS.EMBEDDING });
   }
-  return openai;
+  return embeddingModel;
 }
 // --- END LAZY INITIALIZATION ---
 
 
 /**
- * Generate embedding for text using OpenAI's embedding model
+ * Generate embedding for text using Vertex AI's embedding model
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   if (!text || text.trim().length === 0) {
@@ -34,49 +29,37 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     : text;
 
   try {
-    const client = getOpenAIClient();
-    const response = await client.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: truncatedText,
+    const model = getEmbeddingModel();
+    const result = await model.embedContent({
+      content: { parts: [{ text: truncatedText }] },
     });
-
-    return response.data[0].embedding;
+    return result.embedding?.values ?? [];
   } catch (error) {
-    console.error('OpenAI embedding error:', error);
+    console.error('Vertex AI embedding error:', error);
     throw new Error('Failed to generate embedding');
   }
 }
 
 /**
- * Generate embeddings for multiple texts in batch
+ * Generate embeddings for multiple texts using Vertex AI batch API
  */
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   if (!texts || texts.length === 0) {
     return [];
   }
 
-  const client = getOpenAIClient();
-  // OpenAI allows up to 2048 inputs per request
-  const batchSize = 100;
-  const embeddings: number[][] = [];
-
-  for (let i = 0; i < texts.length; i += batchSize) {
-    const batch = texts.slice(i, i + batchSize);
-
-    try {
-      const response = await client.embeddings.create({
-        model: 'text-embedding-3-small',
-        input: batch,
-      });
-
-      embeddings.push(...response.data.map((d: any) => d.embedding));
-    } catch (error) {
-      console.error(`Batch embedding error at index ${i}:`, error);
-      throw new Error(`Failed to generate embeddings for batch starting at index ${i}`);
-    }
+  try {
+    const model = getEmbeddingModel();
+    const response = await model.batchEmbedContents({
+      requests: texts.map(text => ({
+        content: { parts: [{ text }] },
+      })),
+    });
+    return response.embeddings?.map(e => e.values) ?? [];
+  } catch (error) {
+    console.error('Vertex AI batch embedding error:', error);
+    throw new Error('Failed to generate embeddings');
   }
-
-  return embeddings;
 }
 
 // Alias for backward compatibility
