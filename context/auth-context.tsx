@@ -1,9 +1,19 @@
 // context/auth-context.tsx
-'use client';
+'use-client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { 
+  createContext, 
+  useContext, 
+  useEffect, 
+  useState, 
+  type ReactNode 
+} from 'react';
 import { useRouter } from 'next/navigation';
-import { type User, onIdTokenChanged, signOut as firebaseSignOut } from 'firebase/auth';
+import { 
+  type User, 
+  onIdTokenChanged, 
+  signOut as firebaseSignOut 
+} from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 
 interface AuthContextType {
@@ -12,7 +22,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// THIS IS THE FIX: The `AuthContext` must be exported.
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

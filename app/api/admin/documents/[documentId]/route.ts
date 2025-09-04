@@ -1,41 +1,34 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/admin-middleware';
 import { USER_ROLES } from '@/lib/constants/roles';
-import { companyService } from '@/lib/firebase/services/company.service';
+import { documentService } from '@/lib/firebase/services/document.service';
 import { deleteDocument as deleteBlobDocument } from '@/lib/storage/firebase-storage';
 import { deleteDocumentVectors } from '@/lib/ai/vector-search';
 
 export const DELETE = withAuth(USER_ROLES.COMPANY_ADMIN, async (
   request: NextRequest,
-  { params }: { params: { documentId: string } },
-  user
+  { params }: { params: { documentId: string } }
 ) => {
   try {
     const { documentId } = params;
-    
-    // TODO: Get companyId from document
-    const companyId = user.companyId;
-
-    if (!companyId) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-    }
-    
-    // Delete from blob storage
     const { url } = await request.json();
+    
+    // 1. Delete from blob storage if URL is provided
     if (url) {
       await deleteBlobDocument(url);
     }
     
-    // Delete vectors from Vertex AI
-    await deleteDocumentVectors(companyId, documentId);
+    // 2. Delete vectors from the vector database
+    // The new documentService does not include companyId, so we pass only the documentId
+    await deleteDocumentVectors(documentId);
     
-    // Delete from database
-    await companyService.deleteDocument(companyId, documentId);
+    // 3. Delete the document record from Firestore
+    await documentService.deleteDocument(documentId);
     
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: `Document ${documentId} deleted.` });
     
   } catch (error) {
-    console.error('Document deletion error:', error);
+    console.error(`Document deletion error for ${params.documentId}:`, error);
     return NextResponse.json(
       { error: 'Failed to delete document' },
       { status: 500 }

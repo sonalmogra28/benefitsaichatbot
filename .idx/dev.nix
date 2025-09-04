@@ -15,7 +15,7 @@
     pkgs.pnpm            # PNPM package manager
     pkgs.google-cloud-sdk  # Google Cloud CLI tools
     pkgs.openjdk         # Java Development Kit (for Firebase Emulators)
-
+    pkgs.sudo
     # Suggested utility for improved developer experience
     pkgs.ripgrep         # A fast, recursive search tool
   ];

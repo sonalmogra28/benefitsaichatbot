@@ -26,6 +26,6 @@ This file tracks the step-by-step implementation of the new authentication syste
 ## Phase 5: Security and Finalization
 
 - [x] **Task 5.1:** **REWRITE** `middleware.ts` to protect all necessary routes by verifying the session cookie.
-- [ ] **Task 5.2:** **COMMIT** all changes to a new branch named `fix/authentication-overhaul`.
+- [x] **Task 5.2:** **COMMIT** all changes to a new branch named `fix/authentication-overhaul`.
 - [ ] **Task 5.3:** **RUN BUILD & TEST** locally to prove the system is stable.
 - [ ] **Task 5.4:** Await your final approval to merge.
