@@ -15,8 +15,9 @@ export async function POST(request: NextRequest) {
     if (decodedToken.super_admin !== true) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-    
-    const { fileName, fileType, downloadURL, storagePath } = await request.json();
+
+    const { fileName, fileType, downloadURL, storagePath } =
+      await request.json();
 
     const docRef = await adminDb.collection('documents').add({
       userId: decodedToken.uid,
@@ -30,9 +31,15 @@ export async function POST(request: NextRequest) {
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    return NextResponse.json({ id: docRef.id, message: 'Document created successfully' });
+    return NextResponse.json({
+      id: docRef.id,
+      message: 'Document created successfully',
+    });
   } catch (error) {
     console.error('Error creating document in Firestore:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 },
+    );
   }
 }

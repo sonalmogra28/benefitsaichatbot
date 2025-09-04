@@ -12,16 +12,18 @@ interface ChatPageProps {
 export async function generateMetadata({ params }: ChatPageProps) {
   return {
     title: 'Benefits Chat',
-    description: 'Chat with your AI benefits assistant'
+    description: 'Chat with your AI benefits assistant',
   };
 }
 
 export default async function ChatPage({ params }: ChatPageProps) {
   // Get the current user session
-  const session = await adminAuth.verifyIdToken(
-    // TODO: Get token from cookies/headers
-    ''
-  ).catch(() => null);
+  const session = await adminAuth
+    .verifyIdToken(
+      // TODO: Get token from cookies/headers
+      '',
+    )
+    .catch(() => null);
 
   if (!session) {
     notFound();
@@ -29,13 +31,13 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   // Verify the user has access to this conversation
   const conversation = await getConversation(params.id, session.uid);
-  
+
   if (!conversation) {
     notFound();
   }
 
   return (
-    <Chat 
+    <Chat
       id={params.id}
       initialMessages={conversation.messages || []}
       initialChatModel="gemini-2.0-flash-exp"

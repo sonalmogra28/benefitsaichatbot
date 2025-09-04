@@ -2,12 +2,12 @@
 
 A multi-tenant, AI-powered benefits management platform that transforms employee benefits decisions through conversational AI, visual analytics, and intelligent automation.
 
-## 🚀 Current Status
+## 🚀 Project Overview
 
-**Version**: MVP (Single-tenant)  
-**Stack**: Next.js 15, TypeScript, Drizzle ORM, Neon PostgreSQL, Vercel AI SDK  
-**Deployment**: Vercel (Production)  
-**AI Model**: xAI Grok-2 (with OpenAI GPT-4 fallback ready)
+- **Version**: 3.1.0
+- **Deployment**: Firebase/Google Cloud
+- **AI Model**: Vertex AI (with OpenAI and Claude fallbacks)
+- **Migration Status**: PostgreSQL ➜ Firebase
 
 ### ✅ Completed Features
 - Basic conversational AI with benefits personality
@@ -55,16 +55,16 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
          └───────────────────────┴─────────────────────────┘
                                  │
                     ┌────────────▼────────────┐
-                    │    Vercel Edge/CDN      │
-                    │  (Auth, Rate Limiting)  │
+                    │    Firebase Hosting     │
+                    │   (Auth, CDN, SSL)      │
                     └────────────┬────────────┘
                                  │
          ┌───────────────────────┴───────────────────────┐
          │                                               │
-    ┌────▼─────┐  ┌──────────────┐  ┌─────────────┐  ┌─▼──────────┐
-    │   Chat   │  │   Benefits   │  │  Analytics  │  │   Admin    │
-    │  Service │  │   Service    │  │   Service   │  │  Service   │
-    └────┬─────┘  └──────┬───────┘  └──────┬──────┘  └─────┬──────┘
+    ┌────▼──────┐  ┌──────────────┐  ┌─────────────┐  ┌─▼──────────┐
+    │   Chat    │  │   Benefits   │  │  Analytics  │  │   Admin    │
+    │ Function  │  │   Function   │  │  Function   │  │  Function  │
+    └────┬──────┘  └──────┬───────┘  └──────┬──────┘  └─────┬──────┘
          │               │                   │                │
          └───────────────┴───────────────────┴────────────────┘
                                  │
@@ -74,12 +74,13 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
                     └────────────┬────────────┘
                                  │
          ┌───────────────────────┴───────────────────────┐
+
          │                       │                       │
     ┌────▼─────┐         ┌──────▼───────┐      ┌───────▼──────┐
     │Firestore │         │ Vertex AI VS  │      │ Memorystore │
     │ Database │         │ (Vector DB)   │      │   (Cache)   │
     └──────────┘         └──────────────┘      └──────────────┘
-```
+
 
 ## 🚦 Quick Start
 
@@ -87,6 +88,7 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
 - Node.js >= 20.0.0
 - pnpm >= 8.0.0
 - Firebase CLI
+
 
 ### Environment Setup
 ```bash
@@ -105,11 +107,9 @@ cp .env.example .env.local
 FIREBASE_PROJECT_ID=       # Firebase project identifier
 FIREBASE_CLIENT_EMAIL=     # Service account client email
 FIREBASE_PRIVATE_KEY=      # Base64-encoded private key
-POSTGRES_URL=              # Neon PostgreSQL URL
-POSTGRES_URL_NON_POOLING=  # Neon direct connection
 AUTH_SECRET=               # NextAuth secret (generate with: openssl rand -base64 32)
 OPENAI_API_KEY=            # For GPT-4 fallback
-XAI_API_KEY=               # For Grok-2 (primary)
+ANTHROPIC_API_KEY=         # For Claude fallback
 ```
 
 #### Google Cloud Setup
@@ -156,9 +156,6 @@ pnpm db:generate
 # Run migrations
 pnpm db:migrate
 
-# Open Drizzle Studio
-pnpm db:studio
-
 # Push schema changes (dev only)
 pnpm db:push
 ```
@@ -193,22 +190,22 @@ pnpm test:e2e           # Run E2E tests with Playwright
 
 ## 🚀 Deployment
 
-### Vercel Deployment (Production)
+### Firebase Deployment
 ```bash
 # Deploy to production
-vercel --prod
+firebase deploy
 
-# Deploy to preview
-vercel
+# Deploy to a specific project
+firebase deploy --project <project-id>
 
-# Check deployment status
-vercel ls
+# Emulate locally
+firebase emulators:start
 ```
 
 ### Environment Configuration
-- **Development**: Local PostgreSQL, development API keys
-- **Staging**: Neon PostgreSQL (staging), test API keys
-- **Production**: Neon PostgreSQL (production), production API keys
+- **Development**: Firebase emulators, development API keys
+- **Staging**: Firebase project (staging), test API keys
+- **Production**: Firebase project (production), production API keys
 
 ## 📁 Project Structure
 
@@ -228,7 +225,7 @@ benefits-chatbot/
 │   │   ├── prompts/       # System prompts
 │   │   └── context/       # Context management
 │   ├── db/                # Database layer
-│   │   ├── schema/        # Drizzle schemas
+│   │   ├── schema/        # Database schemas
 │   │   ├── repositories/  # Data access layer
 │   │   └── migrations/    # SQL migrations
 │   └── utils/             # Utility functions
@@ -248,7 +245,7 @@ benefits-chatbot/
 
 ### Data Protection
 - End-to-end encryption (TLS 1.3)
-- Row-level security in PostgreSQL
+- Granular access control via Firestore security rules
 - Encrypted environment variables
 - No PII/PHI storage in logs
 
@@ -287,7 +284,7 @@ When using AI coding assistants:
 ## 📊 Monitoring & Analytics
 
 ### Production Monitoring
-- **Vercel Analytics**: Page views, Web Vitals
+- **Firebase Analytics**: Page views, Web Vitals
 - **Error Tracking**: Sentry (to be configured)
 - **AI Metrics**: Token usage, response times
 - **Business Metrics**: Custom analytics dashboard

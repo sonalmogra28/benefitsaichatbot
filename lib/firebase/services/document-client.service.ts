@@ -14,8 +14,8 @@ export class DocumentClientService {
     }
     const token = await user.getIdToken();
     return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     };
   }
 
@@ -27,7 +27,7 @@ export class DocumentClientService {
       const headers = await this.getAuthHeader();
       const response = await fetch('/api/documents', {
         method: 'GET',
-        headers
+        headers,
       });
 
       if (!response.ok) {
@@ -51,7 +51,7 @@ export class DocumentClientService {
       const response = await fetch('/api/documents', {
         method: 'POST',
         headers,
-        body: JSON.stringify(documentData)
+        body: JSON.stringify(documentData),
       });
 
       if (!response.ok) {

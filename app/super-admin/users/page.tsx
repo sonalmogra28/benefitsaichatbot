@@ -24,7 +24,11 @@ function SuperAdminUsersPage() {
     fetchUsers();
   }, [fetchUsers]);
 
-  const handleRoleChange = async (uid: string, role: string, companyId: string) => {
+  const handleRoleChange = async (
+    uid: string,
+    role: string,
+    companyId: string,
+  ) => {
     if (user) {
       const idToken = await user.getIdToken();
       await fetch(`/api/admin/users/${uid}/assign-role`, {

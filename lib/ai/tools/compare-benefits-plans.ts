@@ -54,7 +54,7 @@ export const compareBenefitsPlans = tool({
 
       // Get the specified benefit plans for comparison
       const allPlans = await benefitService.getBenefitPlans(user.companyId);
-      const plans = allPlans.filter(p => planIds.includes(p.id));
+      const plans = allPlans.filter((p) => planIds.includes(p.id));
 
       if (plans.length === 0) {
         return {
@@ -68,8 +68,14 @@ export const compareBenefitsPlans = tool({
       const plansWithAnalysis = plans.map((plan) => {
         const monthlyCost = plan.monthlyPremium || 0;
         const annualCost = monthlyCost * 12;
-        const deductible = coverageType === 'family' ? plan.deductibleFamily || 0 : plan.deductibleIndividual || 0;
-        const outOfPocketMax = coverageType === 'family' ? plan.outOfPocketMaxFamily || 0 : plan.outOfPocketMaxIndividual || 0;
+        const deductible =
+          coverageType === 'family'
+            ? plan.deductibleFamily || 0
+            : plan.deductibleIndividual || 0;
+        const outOfPocketMax =
+          coverageType === 'family'
+            ? plan.outOfPocketMaxFamily || 0
+            : plan.outOfPocketMaxIndividual || 0;
 
         return {
           id: plan.id,
@@ -104,10 +110,8 @@ export const compareBenefitsPlans = tool({
             ...plansWithAnalysis.map((p) => p.costs.monthlyCost),
           ),
           averageDeductible:
-            plansWithAnalysis.reduce(
-              (sum, p) => sum + p.costs.deductible,
-              0,
-            ) / plansWithAnalysis.length,
+            plansWithAnalysis.reduce((sum, p) => sum + p.costs.deductible, 0) /
+            plansWithAnalysis.length,
           lowestDeductible: Math.min(
             ...plansWithAnalysis.map((p) => p.costs.deductible),
           ),

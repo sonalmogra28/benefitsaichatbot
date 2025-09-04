@@ -2,11 +2,16 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { BenefitPlansRepository } from '../../../lib/db/repositories/benefit-plans.repository';
-import { companies, users, benefitPlans, benefitEnrollments } from '../../../lib/db/schema';
+import {
+  companies,
+  users,
+  benefitPlans,
+  benefitEnrollments,
+} from '../../../lib/db/schema';
 
 /**
  * Integration tests for BenefitPlansRepository
- * 
+ *
  * These tests validate the repository layer with real database operations
  * and ensure proper tenant isolation.
  */
@@ -21,7 +26,8 @@ describe('BenefitPlansRepository', () => {
 
   beforeAll(async () => {
     // Use test database connection
-    const connectionString = process.env.POSTGRES_URL_NO_SSL || process.env.POSTGRES_URL;
+    const connectionString =
+      process.env.POSTGRES_URL_NO_SSL || process.env.POSTGRES_URL;
     if (!connectionString) {
       throw new Error('Test database connection string not found');
     }
@@ -38,26 +44,32 @@ describe('BenefitPlansRepository', () => {
   beforeEach(async () => {
     // Create test company and user for each test
     testStackOrgId = `test-org-${Date.now()}`;
-    
-    const [company] = await db.insert(companies).values({
-      stackOrgId: testStackOrgId,
-      name: 'Test Company',
-      settings: {},
-      subscriptionTier: 'basic',
-      isActive: true,
-    }).returning();
-    
+
+    const [company] = await db
+      .insert(companies)
+      .values({
+        stackOrgId: testStackOrgId,
+        name: 'Test Company',
+        settings: {},
+        subscriptionTier: 'basic',
+        isActive: true,
+      })
+      .returning();
+
     testCompanyId = company.id;
 
-    const [user] = await db.insert(users).values({
-      stackUserId: `test-user-${Date.now()}`,
-      companyId: testCompanyId,
-      email: 'test@example.com',
-      firstName: 'Test',
-      lastName: 'User',
-      role: 'employee',
-      isActive: true,
-    }).returning();
+    const [user] = await db
+      .insert(users)
+      .values({
+        stackUserId: `test-user-${Date.now()}`,
+        companyId: testCompanyId,
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'employee',
+        isActive: true,
+      })
+      .returning();
 
     testUserId = user.id;
   });
@@ -97,25 +109,34 @@ describe('BenefitPlansRepository', () => {
           monthlyPremiumEmployee: '400.00',
           effectiveDate: new Date('2024-01-01'),
           isActive: false, // This should not be returned
-        }
+        },
       ]);
 
-      const plans = await repository.findByCompany(testStackOrgId, testCompanyId);
+      const plans = await repository.findByCompany(
+        testStackOrgId,
+        testCompanyId,
+      );
 
       expect(plans).toHaveLength(2);
-      expect(plans.every(plan => plan.isActive)).toBe(true);
-      expect(plans.map(p => p.name)).toEqual(['Test Dental Plan', 'Test Health Plan']);
+      expect(plans.every((plan) => plan.isActive)).toBe(true);
+      expect(plans.map((p) => p.name)).toEqual([
+        'Test Dental Plan',
+        'Test Health Plan',
+      ]);
     });
 
     it('should enforce tenant isolation', async () => {
       // Create another company
-      const [otherCompany] = await db.insert(companies).values({
-        stackOrgId: 'other-org',
-        name: 'Other Company',
-        settings: {},
-        subscriptionTier: 'basic',
-        isActive: true,
-      }).returning();
+      const [otherCompany] = await db
+        .insert(companies)
+        .values({
+          stackOrgId: 'other-org',
+          name: 'Other Company',
+          settings: {},
+          subscriptionTier: 'basic',
+          isActive: true,
+        })
+        .returning();
 
       // Create plan for other company
       await db.insert(benefitPlans).values({
@@ -130,7 +151,10 @@ describe('BenefitPlansRepository', () => {
       });
 
       // Should not return plans from other company
-      const plans = await repository.findByCompany(testStackOrgId, testCompanyId);
+      const plans = await repository.findByCompany(
+        testStackOrgId,
+        testCompanyId,
+      );
       expect(plans).toHaveLength(0);
     });
   });
@@ -167,13 +191,17 @@ describe('BenefitPlansRepository', () => {
           monthlyPremiumEmployee: '75.00',
           effectiveDate: new Date('2024-01-01'),
           isActive: true,
-        }
+        },
       ]);
 
-      const healthPlans = await repository.findByType(testStackOrgId, testCompanyId, 'health');
-      
+      const healthPlans = await repository.findByType(
+        testStackOrgId,
+        testCompanyId,
+        'health',
+      );
+
       expect(healthPlans).toHaveLength(2);
-      expect(healthPlans.every(plan => plan.type === 'health')).toBe(true);
+      expect(healthPlans.every((plan) => plan.type === 'health')).toBe(true);
       // Should be ordered by premium (ascending)
       expect(healthPlans[0].name).toBe('Health Plan 2'); // $400
       expect(healthPlans[1].name).toBe('Health Plan 1'); // $500
@@ -183,27 +211,33 @@ describe('BenefitPlansRepository', () => {
   describe('calculateUserBenefitsCosts', () => {
     it('should calculate total costs for user enrollments', async () => {
       // Create benefit plans
-      const [healthPlan] = await db.insert(benefitPlans).values({
-        companyId: testCompanyId,
-        name: 'Health Plan',
-        type: 'health',
-        category: 'PPO',
-        provider: 'Health Provider',
-        monthlyPremiumEmployee: '500.00',
-        effectiveDate: new Date('2024-01-01'),
-        isActive: true,
-      }).returning();
+      const [healthPlan] = await db
+        .insert(benefitPlans)
+        .values({
+          companyId: testCompanyId,
+          name: 'Health Plan',
+          type: 'health',
+          category: 'PPO',
+          provider: 'Health Provider',
+          monthlyPremiumEmployee: '500.00',
+          effectiveDate: new Date('2024-01-01'),
+          isActive: true,
+        })
+        .returning();
 
-      const [dentalPlan] = await db.insert(benefitPlans).values({
-        companyId: testCompanyId,
-        name: 'Dental Plan',
-        type: 'dental',
-        category: 'PPO',
-        provider: 'Dental Provider',
-        monthlyPremiumEmployee: '75.00',
-        effectiveDate: new Date('2024-01-01'),
-        isActive: true,
-      }).returning();
+      const [dentalPlan] = await db
+        .insert(benefitPlans)
+        .values({
+          companyId: testCompanyId,
+          name: 'Dental Plan',
+          type: 'dental',
+          category: 'PPO',
+          provider: 'Dental Provider',
+          monthlyPremiumEmployee: '75.00',
+          effectiveDate: new Date('2024-01-01'),
+          isActive: true,
+        })
+        .returning();
 
       // Create enrollments
       await db.insert(benefitEnrollments).values([
@@ -228,10 +262,13 @@ describe('BenefitPlansRepository', () => {
           employeeContribution: '25.00',
           employerContribution: '50.00',
           status: 'active',
-        }
+        },
       ]);
 
-      const costs = await repository.calculateUserBenefitsCosts(testStackOrgId, testUserId);
+      const costs = await repository.calculateUserBenefitsCosts(
+        testStackOrgId,
+        testUserId,
+      );
 
       expect(costs.totalMonthlyCost).toBe(575);
       expect(costs.totalEmployeeContribution).toBe(175);
@@ -258,7 +295,7 @@ describe('BenefitPlansRepository', () => {
         testStackOrgId,
         testCompanyId,
         'health',
-        4 // family size
+        4, // family size
       );
 
       expect(comparisonData).toHaveLength(1);
@@ -282,7 +319,7 @@ describe('BenefitPlansRepository', () => {
         testStackOrgId,
         testCompanyId,
         'health',
-        1 // individual
+        1, // individual
       );
 
       expect(comparisonData).toHaveLength(1);

@@ -2,7 +2,14 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from './ui/button';
 
@@ -21,27 +28,74 @@ export function PlanComparison() {
   const [allPlans, setAllPlans] = useState<Plan[]>([]);
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([]);
   const [comparison, setComparison] = useState<Plan[]>([]);
-  
+
   useEffect(() => {
     // In a real application, you would fetch these plans from an API
     const mockPlans: Plan[] = [
-      { id: '1', name: 'Gold PPO', premium: 500, deductible: 1000, outOfPocketMax: 5000, type: 'health', category: 'PPO', provider: 'Blue Cross' },
-      { id: '2', name: 'Silver HMO', premium: 350, deductible: 2500, outOfPocketMax: 7000, type: 'health', category: 'HMO', provider: 'Kaiser' },
-      { id: '3', name: 'Bronze HDHP', premium: 250, deductible: 5000, outOfPocketMax: 8000, type: 'health', category: 'HDHP', provider: 'Aetna' },
-      { id: '4', name: 'Vision Basic', premium: 20, deductible: 50, outOfPocketMax: 200, type: 'vision', category: 'PPO', provider: 'VSP' },
-      { id: '5', name: 'Dental Premier', premium: 45, deductible: 100, outOfPocketMax: 1500, type: 'dental', category: 'PPO', provider: 'Delta Dental' },
+      {
+        id: '1',
+        name: 'Gold PPO',
+        premium: 500,
+        deductible: 1000,
+        outOfPocketMax: 5000,
+        type: 'health',
+        category: 'PPO',
+        provider: 'Blue Cross',
+      },
+      {
+        id: '2',
+        name: 'Silver HMO',
+        premium: 350,
+        deductible: 2500,
+        outOfPocketMax: 7000,
+        type: 'health',
+        category: 'HMO',
+        provider: 'Kaiser',
+      },
+      {
+        id: '3',
+        name: 'Bronze HDHP',
+        premium: 250,
+        deductible: 5000,
+        outOfPocketMax: 8000,
+        type: 'health',
+        category: 'HDHP',
+        provider: 'Aetna',
+      },
+      {
+        id: '4',
+        name: 'Vision Basic',
+        premium: 20,
+        deductible: 50,
+        outOfPocketMax: 200,
+        type: 'vision',
+        category: 'PPO',
+        provider: 'VSP',
+      },
+      {
+        id: '5',
+        name: 'Dental Premier',
+        premium: 45,
+        deductible: 100,
+        outOfPocketMax: 1500,
+        type: 'dental',
+        category: 'PPO',
+        provider: 'Delta Dental',
+      },
     ];
     setAllPlans(mockPlans);
   }, []);
 
   const handleSelectPlan = (planId: string) => {
     setSelectedPlanIds((prev) =>
-      prev.includes(planId) ? prev.filter((id) => id !== planId) : [...prev, planId]
+      prev.includes(planId)
+        ? prev.filter((id) => id !== planId)
+        : [...prev, planId],
     );
   };
 
   const comparePlans = () => {
-    setComparison(allPlans.filter(plan => selectedPlanIds.includes(plan.id)));
+    setComparison(allPlans.filter((plan) => selectedPlanIds.includes(plan.id)));
   };
 
   return (
@@ -67,7 +121,9 @@ export function PlanComparison() {
               </div>
             ))}
           </div>
-          <Button onClick={comparePlans} disabled={selectedPlanIds.length < 2}>Compare Selected</Button>
+          <Button onClick={comparePlans} disabled={selectedPlanIds.length < 2}>
+            Compare Selected
+          </Button>
         </CardContent>
       </Card>
       {comparison.length > 0 && (
@@ -80,33 +136,51 @@ export function PlanComparison() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Feature</TableHead>
-                  {comparison.map(plan => <TableHead key={plan.id}>{plan.name}</TableHead>)}
+                  {comparison.map((plan) => (
+                    <TableHead key={plan.id}>{plan.name}</TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 <TableRow>
                   <TableCell>Premium</TableCell>
-                  {comparison.map(plan => <TableCell key={plan.id}>${plan.premium}/mo</TableCell>)}
+                  {comparison.map((plan) => (
+                    <TableCell key={plan.id}>${plan.premium}/mo</TableCell>
+                  ))}
                 </TableRow>
                 <TableRow>
                   <TableCell>Deductible</TableCell>
-                  {comparison.map(plan => <TableCell key={plan.id}>${plan.deductible}</TableCell>)}
+                  {comparison.map((plan) => (
+                    <TableCell key={plan.id}>${plan.deductible}</TableCell>
+                  ))}
                 </TableRow>
                 <TableRow>
                   <TableCell>Out-of-Pocket Max</TableCell>
-                  {comparison.map(plan => <TableCell key={plan.id}>${plan.outOfPocketMax}</TableCell>)}
+                  {comparison.map((plan) => (
+                    <TableCell key={plan.id}>${plan.outOfPocketMax}</TableCell>
+                  ))}
                 </TableRow>
-                 <TableRow>
+                <TableRow>
                   <TableCell>Type</TableCell>
-                  {comparison.map(plan => <TableCell key={plan.id}><Badge>{plan.type}</Badge></TableCell>)}
+                  {comparison.map((plan) => (
+                    <TableCell key={plan.id}>
+                      <Badge>{plan.type}</Badge>
+                    </TableCell>
+                  ))}
                 </TableRow>
-                 <TableRow>
+                <TableRow>
                   <TableCell>Category</TableCell>
-                  {comparison.map(plan => <TableCell key={plan.id}><Badge variant="secondary">{plan.category}</Badge></TableCell>)}
+                  {comparison.map((plan) => (
+                    <TableCell key={plan.id}>
+                      <Badge variant="secondary">{plan.category}</Badge>
+                    </TableCell>
+                  ))}
                 </TableRow>
-                 <TableRow>
+                <TableRow>
                   <TableCell>Provider</TableCell>
-                  {comparison.map(plan => <TableCell key={plan.id}>{plan.provider}</TableCell>)}
+                  {comparison.map((plan) => (
+                    <TableCell key={plan.id}>{plan.provider}</TableCell>
+                  ))}
                 </TableRow>
               </TableBody>
             </Table>

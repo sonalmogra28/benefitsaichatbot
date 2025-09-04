@@ -14,7 +14,7 @@ export function MfaVerification({ resolver }: { resolver: any }) {
     try {
       const cred = PhoneAuthProvider.credential(
         resolver.hints[0].verificationId,
-        verificationCode
+        verificationCode,
       );
       const userCredential = await resolver.resolveSignIn(cred);
       // The user is now signed in.

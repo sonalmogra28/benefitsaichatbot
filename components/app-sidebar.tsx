@@ -62,18 +62,18 @@ export function AppSidebar() {
         <SidebarHistory />
         <WithRole allowedRoles="super-admin">
           <div className="px-4">
-             <Link href="/super-admin">Super Admin</Link>
+            <Link href="/super-admin">Super Admin</Link>
           </div>
         </WithRole>
       </SidebarContent>
       <SidebarFooter>
         <div className="flex flex-col gap-2 p-2">
-            <Button asChild variant="ghost" className="w-full justify-start">
-                <Link href="/profile">
-                    <UserIcon className="mr-2 size-4" />
-                    Profile
-                </Link>
-            </Button>
+          <Button asChild variant="ghost" className="w-full justify-start">
+            <Link href="/profile">
+              <UserIcon className="mr-2 size-4" />
+              Profile
+            </Link>
+          </Button>
         </div>
         <SidebarUserNav />
       </SidebarFooter>
