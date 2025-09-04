@@ -42,10 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user) {
         setUser(user);
         const idToken = await user.getIdToken();
+        const refreshToken = (user as any).refreshToken as string;
         await fetch('/api/auth/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken }),
+          body: JSON.stringify({ idToken, refreshToken }),
         });
       } else {
         setUser(null);
@@ -56,6 +57,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(async () => {
+      await fetch('/api/auth/refresh', { method: 'POST' });
+    }, 10 * 60 * 1000); // Refresh every 10 minutes
+    return () => clearInterval(interval);
+  }, [user]);
   
   const signInWithGoogle = async () => {
     setIsSigningIn(true);
