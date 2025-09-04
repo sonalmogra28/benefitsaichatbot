@@ -100,8 +100,12 @@ pnpm install
 
 # Copy environment variables
 cp .env.example .env.local
+# Never commit real `.env` files or secrets to version control.
 
 # Required environment variables:
+FIREBASE_PROJECT_ID=       # Firebase project identifier
+FIREBASE_CLIENT_EMAIL=     # Service account client email
+FIREBASE_PRIVATE_KEY=      # Base64-encoded private key
 POSTGRES_URL=              # Neon PostgreSQL URL
 POSTGRES_URL_NON_POOLING=  # Neon direct connection
 AUTH_SECRET=               # NextAuth secret (generate with: openssl rand -base64 32)
@@ -270,6 +274,9 @@ benefits-chatbot/
 - No `any` without TODO
 - 80%+ test coverage
 - All PRs must pass CI
+
+### CI Test Process
+Our GitHub Actions pipeline runs `npm test` with coverage on every push and pull request. The build fails if any test fails or if coverage falls below the configured thresholds (lines: 80%, statements: 80%, functions: 80%, branches: 15%). Run `npm test` locally before pushing to verify your changes.
 
 ### Using with Windsurf/Cascade
 When using AI coding assistants:
