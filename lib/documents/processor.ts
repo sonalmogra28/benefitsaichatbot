@@ -1,5 +1,8 @@
 import { extractText } from 'unpdf';
 import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
+import { upsertDocumentChunks } from '@/lib/ai/vector-search';
+import { generateEmbeddings } from '@/lib/ai/embeddings';
+
 
 /**
  * Process a document: extract text, chunk it, generate embeddings, and store in Vertex AI Vector Search
@@ -57,9 +60,11 @@ export async function processDocument(documentId: string) {
       overlapSize: 200,
     });
 
+    const embeddings = await generateEmbeddings(chunks);
     const documentChunks = chunks.map((chunk, i) => ({
       id: `${documentId}-chunk-${i}`,
       text: chunk,
+      embedding: embeddings[i],
       metadata: {
         documentId,
         companyId: document.companyId,
@@ -71,8 +76,16 @@ export async function processDocument(documentId: string) {
     }));
 
     // Store in Vertex AI
-    const { status: upsertStatus, vectorsUpserted } =
-      await upsertDocumentChunks(document.companyId, documentChunks);
+
+    const { status: upsertStatus, vectorsUpserted } = await upsertDocumentChunks(
+      document.companyId,
+      documentChunks,
+    );
+
+    console.log(
+      `Generated and stored ${vectorsUpserted} embedding vectors for document ${documentId}`,
+    );
+
 
     // Update document status to processed
     await adminDb.collection('documents').doc(documentId).update({

@@ -55,7 +55,6 @@ export async function GET(req: NextRequest) {
   const firestoreCheck = await checkFirestore();
   checks.push(firestoreCheck);
 
-  // Redis check removed - using in-memory rate limiting
 
   // Check AI services
   const aiCheck = await checkAIServices();

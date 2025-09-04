@@ -84,6 +84,7 @@ async function testDocumentProcessing() {
     // Test 4: Process the document and upsert to Vertex AI
     console.log('4️⃣ Testing Document Processing and Upserting to Vertex AI...');
     const documentChunks = chunks.slice(0, 3).map((chunk, i) => ({
+
       id: `${testDocument.id}-chunk-${i}`,
       text: chunk,
       metadata: {
@@ -94,6 +95,11 @@ async function testDocumentProcessing() {
         category: testDocument.category || undefined,
         tags: (testDocument.tags as string[]) || [],
       },
+    }));
+    const embeddings = await generateEmbeddings(baseChunks.map((c) => c.text));
+    const documentChunks = baseChunks.map((chunk, i) => ({
+      ...chunk,
+      embedding: embeddings[i],
     }));
 
     const { status, vectorsUpserted } = await upsertDocumentChunks(
