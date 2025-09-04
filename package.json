@@ -11,6 +11,7 @@
     "lint:fix": "pnpm biome check --apply .",
     "format": "pnpm biome format --write .",
     "test": "vitest run --coverage",
+    "validate-env": "pnpm tsx scripts/validate-env.ts",
     "test:document-upload": "pnpm tsx scripts/test-document-upload.ts",
     "typecheck": "tsc --noEmit",
     "pre-deploy": "pnpm lint && pnpm typecheck && pnpm test",
@@ -125,6 +126,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@firebase/rules-unit-testing": "^5.0.0",
     "@playwright/test": "^1.50.1",
     "@tailwindcss/typography": "^0.5.15",
     "@testing-library/jest-dom": "^6.4.8",

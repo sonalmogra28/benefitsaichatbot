@@ -15,7 +15,7 @@ export class OnboardingService {
    */
   async completeOnboarding(
     userId: string,
-    data: OnboardingData
+    data: OnboardingData,
   ): Promise<void> {
     try {
       // Update user metadata with onboarding selections
@@ -32,7 +32,6 @@ export class OnboardingService {
       if (user) {
         await this.sendWelcomeEmail(user.email || '', user.displayName || '');
       }
-
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
       throw error;
@@ -70,7 +69,6 @@ export class OnboardingService {
       }
 
       return { completed: false };
-
     } catch (error) {
       console.error('Failed to get onboarding status:', error);
       throw error;
@@ -83,7 +81,7 @@ export class OnboardingService {
   async updateOnboardingProgress(
     userId: string,
     step: string,
-    data: any
+    data: any,
   ): Promise<void> {
     try {
       const user = await userService.getUserFromFirestore(userId);
@@ -103,7 +101,6 @@ export class OnboardingService {
         onboardingProgress: onboardingProgress as any,
         lastOnboardingStep: step,
       });
-
     } catch (error) {
       console.error('Failed to update onboarding progress:', error);
       throw error;
@@ -156,7 +153,6 @@ export class OnboardingService {
       metadata.benefitsInterests = undefined;
 
       await userService.updateUserMetadata(userId, metadata);
-
     } catch (error) {
       console.error('Failed to reset onboarding:', error);
       throw error;

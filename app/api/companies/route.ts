@@ -12,12 +12,15 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    
+
     try {
       const decodedToken = await adminAuth.verifyIdToken(token);
-      
+
       // Check if user has super admin or platform admin role
-      if (decodedToken.role !== USER_ROLES.SUPER_ADMIN && decodedToken.role !== USER_ROLES.PLATFORM_ADMIN) {
+      if (
+        decodedToken.role !== USER_ROLES.SUPER_ADMIN &&
+        decodedToken.role !== USER_ROLES.PLATFORM_ADMIN
+      ) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     } catch (error) {
@@ -39,7 +42,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (startAfter) {
-      const startDoc = await adminDb.collection('companies').doc(startAfter).get();
+      const startDoc = await adminDb
+        .collection('companies')
+        .doc(startAfter)
+        .get();
       if (startDoc.exists) {
         query = query.startAfter(startDoc);
       }
@@ -49,8 +55,8 @@ export async function GET(request: NextRequest) {
 
     // Execute query
     const snapshot = await query.get();
-    
-    const companies = snapshot.docs.map(doc => ({
+
+    const companies = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt?.toDate?.() || null,
@@ -66,7 +72,7 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching companies:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -80,12 +86,15 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    
+
     try {
       const decodedToken = await adminAuth.verifyIdToken(token);
-      
+
       // Check if user has super admin role
-      if (decodedToken.role !== USER_ROLES.SUPER_ADMIN && decodedToken.role !== USER_ROLES.PLATFORM_ADMIN) {
+      if (
+        decodedToken.role !== USER_ROLES.SUPER_ADMIN &&
+        decodedToken.role !== USER_ROLES.PLATFORM_ADMIN
+      ) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     } catch (error) {
@@ -101,7 +110,7 @@ export async function POST(request: NextRequest) {
     if (!name || !adminEmail) {
       return NextResponse.json(
         { error: 'Name and admin email are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -112,11 +121,11 @@ export async function POST(request: NextRequest) {
         .where('domain', '==', domain)
         .limit(1)
         .get();
-      
+
       if (!existingCompany.empty) {
         return NextResponse.json(
           { error: 'A company with this domain already exists' },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -155,18 +164,18 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { 
+      {
         ...companyData,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error('Error creating company:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

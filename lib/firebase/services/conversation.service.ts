@@ -35,11 +35,11 @@ export class ConversationService {
    * Create a new conversation
    */
   async createConversation(
-    conversationData: z.infer<typeof conversationSchema>
+    conversationData: z.infer<typeof conversationSchema>,
   ): Promise<string> {
     try {
       const validated = conversationSchema.parse(conversationData);
-      
+
       const conversationRef = adminDb.collection('conversations').doc();
       const conversationId = conversationRef.id;
 
@@ -47,7 +47,7 @@ export class ConversationService {
         id: conversationId,
         ...validated,
         createdAt: AdminFieldValue.serverTimestamp(),
-        updatedAt: AdminFieldValue.serverTimestamp()
+        updatedAt: AdminFieldValue.serverTimestamp(),
       });
 
       return conversationId;
@@ -66,8 +66,11 @@ export class ConversationService {
    */
   async getConversation(conversationId: string): Promise<Conversation | null> {
     try {
-      const conversationDoc = await adminDb.collection('conversations').doc(conversationId).get();
-      
+      const conversationDoc = await adminDb
+        .collection('conversations')
+        .doc(conversationId)
+        .get();
+
       if (!conversationDoc.exists) {
         return null;
       }
@@ -84,12 +87,16 @@ export class ConversationService {
    */
   async addMessage(
     conversationId: string,
-    messageData: z.infer<typeof messageSchema>
+    messageData: z.infer<typeof messageSchema>,
   ): Promise<string> {
     try {
       const validated = messageSchema.parse(messageData);
-      
-      const messageRef = adminDb.collection('conversations').doc(conversationId).collection('messages').doc();
+
+      const messageRef = adminDb
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc();
       const messageId = messageRef.id;
 
       await messageRef.set({
@@ -118,10 +125,18 @@ export class ConversationService {
    */
   async getMessages(conversationId: string): Promise<Message[]> {
     try {
-      const snapshot = await adminDb.collection('conversations').doc(conversationId).collection('messages').orderBy('createdAt', 'asc').get();
-      return snapshot.docs.map(doc => doc.data() as Message);
+      const snapshot = await adminDb
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .orderBy('createdAt', 'asc')
+        .get();
+      return snapshot.docs.map((doc) => doc.data() as Message);
     } catch (error) {
-      console.error(`Failed to get messages for conversation ${conversationId}:`, error);
+      console.error(
+        `Failed to get messages for conversation ${conversationId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -131,19 +146,23 @@ export class ConversationService {
 export const conversationService = new ConversationService();
 
 // Helper function for backward compatibility
-export async function getConversation(conversationId: string, userId: string): Promise<any> {
+export async function getConversation(
+  conversationId: string,
+  userId: string,
+): Promise<any> {
   try {
-    const conversation = await conversationService.getConversation(conversationId);
-    
+    const conversation =
+      await conversationService.getConversation(conversationId);
+
     // Verify user has access to this conversation
     if (conversation && conversation.userId === userId) {
       const messages = await conversationService.getMessages(conversationId);
       return {
         ...conversation,
-        messages
+        messages,
       };
     }
-    
+
     return null;
   } catch (error) {
     console.error('Failed to get conversation:', error);

@@ -32,29 +32,45 @@ export default function AdminLayout({
             <p className="text-sm text-muted-foreground">System Management</p>
           </div>
           <nav className="p-4 space-y-2">
-            <Link href="/admin" className="block px-4 py-2 rounded-lg hover:bg-muted">
+            <Link
+              href="/admin"
+              className="block px-4 py-2 rounded-lg hover:bg-muted"
+            >
               Dashboard
             </Link>
-            <Link href="/admin/documents" className="block px-4 py-2 rounded-lg hover:bg-muted">
+            <Link
+              href="/admin/documents"
+              className="block px-4 py-2 rounded-lg hover:bg-muted"
+            >
               📄 Documents
             </Link>
-            <Link href="/admin/companies" className="block px-4 py-2 rounded-lg hover:bg-muted">
+            <Link
+              href="/admin/companies"
+              className="block px-4 py-2 rounded-lg hover:bg-muted"
+            >
               Companies
             </Link>
-            <Link href="/admin/users" className="block px-4 py-2 rounded-lg hover:bg-muted">
+            <Link
+              href="/admin/users"
+              className="block px-4 py-2 rounded-lg hover:bg-muted"
+            >
               Users
             </Link>
-            <Link href="/admin/analytics" className="block px-4 py-2 rounded-lg hover:bg-muted">
+            <Link
+              href="/admin/analytics"
+              className="block px-4 py-2 rounded-lg hover:bg-muted"
+            >
               Analytics
             </Link>
-            <Link href="/admin/settings" className="block px-4 py-2 rounded-lg hover:bg-muted">
+            <Link
+              href="/admin/settings"
+              className="block px-4 py-2 rounded-lg hover:bg-muted"
+            >
               Settings
             </Link>
           </nav>
         </aside>
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </SidebarProvider>
   );

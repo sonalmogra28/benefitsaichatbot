@@ -1,13 +1,9 @@
-import type {
-  CoreAssistantMessage,
-  CoreToolMessage,
-  UIMessage,
-} from 'ai';
+import type { CoreAssistantMessage, CoreToolMessage, UIMessage } from 'ai';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import type { DBMessage, Document } from '@/lib/db/schema-chat';
 import { ChatSDKError, type ErrorCode } from './errors';
-import type { ChatMessage, } from './types';
+import type { ChatMessage } from './types';
 import { formatISO } from 'date-fns';
 
 export function cn(...inputs: ClassValue[]) {
@@ -103,7 +99,11 @@ export function convertToUIMessages(messages: DBMessage[]): ChatMessage[] {
     role: message.role as 'user' | 'assistant' | 'system',
     content: message.content,
     metadata: {
-      createdAt: formatISO(message.createdAt.toDate ? message.createdAt.toDate() : new Date(message.createdAt as any)),
+      createdAt: formatISO(
+        message.createdAt.toDate
+          ? message.createdAt.toDate()
+          : new Date(message.createdAt as any),
+      ),
     },
   }));
 }

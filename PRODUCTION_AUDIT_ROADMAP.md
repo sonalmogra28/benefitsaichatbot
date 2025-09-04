@@ -37,7 +37,7 @@
 ### AI/ML Stack
 - **Primary**: Google Vertex AI (Gemini 2.0) ✅
 - **Fallback**: OpenAI GPT-4 ⚠️ (not configured)
-- **Vector Search**: Pinecone ⚠️ (to migrate to Vertex AI)
+- **Vector Search**: Vertex AI Vector Search ⚠️ (needs full integration)
 - **Document AI**: Google Document AI ⚠️ (not implemented)
 
 ### Development Tools
@@ -85,8 +85,8 @@
 ```
 ❌ FIREBASE_SERVICE_ACCOUNT (for admin SDK)
 ❌ OPENAI_API_KEY (fallback AI)
-❌ PINECONE_API_KEY (vector search)
-❌ REDIS_URL (rate limiting)
+❌ VERTEX_AI_INDEX (vector search configuration)
+❌ CACHE_URL (Memorystore or Firestore cache)
 ```
 
 ---
@@ -293,10 +293,10 @@
 
 5. **Basic Rate Limiting**
    - *Reason*: In-memory rate limiting acceptable for low traffic
-   - *Mitigation*: Implement Redis/Memorystore when scaling
+   - *Mitigation*: Implement Firebase Memorystore when scaling
 
 ### Future Debt (Post-MVP)
-1. Replace Pinecone with Vertex AI Vector Search
+1. Fully configure Vertex AI Vector Search
 2. Migrate from Resend to Firebase Email Extensions
 3. Implement proper caching strategy
 4. Add internationalization support

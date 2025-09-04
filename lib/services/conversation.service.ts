@@ -23,9 +23,13 @@ export interface Message {
 /**
  * Create a new conversation for a user
  */
-export async function createConversation(userId: string, companyId: string, title?: string): Promise<Chat> {
+export async function createConversation(
+  userId: string,
+  companyId: string,
+  title?: string,
+): Promise<Chat> {
   const chatRef = db.collection('chats').doc();
-  
+
   const newChat = {
     id: chatRef.id,
     userId,
@@ -35,9 +39,9 @@ export async function createConversation(userId: string, companyId: string, titl
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   };
-  
+
   await chatRef.set(newChat);
-  
+
   return {
     ...newChat,
     createdAt: new Date(),
@@ -48,20 +52,23 @@ export async function createConversation(userId: string, companyId: string, titl
 /**
  * Get a conversation by ID
  */
-export async function getConversation(chatId: string, userId: string): Promise<Chat | null> {
+export async function getConversation(
+  chatId: string,
+  userId: string,
+): Promise<Chat | null> {
   const chatDoc = await db.collection('chats').doc(chatId).get();
-  
+
   if (!chatDoc.exists) {
     return null;
   }
-  
+
   const chat = chatDoc.data() as Chat;
-  
+
   // Verify the user owns this chat
   if (chat.userId !== userId) {
     return null;
   }
-  
+
   return {
     ...chat,
     id: chatDoc.id,
@@ -71,18 +78,24 @@ export async function getConversation(chatId: string, userId: string): Promise<C
 /**
  * Get all conversations for a user
  */
-export async function getUserConversations(userId: string, limit = 50): Promise<Chat[]> {
+export async function getUserConversations(
+  userId: string,
+  limit = 50,
+): Promise<Chat[]> {
   const snapshot = await db
     .collection('chats')
     .where('userId', '==', userId)
     .orderBy('updatedAt', 'desc')
     .limit(limit)
     .get();
-  
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-  } as Chat));
+
+  return snapshot.docs.map(
+    (doc) =>
+      ({
+        id: doc.id,
+        ...doc.data(),
+      }) as Chat,
+  );
 }
 
 /**
@@ -92,10 +105,14 @@ export async function addMessage(
   chatId: string,
   userId: string,
   role: 'user' | 'assistant' | 'system',
-  content: string
+  content: string,
 ): Promise<Message> {
-  const messageRef = db.collection('chats').doc(chatId).collection('messages').doc();
-  
+  const messageRef = db
+    .collection('chats')
+    .doc(chatId)
+    .collection('messages')
+    .doc();
+
   const newMessage = {
     id: messageRef.id,
     chatId,
@@ -104,14 +121,14 @@ export async function addMessage(
     content,
     createdAt: FieldValue.serverTimestamp(),
   };
-  
+
   await messageRef.set(newMessage);
-  
+
   // Update chat's updatedAt timestamp
   await db.collection('chats').doc(chatId).update({
     updatedAt: FieldValue.serverTimestamp(),
   });
-  
+
   return {
     ...newMessage,
     createdAt: new Date(),
@@ -121,7 +138,10 @@ export async function addMessage(
 /**
  * Get messages for a conversation
  */
-export async function getMessages(chatId: string, limit = 100): Promise<Message[]> {
+export async function getMessages(
+  chatId: string,
+  limit = 100,
+): Promise<Message[]> {
   const snapshot = await db
     .collection('chats')
     .doc(chatId)
@@ -129,42 +149,48 @@ export async function getMessages(chatId: string, limit = 100): Promise<Message[
     .orderBy('createdAt', 'asc')
     .limit(limit)
     .get();
-  
-  return snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-  } as Message));
+
+  return snapshot.docs.map(
+    (doc) =>
+      ({
+        id: doc.id,
+        ...doc.data(),
+      }) as Message,
+  );
 }
 
 /**
  * Delete a conversation and all its messages
  */
-export async function deleteConversation(chatId: string, userId: string): Promise<boolean> {
+export async function deleteConversation(
+  chatId: string,
+  userId: string,
+): Promise<boolean> {
   try {
     // Verify ownership
     const chat = await getConversation(chatId, userId);
     if (!chat) {
       return false;
     }
-    
+
     // Delete all messages first
     const messagesSnapshot = await db
       .collection('chats')
       .doc(chatId)
       .collection('messages')
       .get();
-    
+
     const batch = db.batch();
-    
-    messagesSnapshot.docs.forEach(doc => {
+
+    messagesSnapshot.docs.forEach((doc) => {
       batch.delete(doc.ref);
     });
-    
+
     // Delete the chat document
     batch.delete(db.collection('chats').doc(chatId));
-    
+
     await batch.commit();
-    
+
     return true;
   } catch (error) {
     console.error('Failed to delete conversation:', error);
@@ -178,7 +204,7 @@ export async function deleteConversation(chatId: string, userId: string): Promis
 export async function updateConversationTitle(
   chatId: string,
   userId: string,
-  title: string
+  title: string,
 ): Promise<boolean> {
   try {
     // Verify ownership
@@ -186,12 +212,12 @@ export async function updateConversationTitle(
     if (!chat) {
       return false;
     }
-    
+
     await db.collection('chats').doc(chatId).update({
       title,
       updatedAt: FieldValue.serverTimestamp(),
     });
-    
+
     return true;
   } catch (error) {
     console.error('Failed to update conversation title:', error);
@@ -208,10 +234,11 @@ export async function getConversationAnalytics(companyId: string) {
       .collection('chats')
       .where('companyId', '==', companyId)
       .get();
-    
+
     const totalChats = snapshot.size;
-    const uniqueUsers = new Set(snapshot.docs.map(doc => doc.data().userId)).size;
-    
+    const uniqueUsers = new Set(snapshot.docs.map((doc) => doc.data().userId))
+      .size;
+
     // Get message counts
     let totalMessages = 0;
     for (const chatDoc of snapshot.docs) {
@@ -222,12 +249,13 @@ export async function getConversationAnalytics(companyId: string) {
         .get();
       totalMessages += messagesSnapshot.size;
     }
-    
+
     return {
       totalChats,
       uniqueUsers,
       totalMessages,
-      averageMessagesPerChat: totalChats > 0 ? Math.round(totalMessages / totalChats) : 0,
+      averageMessagesPerChat:
+        totalChats > 0 ? Math.round(totalMessages / totalChats) : 0,
     };
   } catch (error) {
     console.error('Failed to get conversation analytics:', error);

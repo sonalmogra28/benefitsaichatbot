@@ -7,7 +7,12 @@ export interface ChatMessage {
   content: string;
   createdAt: Timestamp | FieldValue;
   // Add any other relevant message metadata like tool calls or function responses
-  toolInvocations?: Array<{ toolCallId: string; toolName: string; args: any; result?: any }>;
+  toolInvocations?: Array<{
+    toolCallId: string;
+    toolName: string;
+    args: any;
+    result?: any;
+  }>;
 }
 
 // Conversation Schema
@@ -21,7 +26,7 @@ export interface Conversation {
   model: string; // e.g., 'gemini-pro', 'gpt-4'
   visibility: 'private' | 'company' | 'public';
   // Array of messages within the conversation (can be subcollection or embedded for smaller chats)
-  messages: ChatMessage[]; 
+  messages: ChatMessage[];
 }
 
 // Optional: If messages are stored in a subcollection, define a separate interface for individual message documents
@@ -56,6 +61,8 @@ export interface Document {
   kind: 'text' | 'code';
   language?: string;
   content: string;
+  createdAt?: string | Date;
+  companyId?: string;
 }
 
 // DBMessage type for database messages

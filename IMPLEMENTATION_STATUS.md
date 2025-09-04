@@ -46,7 +46,7 @@ Located in `/lib/ai/rag-system.ts`:
 ```
 
 ### Missing Components:
-- ⚠️ Actual vector database (Pinecone/Vertex AI Vector Search)
+- ⚠️ Actual vector database (Vertex AI Vector Search)
 - ⚠️ Document upload and processing pipeline
 - ⚠️ Embedding generation implementation
 - ⚠️ Similarity search functionality
@@ -145,9 +145,8 @@ GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 ```
 
 ### Priority 3: Vector Database
-- Option A: Set up Pinecone
-- Option B: Use Vertex AI Vector Search
-- Option C: Use Firestore with basic search
+- Option A: Use Vertex AI Vector Search
+- Option B: Use Firestore with basic search
 
 ### Priority 4: Document Processing
 - Implement PDF parsing

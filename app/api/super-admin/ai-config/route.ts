@@ -1,6 +1,4 @@
-
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase/admin';
 import { superAdminService } from '@/lib/services/super-admin.service';
 import * as z from 'zod';
 
@@ -39,15 +37,19 @@ export async function POST(request: Request) {
     const validatedData = aiConfigSchema.parse(json);
 
     const currentSettings = await superAdminService.getSystemSettings();
-    
+
     const updatedAiSettings = {
       ...currentSettings.aiSettings, // Preserve existing AI settings
       ...validatedData, // Overwrite with new, validated data
     };
 
-    await superAdminService.updateSystemSettings({ aiSettings: updatedAiSettings });
+    await superAdminService.updateSystemSettings({
+      aiSettings: updatedAiSettings,
+    });
 
-    return NextResponse.json({ message: 'AI configuration updated successfully.' });
+    return NextResponse.json({
+      message: 'AI configuration updated successfully.',
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return new NextResponse(JSON.stringify(error.errors), { status: 400 });

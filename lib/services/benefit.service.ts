@@ -1,7 +1,6 @@
-
 import { db } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { BenefitPlan } from '@/lib/types/benefit';
+import type { BenefitPlan } from '@/lib/types/benefit-plan.type';
 
 class BenefitService {
   private benefitPlansCollection = db.collection('benefitPlans');
@@ -11,7 +10,9 @@ class BenefitService {
    * @param planData The data for the new benefit plan.
    * @returns The newly created benefit plan with its ID.
    */
-  async createBenefitPlan(planData: Omit<BenefitPlan, 'id'>): Promise<BenefitPlan> {
+  async createBenefitPlan(
+    planData: Omit<BenefitPlan, 'id'>,
+  ): Promise<BenefitPlan> {
     try {
       const docRef = this.benefitPlansCollection.doc();
       const newPlan = {
@@ -23,8 +24,8 @@ class BenefitService {
       await docRef.set(newPlan);
       return newPlan as BenefitPlan;
     } catch (error) {
-      console.error("Error creating benefit plan:", error);
-      throw new Error("Failed to create benefit plan.");
+      console.error('Error creating benefit plan:', error);
+      throw new Error('Failed to create benefit plan.');
     }
   }
 
@@ -42,7 +43,7 @@ class BenefitService {
       return { id: doc.id, ...doc.data() } as BenefitPlan;
     } catch (error) {
       console.error(`Error getting benefit plan ${planId}:`, error);
-      throw new Error("Failed to retrieve benefit plan.");
+      throw new Error('Failed to retrieve benefit plan.');
     }
   }
 
@@ -53,10 +54,12 @@ class BenefitService {
   async getAllBenefitPlans(): Promise<BenefitPlan[]> {
     try {
       const snapshot = await this.benefitPlansCollection.orderBy('name').get();
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as BenefitPlan);
+      return snapshot.docs.map(
+        (doc) => ({ id: doc.id, ...doc.data() }) as BenefitPlan,
+      );
     } catch (error) {
-      console.error("Error getting all benefit plans:", error);
-      throw new Error("Failed to retrieve benefit plans.");
+      console.error('Error getting all benefit plans:', error);
+      throw new Error('Failed to retrieve benefit plans.');
     }
   }
 
@@ -66,7 +69,10 @@ class BenefitService {
    * @param updates The partial data to update the plan with.
    * @returns The updated benefit plan.
    */
-  async updateBenefitPlan(planId: string, updates: Partial<Omit<BenefitPlan, 'id'>>): Promise<BenefitPlan> {
+  async updateBenefitPlan(
+    planId: string,
+    updates: Partial<Omit<BenefitPlan, 'id'>>,
+  ): Promise<BenefitPlan> {
     try {
       const docRef = this.benefitPlansCollection.doc(planId);
       await docRef.update({
@@ -77,7 +83,7 @@ class BenefitService {
       return { id: updatedDoc.id, ...updatedDoc.data() } as BenefitPlan;
     } catch (error) {
       console.error(`Error updating benefit plan ${planId}:`, error);
-      throw new Error("Failed to update benefit plan.");
+      throw new Error('Failed to update benefit plan.');
     }
   }
 
@@ -90,7 +96,7 @@ class BenefitService {
       await this.benefitPlansCollection.doc(planId).delete();
     } catch (error) {
       console.error(`Error deleting benefit plan ${planId}:`, error);
-      throw new Error("Failed to delete benefit plan.");
+      throw new Error('Failed to delete benefit plan.');
     }
   }
 }

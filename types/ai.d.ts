@@ -12,5 +12,7 @@ declare module 'ai' {
   /**
    * Generic helper to create an AI tool with typed params & result.
    */
-  export function tool<P extends ZodTypeAny, R = any>(def: ToolDefinition<P, R>): ToolDefinition<P, R>;
+  export function tool<P extends ZodTypeAny, R = any>(
+    def: ToolDefinition<P, R>,
+  ): ToolDefinition<P, R>;
 }

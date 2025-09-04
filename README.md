@@ -2,12 +2,14 @@
 
 A multi-tenant, AI-powered benefits management platform that transforms employee benefits decisions through conversational AI, visual analytics, and intelligent automation.
 
-## 🚀 Current Status
 
-**Version**: MVP (Single-tenant)  
-**Stack**: Next.js 15, TypeScript, Drizzle ORM, Neon PostgreSQL, Vercel AI SDK  
-**Deployment**: Vercel (Production)  
-**AI Model**: xAI Grok-2 (with OpenAI GPT-4 fallback ready)
+## 📦 Project Overview
+
+- Version `3.1.0`
+- Firebase/Google Cloud deployment
+- Vertex AI as primary model (OpenAI/Claude fallbacks)
+- Migration status: PostgreSQL ➜ Firebase
+
 
 ### ✅ Completed Features
 - Basic conversational AI with benefits personality
@@ -55,30 +57,28 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
          └───────────────────────┴─────────────────────────┘
                                  │
                     ┌────────────▼────────────┐
-                    │    Vercel Edge/CDN      │
-                    │  (Auth, Rate Limiting)  │
+                    │  Firebase Hosting/CDN   │
+                    │     (Auth, Routing)     │
                     └────────────┬────────────┘
                                  │
          ┌───────────────────────┴───────────────────────┐
          │                                               │
-    ┌────▼─────┐  ┌──────────────┐  ┌─────────────┐  ┌─▼──────────┐
-    │   Chat   │  │   Benefits   │  │  Analytics  │  │   Admin    │
-    │  Service │  │   Service    │  │   Service   │  │  Service   │
-    └────┬─────┘  └──────┬───────┘  └──────┬──────┘  └─────┬──────┘
+    ┌────▼──────┐  ┌──────────────┐  ┌─────────────┐  ┌─▼──────────┐
+    │   Chat    │  │   Benefits   │  │  Analytics  │  │   Admin    │
+    │ Function  │  │   Function   │  │  Function   │  │  Function  │
+    └────┬──────┘  └──────┬───────┘  └──────┬──────┘  └─────┬──────┘
          │               │                   │                │
          └───────────────┴───────────────────┴────────────────┘
                                  │
                     ┌────────────▼────────────┐
-                    │    AI Orchestration     │
-                    │  (Multi-Model Routing)  │
+                    │   AI Orchestration     │
+                    │      (Vertex AI)       │
                     └────────────┬────────────┘
                                  │
-         ┌───────────────────────┴───────────────────────┐
-         │                       │                       │
-    ┌────▼─────┐         ┌──────▼───────┐      ┌───────▼──────┐
-    │PostgreSQL│         │   Pinecone    │      │    Redis     │
-    │  (Neon)  │         │ (Vector DB)   │      │   (Cache)    │
-    └──────────┘         └──────────────┘      └──────────────┘
+    ┌────────────┐ ┌──────────────┐ ┌─────────────┐ ┌────────────────────────┐
+    │Firebase    │ │Cloud         │ │ Firestore   │ │ Vertex AI Vector Search│
+    │Hosting     │ │Functions     │ │ (Database)  │ │ (Vector DB)            │
+    └────────────┘ └──────────────┘ └─────────────┘ └────────────────────────┘
 ```
 
 ## 🚦 Quick Start
@@ -86,8 +86,9 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
 ### Prerequisites
 - Node.js >= 20.0.0
 - pnpm >= 8.0.0
-- PostgreSQL (via Neon)
-- Vercel CLI (for deployment)
+- Firebase CLI
+- Firestore database
+- Cloud Storage bucket
 
 ### Environment Setup
 ```bash
@@ -100,20 +101,40 @@ pnpm install
 
 # Copy environment variables
 cp .env.example .env.local
+# Never commit real `.env` files or secrets to version control.
 
-# Required environment variables:
-POSTGRES_URL=              # Neon PostgreSQL URL
-POSTGRES_URL_NON_POOLING=  # Neon direct connection
-AUTH_SECRET=               # NextAuth secret (generate with: openssl rand -base64 32)
-OPENAI_API_KEY=            # For GPT-4 fallback
-XAI_API_KEY=               # For Grok-2 (primary)
+# Review .env.local and fill in the required variables
+# See .env.local.example for a complete list
+
+# Validate your environment
+pnpm run validate-env
+
 ```
+
+### Required Environment Variables
+
+The application relies on the following variables:
+
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_FIREBASE_DATABASE_URL`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `RESEND_API_KEY`
+- `GOOGLE_GENERATIVE_AI_API_KEY` (or another AI provider key)
+
+See `.env.example` for the complete list and descriptions.
 
 #### Google Cloud Setup
 
-To use Vertex AI and Document AI features:
+To use Firestore and Vertex AI features:
 
-1. Enable the Vertex AI and Document AI APIs in your Google Cloud project.
+1. Enable the Firestore, Vertex AI, and Document AI APIs in your Google Cloud project.
 2. Create a Vertex AI index and endpoint, and note their IDs.
 3. Create a Document AI processor for the documents you need to process.
 4. Grant your service account the following IAM roles:
@@ -122,39 +143,37 @@ To use Vertex AI and Document AI features:
 5. Add the following variables to your `.env.local` file:
    - `GOOGLE_CLOUD_PROJECT`
    - `GOOGLE_CLOUD_LOCATION`
-   - `VERTEX_INDEX_ID`
-   - `VERTEX_ENDPOINT_ID`
+   - `VERTEX_AI_PROJECT_ID`
+   - `VERTEX_AI_LOCATION`
+   - `VERTEX_AI_INDEX_ID`
+   - `VERTEX_AI_INDEX_ENDPOINT_ID`
    - `DOCUMENT_AI_PROCESSOR_ID`
+
+
+## Quick Start Commands
 
 ### Development
 ```bash
-# Run database migrations
-pnpm db:migrate
+# Install dependencies
+pnpm install
 
 # Start development server
-pnpm dev
+pnpm run dev
+
+# Start Firebase emulators
+firebase emulators:start
+```
+
+### Build & Testing
+```bash
+# Build application
+pnpm run build
+
+# Type checking
+pnpm run typecheck
 
 # Run tests
 pnpm test
-
-# Check types
-pnpm tsc --noEmit
-
-# Lint and format
-pnpm lint:fix
-pnpm format
-```
-
-### Database Management
-```bash
-# Generate migration
-pnpm db:generate
-
-# Run migrations
-pnpm db:migrate
-
-# Open Drizzle Studio
-pnpm db:studio
 
 # Push schema changes (dev only)
 pnpm db:push
@@ -188,25 +207,6 @@ pnpm test:e2e           # Run E2E tests with Playwright
 # - Security audit
 ```
 
-## 🚀 Deployment
-
-### Vercel Deployment (Production)
-```bash
-# Deploy to production
-vercel --prod
-
-# Deploy to preview
-vercel
-
-# Check deployment status
-vercel ls
-```
-
-### Environment Configuration
-- **Development**: Local PostgreSQL, development API keys
-- **Staging**: Neon PostgreSQL (staging), test API keys
-- **Production**: Neon PostgreSQL (production), production API keys
-
 ## 📁 Project Structure
 
 ```
@@ -225,9 +225,9 @@ benefits-chatbot/
 │   │   ├── prompts/       # System prompts
 │   │   └── context/       # Context management
 │   ├── db/                # Database layer
-│   │   ├── schema/        # Drizzle schemas
+│   │   ├── schema/        # Database schemas
 │   │   ├── repositories/  # Data access layer
-│   │   └── migrations/    # SQL migrations
+│   │   └── converters/    # Firestore converters and utilities
 │   └── utils/             # Utility functions
 ├── public/                # Static assets
 ├── scripts/               # Build and maintenance scripts
@@ -245,7 +245,6 @@ benefits-chatbot/
 
 ### Data Protection
 - End-to-end encryption (TLS 1.3)
-- Row-level security in PostgreSQL
 - Encrypted environment variables
 - No PII/PHI storage in logs
 
@@ -271,6 +270,9 @@ benefits-chatbot/
 - 80%+ test coverage
 - All PRs must pass CI
 
+### CI Test Process
+Our GitHub Actions pipeline runs `npm test` with coverage on every push and pull request. The build fails if any test fails or if coverage falls below the configured thresholds (lines: 80%, statements: 80%, functions: 80%, branches: 15%). Run `npm test` locally before pushing to verify your changes.
+
 ### Using with Windsurf/Cascade
 When using AI coding assistants:
 1. Always provide full context from claude.md
@@ -281,7 +283,6 @@ When using AI coding assistants:
 ## 📊 Monitoring & Analytics
 
 ### Production Monitoring
-- **Vercel Analytics**: Page views, Web Vitals
 - **Error Tracking**: Sentry (to be configured)
 - **AI Metrics**: Token usage, response times
 - **Business Metrics**: Custom analytics dashboard
@@ -295,15 +296,6 @@ When using AI coding assistants:
 
 ### Common Issues
 
-#### Database Connection Errors
-```bash
-# Check connection
-pnpm exec tsx scripts/check-db.ts
-
-# Reset connection pool
-pnpm db:push --force
-```
-
 #### Build Failures
 ```bash
 # Clear cache
@@ -314,8 +306,6 @@ pnpm build
 
 #### Type Errors
 ```bash
-# Regenerate types
-pnpm db:generate
 pnpm tsc --noEmit
 ```
 
@@ -337,4 +327,4 @@ Proprietary - All rights reserved
 
 ---
 
-**Note**: This is an active development project. Always check [claude.md](./claude.md) for the latest development status and [roadmap-v2.md](./docs/roadmap-v2.md) for upcoming features.
+**Note**: This is an active development project. 

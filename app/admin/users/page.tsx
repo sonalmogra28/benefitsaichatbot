@@ -7,7 +7,17 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Search, UserPlus, Shield, Mail, MoreVertical, Edit, Trash2, Key } from 'lucide-react';
+import {
+  Users,
+  Search,
+  UserPlus,
+  Shield,
+  Mail,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Key,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +33,12 @@ interface User {
   name: string;
   email: string;
   company: string;
-  role: 'super_admin' | 'platform_admin' | 'company_admin' | 'hr_admin' | 'employee';
+  role:
+    | 'super_admin'
+    | 'platform_admin'
+    | 'company_admin'
+    | 'hr_admin'
+    | 'employee';
   status: 'active' | 'pending' | 'suspended';
   lastLogin: Date | null;
   createdAt: Date;
@@ -40,17 +55,21 @@ export default function AdminUsersPage() {
       router.push('/login');
     } else if (user) {
       user.getIdTokenResult().then((idTokenResult) => {
-        if (!idTokenResult.claims.platform_admin && !idTokenResult.claims.super_admin) {
+        if (
+          !idTokenResult.claims.platform_admin &&
+          !idTokenResult.claims.super_admin
+        ) {
           router.push('/');
         }
       });
     }
   }, [user, loading, router]);
 
-  const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.company.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.company.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const getRoleBadge = (role: string) => {
@@ -59,15 +78,15 @@ export default function AdminUsersPage() {
       platform_admin: 'bg-blue-100 text-blue-700',
       company_admin: 'bg-indigo-100 text-indigo-700',
       hr_admin: 'bg-green-100 text-green-700',
-      employee: 'bg-gray-100 text-gray-700'
+      employee: 'bg-gray-100 text-gray-700',
     };
-    
+
     const roleLabels = {
       super_admin: 'Super Admin',
       platform_admin: 'Platform Admin',
       company_admin: 'Company Admin',
       hr_admin: 'HR Admin',
-      employee: 'Employee'
+      employee: 'Employee',
     };
 
     return (
@@ -91,7 +110,11 @@ export default function AdminUsersPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -99,7 +122,9 @@ export default function AdminUsersPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">User Management</h1>
-          <p className="text-muted-foreground">Manage platform users and permissions</p>
+          <p className="text-muted-foreground">
+            Manage platform users and permissions
+          </p>
         </div>
         <Button onClick={() => router.push('/admin/users/new')}>
           <UserPlus className="mr-2 size-4" />
@@ -126,7 +151,7 @@ export default function AdminUsersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {users.filter(u => u.status === 'active').length}
+              {users.filter((u) => u.status === 'active').length}
             </div>
             <p className="text-xs text-muted-foreground">Currently active</p>
           </CardContent>
@@ -139,11 +164,14 @@ export default function AdminUsersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {users.filter(u => 
-                u.role === 'super_admin' || 
-                u.role === 'platform_admin' || 
-                u.role === 'company_admin'
-              ).length}
+              {
+                users.filter(
+                  (u) =>
+                    u.role === 'super_admin' ||
+                    u.role === 'platform_admin' ||
+                    u.role === 'company_admin',
+                ).length
+              }
             </div>
             <p className="text-xs text-muted-foreground">Admin accounts</p>
           </CardContent>
@@ -156,7 +184,7 @@ export default function AdminUsersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {users.filter(u => u.status === 'pending').length}
+              {users.filter((u) => u.status === 'pending').length}
             </div>
             <p className="text-xs text-muted-foreground">Awaiting activation</p>
           </CardContent>
@@ -182,7 +210,9 @@ export default function AdminUsersPage() {
               <Users className="mx-auto size-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No users found</p>
               <p className="text-sm text-muted-foreground mt-2">
-                {searchTerm ? 'Try adjusting your search' : 'No users registered yet'}
+                {searchTerm
+                  ? 'Try adjusting your search'
+                  : 'No users registered yet'}
               </p>
             </div>
           ) : (
@@ -196,11 +226,16 @@ export default function AdminUsersPage() {
                 <div className="col-span-1">Actions</div>
               </div>
               {filteredUsers.map((user) => (
-                <div key={user.id} className="grid grid-cols-12 gap-4 py-3 border-b items-center hover:bg-muted/50 transition-colors">
+                <div
+                  key={user.id}
+                  className="grid grid-cols-12 gap-4 py-3 border-b items-center hover:bg-muted/50 transition-colors"
+                >
                   <div className="col-span-3">
                     <div className="font-medium">{user.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {user.lastLogin ? `Last login: ${new Date(user.lastLogin).toLocaleDateString()}` : 'Never logged in'}
+                      {user.lastLogin
+                        ? `Last login: ${new Date(user.lastLogin).toLocaleDateString()}`
+                        : 'Never logged in'}
                     </div>
                   </div>
                   <div className="col-span-2">
@@ -209,12 +244,8 @@ export default function AdminUsersPage() {
                       {user.email}
                     </div>
                   </div>
-                  <div className="col-span-2 text-sm">
-                    {user.company}
-                  </div>
-                  <div className="col-span-2">
-                    {getRoleBadge(user.role)}
-                  </div>
+                  <div className="col-span-2 text-sm">{user.company}</div>
+                  <div className="col-span-2">{getRoleBadge(user.role)}</div>
                   <div className="col-span-2">
                     {getStatusBadge(user.status)}
                   </div>
