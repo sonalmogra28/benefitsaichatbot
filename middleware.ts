@@ -1,18 +1,25 @@
 // middleware.ts
 import { NextResponse, type NextRequest } from 'next/server';
+import { USER_ROLES, hasRoleAccess } from '@/lib/constants/roles';
 
-async function verifySession(sessionCookie: string | undefined, request: NextRequest): Promise<boolean> {
+async function verifySession(
+  sessionCookie: string | undefined,
+  request: NextRequest,
+): Promise<boolean> {
   if (!sessionCookie) {
     return false;
   }
   try {
-    const response = await fetch(new URL('/api/auth/verify-session', request.url).toString(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      new URL('/api/auth/verify-session', request.url).toString(),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionCookie }),
       },
-      body: JSON.stringify({ sessionCookie }),
-    });
+    );
     const { isValid } = await response.json();
     return isValid;
   } catch (error) {
@@ -42,10 +49,13 @@ async function attemptRefresh(request: NextRequest): Promise<string[] | null> {
 
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get('__session');
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register');
+  const isAuthPage =
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/register');
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api');
   const isApiAuthRoute = request.nextUrl.pathname.startsWith('/api/auth');
 
-  // Allow API auth routes to be accessed without a session
+  // Allow API auth routes to be accessed without checks
   if (isApiAuthRoute) {
     return NextResponse.next();
   }
@@ -59,7 +69,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // If the user is on an auth page but has a valid session, redirect them to the home page.
+
   if (sessionIsValid && isAuthPage) {
     const res = NextResponse.redirect(new URL('/', request.url));
     newCookies?.forEach((c) => res.headers.append('Set-Cookie', c));
