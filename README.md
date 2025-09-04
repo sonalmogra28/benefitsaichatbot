@@ -2,12 +2,13 @@
 
 A multi-tenant, AI-powered benefits management platform that transforms employee benefits decisions through conversational AI, visual analytics, and intelligent automation.
 
-## 🚀 Project Overview
 
-**Version**: MVP (Single-tenant)  
-**Stack**: Next.js 15, TypeScript, Firestore, Firebase Hosting, Vertex AI SDK
-**Deployment**: Firebase Hosting (Production)
-**AI Model**: Vertex AI Gemini (with xAI Grok-2 and OpenAI GPT-4 fallback ready)
+## 📦 Project Overview
+
+- Version `3.1.0`
+- Firebase/Google Cloud deployment
+- Vertex AI as primary model (OpenAI/Claude fallbacks)
+- Migration status: PostgreSQL ➜ Firebase
 
 
 ### ✅ Completed Features
@@ -94,10 +95,6 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
 ### Prerequisites
 - Node.js >= 20.0.0
 - pnpm >= 8.0.0
-- Firebase CLI
-
-- Google Cloud SDK (for Vertex AI)
-
 ### Environment Setup
 ```bash
 # Clone repository
@@ -115,6 +112,7 @@ cp .env.example .env.local
 FIREBASE_PROJECT_ID=       # Firebase project identifier
 FIREBASE_CLIENT_EMAIL=     # Service account client email
 FIREBASE_PRIVATE_KEY=      # Base64-encoded private key
+
 ```
 
 #### Google Cloud Setup
@@ -162,13 +160,8 @@ pnpm run typecheck
 # Run tests
 pnpm test
 
-# Linting
-pnpm run lint
-pnpm run lint:fix
-
-# Format code
-pnpm run format
-
+# Push schema changes (dev only)
+pnpm db:push
 ```
 
 ## 🧪 Testing Strategy
@@ -199,25 +192,6 @@ pnpm test:e2e           # Run E2E tests with Playwright
 # - Security audit
 ```
 
-## 🚀 Deployment
-
-### Firebase Deployment (Production)
-```bash
-# Deploy to production
-firebase deploy --only hosting
-
-# Deploy to preview channel
-firebase hosting:channel:deploy preview
-
-# Check deployment status
-firebase hosting:sites:list
-```
-
-### Environment Configuration
-- **Development**: Firebase emulators, development API keys
-- **Staging**: Staging Firebase project, test API keys
-- **Production**: Production Firebase project, production API keys
-
 ## 📁 Project Structure
 
 ```
@@ -235,7 +209,8 @@ benefits-chatbot/
 │   │   ├── tools/         # AI function tools
 │   │   ├── prompts/       # System prompts
 │   │   └── context/       # Context management
-│   ├── db/                # Firestore data layer
+│   ├── db/                # Database layer
+│   │   ├── schema/        # Database schemas
 │   │   ├── repositories/  # Data access layer
 │   │   └── converters/    # Firestore converters and utilities
 │   └── utils/             # Utility functions
@@ -255,7 +230,6 @@ benefits-chatbot/
 
 ### Data Protection
 - End-to-end encryption (TLS 1.3)
-- Security rules in Firestore
 - Encrypted environment variables
 - No PII/PHI storage in logs
 
@@ -294,8 +268,6 @@ When using AI coding assistants:
 ## 📊 Monitoring & Analytics
 
 ### Production Monitoring
-
-- **Firebase Analytics**: Page views, performance metrics
 - **Error Tracking**: Sentry (to be configured)
 - **AI Metrics**: Token usage, response times
 - **Business Metrics**: Custom analytics dashboard
