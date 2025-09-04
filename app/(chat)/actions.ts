@@ -29,7 +29,7 @@ export async function generateTitleFromUserMessage({
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {
-  console.warn("deleteTrailingMessages is not implemented");
+  console.warn('deleteTrailingMessages is not implemented');
 }
 
 export async function updateChatVisibility({
@@ -39,5 +39,5 @@ export async function updateChatVisibility({
   chatId: string;
   visibility: VisibilityType;
 }) {
-    console.warn("updateChatVisibility is not implemented");
+  console.warn('updateChatVisibility is not implemented');
 }

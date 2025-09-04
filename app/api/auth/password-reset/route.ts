@@ -56,7 +56,7 @@ export async function PUT(request: NextRequest) {
     // Note: Password reset confirmation should be done on the client side
     // using Firebase Auth SDK's confirmPasswordReset method
     // This endpoint is kept for backward compatibility but returns guidance
-    
+
     return NextResponse.json({
       message: 'Please use client-side Firebase Auth to confirm password reset',
       clientMethod: 'confirmPasswordReset(auth, oobCode, newPassword)',

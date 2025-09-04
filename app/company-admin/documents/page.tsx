@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FileText, Upload, Search, Download, Trash2, Eye } from 'lucide-react';
@@ -32,16 +38,20 @@ export default function CompanyDocumentsPage() {
       router.push('/login');
     } else if (user) {
       user.getIdTokenResult().then((idTokenResult) => {
-        if (!idTokenResult.claims.company_admin && !idTokenResult.claims.hr_admin) {
+        if (
+          !idTokenResult.claims.company_admin &&
+          !idTokenResult.claims.hr_admin
+        ) {
           router.push('/');
         }
       });
     }
   }, [user, loading, router]);
 
-  const filteredDocuments = documents.filter(doc =>
-    doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredDocuments = documents.filter(
+    (doc) =>
+      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.category.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const formatFileSize = (bytes: number) => {
@@ -51,7 +61,11 @@ export default function CompanyDocumentsPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -59,7 +73,9 @@ export default function CompanyDocumentsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Document Management</h1>
-          <p className="text-muted-foreground">Manage your company&apos;s benefits documentation</p>
+          <p className="text-muted-foreground">
+            Manage your company&apos;s benefits documentation
+          </p>
         </div>
         <Button onClick={() => setShowUpload(!showUpload)}>
           <Upload className="mr-2 size-4" />
@@ -71,7 +87,9 @@ export default function CompanyDocumentsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Upload New Document</CardTitle>
-            <CardDescription>Add benefits documentation for your employees</CardDescription>
+            <CardDescription>
+              Add benefits documentation for your employees
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <DocumentUploadSection companies={[]} />
@@ -98,7 +116,9 @@ export default function CompanyDocumentsPage() {
               <FileText className="mx-auto size-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No documents found</p>
               <p className="text-sm text-muted-foreground mt-2">
-                {searchTerm ? 'Try adjusting your search' : 'Upload your first document to get started'}
+                {searchTerm
+                  ? 'Try adjusting your search'
+                  : 'Upload your first document to get started'}
               </p>
             </div>
           ) : (
@@ -111,7 +131,10 @@ export default function CompanyDocumentsPage() {
                 <div className="col-span-1">Actions</div>
               </div>
               {filteredDocuments.map((doc) => (
-                <div key={doc.id} className="grid grid-cols-12 gap-4 py-3 border-b items-center hover:bg-muted/50 transition-colors">
+                <div
+                  key={doc.id}
+                  className="grid grid-cols-12 gap-4 py-3 border-b items-center hover:bg-muted/50 transition-colors"
+                >
                   <div className="col-span-5 flex items-center space-x-2">
                     <FileText className="size-4 text-muted-foreground" />
                     <span className="font-medium">{doc.name}</span>
@@ -148,12 +171,16 @@ export default function CompanyDocumentsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Documents
+            </CardTitle>
             <FileText className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{documents.length}</div>
-            <p className="text-xs text-muted-foreground">Across all categories</p>
+            <p className="text-xs text-muted-foreground">
+              Across all categories
+            </p>
           </CardContent>
         </Card>
 
@@ -170,7 +197,9 @@ export default function CompanyDocumentsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Uploads</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Recent Uploads
+            </CardTitle>
             <FileText className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>

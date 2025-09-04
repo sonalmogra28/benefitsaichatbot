@@ -7,7 +7,9 @@ describe('payment-service', () => {
   });
 
   it('throws when period days is invalid', () => {
-    expect(() => calculateProratedAmount(100, 0, 10)).toThrow('periodDays must be greater than 0');
+    expect(() => calculateProratedAmount(100, 0, 10)).toThrow(
+      'periodDays must be greater than 0',
+    );
   });
 
   it('applies discount correctly', () => {
@@ -15,6 +17,8 @@ describe('payment-service', () => {
   });
 
   it('throws when discount is out of range', () => {
-    expect(() => applyDiscount(100, 120)).toThrow('percent must be between 0 and 100');
+    expect(() => applyDiscount(100, 120)).toThrow(
+      'percent must be between 0 and 100',
+    );
   });
 });

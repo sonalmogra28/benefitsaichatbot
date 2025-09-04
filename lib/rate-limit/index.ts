@@ -39,7 +39,7 @@ function getRateLimiter(): RateLimiter {
   if (process.env.NODE_ENV === 'production') {
     return new FirestoreRateLimiter();
   }
-  
+
   // Use in-memory rate limiter for development
   return new InMemoryRateLimiter();
 }
@@ -54,13 +54,13 @@ function getRateLimitConfig(path: string): { max: number; windowMs: number } {
   // Find matching rate limit config
   for (const [pattern, config] of Object.entries(RATE_LIMITS)) {
     if (pattern === 'default') continue;
-    
+
     // Simple pattern matching (could be enhanced with regex)
     if (path.startsWith(pattern.replace('*', ''))) {
       return config;
     }
   }
-  
+
   // Default rate limit
   return RATE_LIMITS.default;
 }
@@ -80,12 +80,12 @@ function getIdentifier(request: NextRequest, userId?: string): string {
   if (userId) {
     return `user:${userId}`;
   }
-  
+
   // Try to get IP from various headers
   const forwardedFor = request.headers.get('x-forwarded-for');
   const realIp = request.headers.get('x-real-ip');
   const ip = forwardedFor?.split(',')[0] || realIp || 'unknown';
-  
+
   return `ip:${ip}`;
 }
 
@@ -94,16 +94,16 @@ function getIdentifier(request: NextRequest, userId?: string): string {
  */
 export async function rateLimit(
   request: NextRequest,
-  userId?: string
+  userId?: string,
 ): Promise<RateLimitResult | NextResponse> {
   const path = request.nextUrl.pathname;
   const config = getRateLimitConfig(path);
   const identifier = getIdentifier(request, userId);
   const key = createRateLimitKey(identifier, path);
-  
+
   try {
     const result = await rateLimiter.check(key, config.max, config.windowMs);
-    
+
     if (!result.allowed) {
       // Create rate limit error response
       const errorResponse: RateLimitError = {
@@ -112,7 +112,7 @@ export async function rateLimit(
         retryAfter: result.retryAfter || 0,
         resetAt: result.resetAt.toISOString(),
       };
-      
+
       return NextResponse.json(errorResponse, {
         status: 429,
         headers: {
@@ -123,12 +123,12 @@ export async function rateLimit(
         },
       });
     }
-    
+
     // Add rate limit headers to the response
     return result;
   } catch (error) {
     console.error('Rate limiting error:', error);
-    
+
     // In case of error, allow the request but log it
     return {
       allowed: true,
@@ -144,12 +144,12 @@ export async function rateLimit(
 export function applyRateLimitHeaders(
   response: NextResponse,
   result: RateLimitResult,
-  limit: number
+  limit: number,
 ): NextResponse {
   response.headers.set('X-RateLimit-Limit', limit.toString());
   response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
   response.headers.set('X-RateLimit-Reset', result.resetAt.toISOString());
-  
+
   return response;
 }
 
@@ -157,8 +157,11 @@ export function applyRateLimitHeaders(
  * Rate limit decorator for API routes
  */
 export function withRateLimit(
-  handler: (request: NextRequest, context?: any) => Promise<Response> | Response,
-  customConfig?: { max: number; windowMs: number }
+  handler: (
+    request: NextRequest,
+    context?: any,
+  ) => Promise<Response> | Response,
+  customConfig?: { max: number; windowMs: number },
 ) {
   return async (request: NextRequest, context?: any): Promise<Response> => {
     // Get user ID if available from auth
@@ -174,14 +177,14 @@ export function withRateLimit(
         // Auth not available
       }
     }
-    
+
     const path = request.nextUrl.pathname;
     const config = customConfig || getRateLimitConfig(path);
     const identifier = getIdentifier(request, userId);
     const key = createRateLimitKey(identifier, path);
-    
+
     const result = await rateLimiter.check(key, config.max, config.windowMs);
-    
+
     if (!result.allowed) {
       const errorResponse: RateLimitError = {
         error: 'RATE_LIMIT_EXCEEDED',
@@ -189,7 +192,7 @@ export function withRateLimit(
         retryAfter: result.retryAfter || 0,
         resetAt: result.resetAt.toISOString(),
       };
-      
+
       return NextResponse.json(errorResponse, {
         status: 429,
         headers: {
@@ -200,17 +203,20 @@ export function withRateLimit(
         },
       });
     }
-    
+
     // Execute the handler
     const response = await handler(request, context);
-    
+
     // Add rate limit headers to successful responses
     if (response instanceof NextResponse) {
       response.headers.set('X-RateLimit-Limit', config.max.toString());
-      response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
+      response.headers.set(
+        'X-RateLimit-Remaining',
+        result.remaining.toString(),
+      );
       response.headers.set('X-RateLimit-Reset', result.resetAt.toISOString());
     }
-    
+
     return response;
   };
 }

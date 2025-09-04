@@ -1,7 +1,5 @@
 import { extractText } from 'unpdf';
 import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
-import { vectorSearchService } from '@/lib/ai/vector-search';
-import { generateEmbeddings } from '@/lib/ai/embeddings';
 
 /**
  * Process a document: extract text, chunk it, generate embeddings, and store in Vertex AI Vector Search
@@ -10,7 +8,7 @@ export async function processDocument(documentId: string) {
   try {
     // Fetch document from Firestore
     const docRef = await adminDb.collection('documents').doc(documentId).get();
-    
+
     if (!docRef.exists) {
       throw new Error('Document not found');
     }
@@ -72,13 +70,9 @@ export async function processDocument(documentId: string) {
       },
     }));
 
-
     // Store in Vertex AI
-    const { status: upsertStatus, vectorsUpserted } = await upsertDocumentChunks(
-      document.companyId,
-      documentChunks,
-    );
-
+    const { status: upsertStatus, vectorsUpserted } =
+      await upsertDocumentChunks(document.companyId, documentChunks);
 
     // Update document status to processed
     await adminDb.collection('documents').doc(documentId).update({
@@ -107,11 +101,14 @@ export async function processDocument(documentId: string) {
 
     // Update document with error status
     try {
-      await adminDb.collection('documents').doc(documentId).update({
-        status: 'failed',
-        processedAt: AdminFieldValue.serverTimestamp(),
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      await adminDb
+        .collection('documents')
+        .doc(documentId)
+        .update({
+          status: 'failed',
+          processedAt: AdminFieldValue.serverTimestamp(),
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
     } catch (updateError) {
       console.error('Failed to update document status:', updateError);
     }
@@ -185,7 +182,7 @@ export async function processCompanyDocuments(companyId: string) {
     .where('status', 'in', ['pending', 'uploaded', 'failed'])
     .get();
 
-  const pendingDocuments = snapshot.docs.map(doc => ({
+  const pendingDocuments = snapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
   }));

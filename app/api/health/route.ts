@@ -27,7 +27,7 @@ interface HealthStatus {
 export async function GET(req: NextRequest) {
   const startTime = Date.now();
   const config = getConfig();
-  
+
   // Basic health check - always returns 200 if service is running
   const basicHealth = {
     status: 'healthy' as const,
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
   // Check for detailed health check request
   const isDetailed = req.nextUrl.searchParams.get('detailed') === 'true';
-  
+
   if (!isDetailed) {
     return NextResponse.json(basicHealth);
   }
@@ -62,9 +62,9 @@ export async function GET(req: NextRequest) {
   checks.push(aiCheck);
 
   // Determine overall health status
-  const hasUnhealthy = checks.some(c => c.status === 'unhealthy');
-  const hasDegraded = checks.some(c => c.status === 'degraded');
-  
+  const hasUnhealthy = checks.some((c) => c.status === 'unhealthy');
+  const hasDegraded = checks.some((c) => c.status === 'degraded');
+
   let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
   if (hasUnhealthy) overallStatus = 'unhealthy';
   else if (hasDegraded) overallStatus = 'degraded';
@@ -85,18 +85,23 @@ export async function GET(req: NextRequest) {
   });
 
   // Return appropriate status code
-  const statusCode = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 200 : 503;
-  
+  const statusCode =
+    overallStatus === 'healthy'
+      ? 200
+      : overallStatus === 'degraded'
+        ? 200
+        : 503;
+
   return NextResponse.json(healthStatus, { status: statusCode });
 }
 
 async function checkFirebaseAuth(): Promise<HealthCheckResult> {
   const start = Date.now();
-  
+
   try {
     // Try to verify a test token or list users with limit 1
     await adminAuth.listUsers(1);
-    
+
     return {
       service: 'Firebase Auth',
       status: 'healthy',
@@ -115,17 +120,20 @@ async function checkFirebaseAuth(): Promise<HealthCheckResult> {
 
 async function checkFirestore(): Promise<HealthCheckResult> {
   const start = Date.now();
-  
+
   try {
     // Try to read from a system collection
     const doc = await adminDb.collection('system').doc('health').get();
-    
+
     // Write a health check timestamp
-    await adminDb.collection('system').doc('health').set({
-      lastCheck: FieldValue.serverTimestamp(),
-      status: 'healthy',
-    }, { merge: true });
-    
+    await adminDb.collection('system').doc('health').set(
+      {
+        lastCheck: FieldValue.serverTimestamp(),
+        status: 'healthy',
+      },
+      { merge: true },
+    );
+
     return {
       service: 'Firestore',
       status: 'healthy',
@@ -142,15 +150,14 @@ async function checkFirestore(): Promise<HealthCheckResult> {
   }
 }
 
-
 async function checkAIServices(): Promise<HealthCheckResult> {
   const start = Date.now();
-  
+
   try {
     const hasGoogleAI = !!process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     const hasOpenAI = !!process.env.OPENAI_API_KEY;
     const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
-    
+
     if (!hasGoogleAI && !hasOpenAI && !hasAnthropic) {
       return {
         service: 'AI Services',
@@ -158,13 +165,13 @@ async function checkAIServices(): Promise<HealthCheckResult> {
         message: 'No AI providers configured',
       };
     }
-    
+
     // Could add actual API health checks here
     const providers = [];
     if (hasGoogleAI) providers.push('Google');
     if (hasOpenAI) providers.push('OpenAI');
     if (hasAnthropic) providers.push('Anthropic');
-    
+
     return {
       service: 'AI Services',
       status: 'healthy',
