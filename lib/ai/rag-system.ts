@@ -4,10 +4,12 @@ import { vectorSearchService } from './vector-search';
 import { generateEmbedding } from './embeddings';
 
 interface DocumentMetadata {
-  title: string;
-  documentType: 'pdf' | 'docx' | 'txt';
-  uploadedAt: Date;
   [key: string]: unknown;
+}
+
+interface SearchResult {
+  chunk: any;
+  score: number;
 }
 
 interface Chunk {
@@ -109,7 +111,7 @@ class RAGSystem {
   private async vectorSearch(
     queryEmbedding: number[],
     companyId: string,
-    limit: number,
+    limit: number
   ): Promise<SearchResult[]> {
     const neighbors = await vectorSearchService.findNearestNeighbors(
       queryEmbedding,
@@ -207,7 +209,28 @@ class RAGSystem {
     if (normA === 0 || normB === 0) return 0;
     return dotProduct / (normA * normB);
   }
+  private splitIntoChunks(text: string, chunkSize: number = 1000): string[] {
+    const chunks: string[] = [];
+    const sentences = text.split('. ');
+    let currentChunk = '';
 
+    for (const sentence of sentences) {
+      const tentative = currentChunk ? `${currentChunk}. ${sentence}` : sentence;
+      if (tentative.length > chunkSize) {
+        if (currentChunk) {
+          chunks.push(currentChunk);
+        }
+        currentChunk = sentence;
+      } else {
+        currentChunk = tentative;
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks;
   generateContext(results: SearchResult[]): string {
     if (results.length === 0) {
       return 'No relevant documents found.';
