@@ -14,6 +14,7 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
     coverage: {
       provider: 'v8',
+      include: ['lib/ai/rag-system.ts'],
     },
     resolveSnapshotPath: (testPath, snapExtension) =>
       path.resolve(__dirname, '__snapshots__', `${testPath}${snapExtension}`),

@@ -3,7 +3,14 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { vectorSearchService } from './vector-search';
 import { generateEmbedding } from './embeddings';
 
-// ... (interfaces remain the same)
+interface DocumentMetadata {
+  [key: string]: unknown;
+}
+
+interface SearchResult {
+  chunk: any;
+  score: number;
+}
 
 class RAGSystem {
 
@@ -72,8 +79,8 @@ class RAGSystem {
   }
 
   private async vectorSearch(
-    queryEmbedding: number[], 
-    companyId: string, 
+    queryEmbedding: number[],
+    companyId: string,
     limit: number
   ): Promise<SearchResult[]> {
     const neighbors = await vectorSearchService.findNearestNeighbors(queryEmbedding, limit);
@@ -98,7 +105,29 @@ class RAGSystem {
     }).filter(result => result.chunk && result.chunk.companyId === companyId);
   }
 
-  // ... (keywordSearch, splitIntoChunks, cosineSimilarity, generateContext remain the same)
+  private splitIntoChunks(text: string, chunkSize: number = 1000): string[] {
+    const chunks: string[] = [];
+    const sentences = text.split('. ');
+    let currentChunk = '';
+
+    for (const sentence of sentences) {
+      const tentative = currentChunk ? `${currentChunk}. ${sentence}` : sentence;
+      if (tentative.length > chunkSize) {
+        if (currentChunk) {
+          chunks.push(currentChunk);
+        }
+        currentChunk = sentence;
+      } else {
+        currentChunk = tentative;
+      }
+    }
+
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+
+    return chunks;
+  }
 }
 
 export const ragSystem = new RAGSystem();
