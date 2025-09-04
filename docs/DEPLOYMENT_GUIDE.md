@@ -22,8 +22,8 @@
 ### Required Accounts
 - Firebase/Google Cloud account with billing enabled
 - Resend account for email services
-- (Optional) Redis instance for caching
-- (Optional) Pinecone account for vector search
+- (Optional) Firebase Memorystore instance for caching
+- (Optional) Vertex AI Vector Search index
 
 ### Access Requirements
 - Firebase project owner or editor permissions

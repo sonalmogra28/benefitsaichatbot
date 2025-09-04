@@ -1,13 +1,32 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
@@ -48,7 +67,10 @@ interface BenefitsManagementProps {
   companyName?: string;
 }
 
-export function BenefitsManagement({ companyId, companyName = 'Your Company' }: BenefitsManagementProps) {
+export function BenefitsManagement({
+  companyId,
+  companyName = 'Your Company',
+}: BenefitsManagementProps) {
   const [plans, setPlans] = useState<BenefitPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -130,7 +152,7 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
     try {
       // TODO: API call to create plan
       toast({
-        title: "Plan Created",
+        title: 'Plan Created',
         description: `${formData.name} has been created successfully`,
       });
       setShowCreateDialog(false);
@@ -139,9 +161,9 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
       window.location.reload();
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to create benefit plan",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create benefit plan',
+        variant: 'destructive',
       });
     }
   };
@@ -150,35 +172,40 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
     try {
       // TODO: API call to update plan
       toast({
-        title: "Plan Updated",
-        description: "The benefit plan has been updated successfully",
+        title: 'Plan Updated',
+        description: 'The benefit plan has been updated successfully',
       });
       setEditingPlan(null);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update benefit plan",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update benefit plan',
+        variant: 'destructive',
       });
     }
   };
 
-  const handleTogglePlanStatus = async (planId: string, currentStatus: boolean) => {
+  const handleTogglePlanStatus = async (
+    planId: string,
+    currentStatus: boolean,
+  ) => {
     try {
       // TODO: API call to toggle status
       toast({
-        title: currentStatus ? "Plan Deactivated" : "Plan Activated",
+        title: currentStatus ? 'Plan Deactivated' : 'Plan Activated',
         description: `The plan has been ${currentStatus ? 'deactivated' : 'activated'} successfully`,
       });
       // Update local state
-      setPlans(plans.map(plan => 
-        plan.id === planId ? { ...plan, isActive: !currentStatus } : plan
-      ));
+      setPlans(
+        plans.map((plan) =>
+          plan.id === planId ? { ...plan, isActive: !currentStatus } : plan,
+        ),
+      );
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update plan status",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update plan status',
+        variant: 'destructive',
       });
     }
   };
@@ -199,15 +226,19 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
 
   const getPlanIcon = (type: string) => {
     switch (type) {
-      case 'health': return <Heart className="size-5" />;
-      case 'dental': return <Shield className="size-5" />;
-      case 'vision': return <Eye className="size-5" />;
-      default: return <Heart className="size-5" />;
+      case 'health':
+        return <Heart className="size-5" />;
+      case 'dental':
+        return <Shield className="size-5" />;
+      case 'vision':
+        return <Eye className="size-5" />;
+      default:
+        return <Heart className="size-5" />;
     }
   };
 
-  const activePlans = plans.filter(plan => plan.isActive);
-  const inactivePlans = plans.filter(plan => !plan.isActive);
+  const activePlans = plans.filter((plan) => plan.isActive);
+  const inactivePlans = plans.filter((plan) => !plan.isActive);
 
   if (loading) {
     return (
@@ -250,13 +281,17 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activePlans.length}</div>
-            <p className="text-xs text-muted-foreground">Available for enrollment</p>
+            <p className="text-xs text-muted-foreground">
+              Available for enrollment
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Enrollments</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Enrollments
+            </CardTitle>
             <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -274,20 +309,32 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${plans.reduce((sum, plan) => sum + (plan.monthlyCost * plan.enrollmentCount), 0).toLocaleString()}
+              $
+              {plans
+                .reduce(
+                  (sum, plan) => sum + plan.monthlyCost * plan.enrollmentCount,
+                  0,
+                )
+                .toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground">Total benefits spend</p>
+            <p className="text-xs text-muted-foreground">
+              Total benefits spend
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Utilization</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Avg Utilization
+            </CardTitle>
             <TrendingUp className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">72%</div>
-            <p className="text-xs text-muted-foreground">Of eligible employees</p>
+            <p className="text-xs text-muted-foreground">
+              Of eligible employees
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -295,8 +342,12 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
       {/* Plans Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="active">Active Plans ({activePlans.length})</TabsTrigger>
-          <TabsTrigger value="inactive">Inactive Plans ({inactivePlans.length})</TabsTrigger>
+          <TabsTrigger value="active">
+            Active Plans ({activePlans.length})
+          </TabsTrigger>
+          <TabsTrigger value="inactive">
+            Inactive Plans ({inactivePlans.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="space-y-4">
@@ -312,14 +363,21 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    <Badge
+                      variant="secondary"
+                      className="bg-green-100 text-green-800"
+                    >
                       Active
                     </Badge>
-                    <Button variant="ghost" size="sm" onClick={() => setEditingPlan(plan)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingPlan(plan)}
+                    >
                       <Edit className="size-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="sm"
                       onClick={() => handleTogglePlanStatus(plan.id, true)}
                     >
@@ -331,36 +389,56 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Monthly Cost</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Monthly Cost
+                    </p>
                     <p className="text-lg font-semibold">${plan.monthlyCost}</p>
                     <p className="text-xs text-muted-foreground">
                       Employer pays: ${plan.employerContribution}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Enrollments</p>
-                    <p className="text-lg font-semibold">{plan.enrollmentCount} employees</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Enrollments
+                    </p>
+                    <p className="text-lg font-semibold">
+                      {plan.enrollmentCount} employees
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      Total cost: ${(plan.monthlyCost * plan.enrollmentCount).toLocaleString()}/mo
+                      Total cost: $
+                      {(
+                        plan.monthlyCost * plan.enrollmentCount
+                      ).toLocaleString()}
+                      /mo
                     </p>
                   </div>
                   {plan.deductible && (
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Deductible</p>
-                      <p className="text-lg font-semibold">${plan.deductible}</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Deductible
+                      </p>
+                      <p className="text-lg font-semibold">
+                        ${plan.deductible}
+                      </p>
                       <p className="text-xs text-muted-foreground">Annual</p>
                     </div>
                   )}
                   {plan.outOfPocketMax && (
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Out of Pocket Max</p>
-                      <p className="text-lg font-semibold">${plan.outOfPocketMax}</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Out of Pocket Max
+                      </p>
+                      <p className="text-lg font-semibold">
+                        ${plan.outOfPocketMax}
+                      </p>
                       <p className="text-xs text-muted-foreground">Annual</p>
                     </div>
                   )}
                 </div>
                 <div className="mt-4">
-                  <p className="text-sm text-muted-foreground">{plan.coverage}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {plan.coverage}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -397,8 +475,8 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">Inactive</Badge>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="sm"
                       onClick={() => handleTogglePlanStatus(plan.id, false)}
                     >
@@ -436,15 +514,19 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="e.g., Premium Health Insurance"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="planType">Plan Type</Label>
-                <Select 
+                <Select
                   value={formData.planType}
-                  onValueChange={(value) => setFormData({ ...formData, planType: value })}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, planType: value })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -467,7 +549,9 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
                 <Input
                   id="provider"
                   value={formData.provider}
-                  onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, provider: e.target.value })
+                  }
                   placeholder="e.g., Blue Cross Blue Shield"
                 />
               </div>
@@ -476,7 +560,9 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
                 <Input
                   id="coverage"
                   value={formData.coverage}
-                  onChange={(e) => setFormData({ ...formData, coverage: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, coverage: e.target.value })
+                  }
                   placeholder="e.g., Comprehensive"
                 />
               </div>
@@ -489,23 +575,33 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
                   id="monthlyCost"
                   type="number"
                   value={formData.monthlyCost}
-                  onChange={(e) => setFormData({ ...formData, monthlyCost: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, monthlyCost: e.target.value })
+                  }
                   placeholder="450"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="employerContribution">Employer Contribution ($)</Label>
+                <Label htmlFor="employerContribution">
+                  Employer Contribution ($)
+                </Label>
                 <Input
                   id="employerContribution"
                   type="number"
                   value={formData.employerContribution}
-                  onChange={(e) => setFormData({ ...formData, employerContribution: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      employerContribution: e.target.value,
+                    })
+                  }
                   placeholder="350"
                 />
               </div>
             </div>
 
-            {(formData.planType === 'health' || formData.planType === 'dental') && (
+            {(formData.planType === 'health' ||
+              formData.planType === 'dental') && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="deductible">Annual Deductible ($)</Label>
@@ -513,7 +609,9 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
                     id="deductible"
                     type="number"
                     value={formData.deductible}
-                    onChange={(e) => setFormData({ ...formData, deductible: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, deductible: e.target.value })
+                    }
                     placeholder="1500"
                   />
                 </div>
@@ -523,7 +621,12 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
                     id="outOfPocketMax"
                     type="number"
                     value={formData.outOfPocketMax}
-                    onChange={(e) => setFormData({ ...formData, outOfPocketMax: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        outOfPocketMax: e.target.value,
+                      })
+                    }
                     placeholder="5000"
                   />
                 </div>
@@ -535,20 +638,28 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Describe the key features and coverage of this plan..."
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setShowCreateDialog(false);
-              resetForm();
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCreateDialog(false);
+                resetForm();
+              }}
+            >
               Cancel
             </Button>
-            <Button onClick={handleCreatePlan} disabled={!formData.name || !formData.provider}>
+            <Button
+              onClick={handleCreatePlan}
+              disabled={!formData.name || !formData.provider}
+            >
               Create Plan
             </Button>
           </DialogFooter>

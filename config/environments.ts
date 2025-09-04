@@ -38,7 +38,8 @@ export interface EnvironmentConfig {
 const configs: Record<Environment, EnvironmentConfig> = {
   development: {
     name: 'Development',
-    firebaseProject: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-dev',
+    firebaseProject:
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-dev',
     apiUrl: 'http://localhost:3000/api',
     appUrl: 'http://localhost:3000',
     features: {
@@ -65,12 +66,16 @@ const configs: Record<Environment, EnvironmentConfig> = {
       enableUserAnalytics: false,
     },
   },
-  
+
   staging: {
     name: 'Staging',
-    firebaseProject: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-staging',
-    apiUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api` || 'https://staging.benefitsbot.com/api',
-    appUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://staging.benefitsbot.com',
+    firebaseProject:
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-staging',
+    apiUrl:
+      `${process.env.NEXT_PUBLIC_APP_URL}/api` ||
+      'https://staging.benefitsbot.com/api',
+    appUrl:
+      process.env.NEXT_PUBLIC_APP_URL || 'https://staging.benefitsbot.com',
     features: {
       aiChat: true,
       documentUpload: true,
@@ -95,11 +100,13 @@ const configs: Record<Environment, EnvironmentConfig> = {
       enableUserAnalytics: false, // No real user tracking in staging
     },
   },
-  
+
   production: {
     name: 'Production',
-    firebaseProject: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-prod',
-    apiUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api` || 'https://benefitsbot.com/api',
+    firebaseProject:
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-prod',
+    apiUrl:
+      `${process.env.NEXT_PUBLIC_APP_URL}/api` || 'https://benefitsbot.com/api',
     appUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://benefitsbot.com',
     features: {
       aiChat: true,
@@ -128,8 +135,11 @@ const configs: Record<Environment, EnvironmentConfig> = {
 };
 
 export function getEnvironment(): Environment {
-  const env = process.env.NEXT_PUBLIC_ENVIRONMENT || process.env.NODE_ENV || 'development';
-  
+  const env =
+    process.env.NEXT_PUBLIC_ENVIRONMENT ||
+    process.env.NODE_ENV ||
+    'development';
+
   if (env === 'staging') return 'staging';
   if (env === 'production') return 'production';
   return 'development';
@@ -152,7 +162,9 @@ export function isDevelopment(): boolean {
 }
 
 // Feature flags
-export function isFeatureEnabled(feature: keyof EnvironmentConfig['features']): boolean {
+export function isFeatureEnabled(
+  feature: keyof EnvironmentConfig['features'],
+): boolean {
   return getConfig().features[feature];
 }
 

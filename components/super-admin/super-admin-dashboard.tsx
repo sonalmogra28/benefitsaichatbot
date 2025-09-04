@@ -1,16 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building2, Users, FileText, BarChart3, Activity, DollarSign, Clock } from 'lucide-react';
+import {
+  Building2,
+  Users,
+  FileText,
+  BarChart3,
+  Activity,
+  DollarSign,
+  Clock,
+} from 'lucide-react';
 import { AnalyticsDashboard } from './analytics-dashboard';
 import Link from 'next/link';
+import type { SuperAdminStats } from '@/types/api';
 
-interface DashboardStats {
-  totalCompanies: number;
-  totalUsers: number;
-  totalDocuments: number;
+interface DashboardStats extends SuperAdminStats {
   activeChats: number;
   monthlyGrowth: number;
   systemHealth: 'healthy' | 'degraded' | 'down';
@@ -20,14 +32,15 @@ interface DashboardStats {
 
 export function SuperAdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
-    totalCompanies: 0,
     totalUsers: 0,
     totalDocuments: 0,
+    totalBenefitPlans: 0,
+    activeEnrollments: 0,
     activeChats: 0,
     monthlyGrowth: 0,
     systemHealth: 'healthy',
     apiUsage: 0,
-    storageUsed: 0
+    storageUsed: 0,
   });
 
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
@@ -42,52 +55,58 @@ export function SuperAdminDashboard() {
       // Get the user's auth token
       const auth = (await import('firebase/auth')).getAuth();
       const user = auth.currentUser;
-      
+
       if (!user) {
         console.error('No authenticated user');
         return;
       }
-      
+
       const token = await user.getIdToken();
-      
+
       // Fetch dashboard stats from API
       const statsResponse = await fetch('/api/super-admin/stats', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
-      
+
       if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        setStats(statsData);
+        const statsData = (await statsResponse.json()) as SuperAdminStats;
+        setStats((prev) => ({ ...prev, ...statsData }));
       } else {
         console.error('Failed to fetch stats:', statsResponse.statusText);
         // Set default values on error
         setStats({
-          totalCompanies: 0,
           totalUsers: 0,
           totalDocuments: 0,
+          totalBenefitPlans: 0,
+          activeEnrollments: 0,
           activeChats: 0,
           monthlyGrowth: 0,
           systemHealth: 'degraded',
           apiUsage: 0,
-          storageUsed: 0
+          storageUsed: 0,
         });
       }
-      
+
       // Fetch recent activity
-      const activityResponse = await fetch('/api/super-admin/activity?limit=5', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
+      const activityResponse = await fetch(
+        '/api/super-admin/activity?limit=5',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
-      
+      );
+
       if (activityResponse.ok) {
         const activityData = await activityResponse.json();
-        setRecentActivity(activityData.map((activity: any) => ({
-          ...activity,
-          timestamp: new Date(activity.timestamp)
-        })));
+        setRecentActivity(
+          activityData.map((activity: any) => ({
+            ...activity,
+            timestamp: new Date(activity.timestamp),
+          })),
+        );
       } else {
         console.error('Failed to fetch activity:', activityResponse.statusText);
         setRecentActivity([]);
@@ -96,14 +115,15 @@ export function SuperAdminDashboard() {
       console.error('Error fetching dashboard stats:', error);
       // Set default values on error
       setStats({
-        totalCompanies: 0,
         totalUsers: 0,
         totalDocuments: 0,
+        totalBenefitPlans: 0,
+        activeEnrollments: 0,
         activeChats: 0,
         monthlyGrowth: 0,
         systemHealth: 'degraded',
         apiUsage: 0,
-        storageUsed: 0
+        storageUsed: 0,
       });
       setRecentActivity([]);
     }
@@ -124,7 +144,7 @@ export function SuperAdminDashboard() {
 
   const formatTimeAgo = (date: Date) => {
     const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
-    
+
     if (seconds < 60) return 'just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
@@ -141,14 +161,12 @@ export function SuperAdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
+            <CardTitle className="text-sm font-medium">Benefit Plans</CardTitle>
             <Building2 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCompanies}</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+{stats.monthlyGrowth}%</span> from last month
-            </p>
+            <div className="text-2xl font-bold">{stats.totalBenefitPlans}</div>
+            <p className="text-xs text-muted-foreground">Available plans</p>
           </CardContent>
         </Card>
 
@@ -159,7 +177,9 @@ export function SuperAdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">Across all companies</p>
+            <p className="text-xs text-muted-foreground">
+              Across all companies
+            </p>
           </CardContent>
         </Card>
 
@@ -180,10 +200,14 @@ export function SuperAdminDashboard() {
             <Activity className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold capitalize ${getHealthColor(stats.systemHealth)}`}>
+            <div
+              className={`text-2xl font-bold capitalize ${getHealthColor(stats.systemHealth)}`}
+            >
               {stats.systemHealth}
             </div>
-            <p className="text-xs text-muted-foreground">All services operational</p>
+            <p className="text-xs text-muted-foreground">
+              All services operational
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -196,12 +220,19 @@ export function SuperAdminDashboard() {
             <BarChart3 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.apiUsage.toLocaleString()}</div>
+            <div className="text-2xl font-bold">
+              {stats.apiUsage.toLocaleString()}
+            </div>
             <p className="text-xs text-muted-foreground">Calls this month</p>
             <div className="mt-3 h-2 bg-gray-200 rounded">
-              <div className="h-2 bg-blue-600 rounded" style={{ width: '65%' }} />
+              <div
+                className="h-2 bg-blue-600 rounded"
+                style={{ width: '65%' }}
+              />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">65% of monthly limit</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              65% of monthly limit
+            </p>
           </CardContent>
         </Card>
 
@@ -214,7 +245,10 @@ export function SuperAdminDashboard() {
             <div className="text-2xl font-bold">{stats.storageUsed} GB</div>
             <p className="text-xs text-muted-foreground">Of 100 GB total</p>
             <div className="mt-3 h-2 bg-gray-200 rounded">
-              <div className="h-2 bg-green-600 rounded" style={{ width: '32%' }} />
+              <div
+                className="h-2 bg-green-600 rounded"
+                style={{ width: '32%' }}
+              />
             </div>
             <p className="text-xs text-muted-foreground mt-1">32% capacity</p>
           </CardContent>
@@ -288,8 +322,8 @@ export function SuperAdminDashboard() {
                 Manage Documents
               </Button>
             </Link>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={handleExportAnalytics}
             >

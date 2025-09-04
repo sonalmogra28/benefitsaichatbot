@@ -38,7 +38,8 @@ export interface EmployeeInvitationData {
 }
 
 export class EmailService {
-  private fromEmail = process.env.FROM_EMAIL || 'Benefits Chatbot <noreply@yourdomain.com>';
+  private fromEmail =
+    process.env.FROM_EMAIL || 'Benefits Chatbot <noreply@yourdomain.com>';
 
   private async queueEmail(
     options: EmailOptions,
@@ -217,13 +218,17 @@ export class EmailService {
               <h2>Hi ${data.name}!</h2>
               <p>${data.message}</p>
 
-              ${data.actionUrl ? `
+              ${
+                data.actionUrl
+                  ? `
                 <p>Click the button below to take action:</p>
                 <a href="${data.actionUrl}" class="button">View Details</a>
 
                 <p>If the button doesn't work, copy and paste this link into your browser:</p>
                 <p style="word-break: break-all; color: #667eea;">${data.actionUrl}</p>
-              ` : ''}
+              `
+                  : ''
+              }
 
               <p>Best regards,<br>The Benefits Portal Team</p>
             </div>
@@ -243,7 +248,7 @@ export class EmailService {
   }
 
   async sendEmployeeInvitation(
-    data: EmployeeInvitationData
+    data: EmployeeInvitationData,
   ): Promise<{ success: boolean; error?: string }> {
     const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/register?company=${encodeURIComponent(data.companyName)}`;
 

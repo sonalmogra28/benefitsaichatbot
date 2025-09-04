@@ -93,7 +93,31 @@ export class ChatPage {
       });
     });
 
-    await this.page.getByTestId('attachments-button').click();
+    const button = this.page.getByTestId('attachments-button');
+    await button.waitFor({ state: 'visible' });
+    await button.click();
+  }
+
+  async addDocumentAttachment() {
+    this.page.on('filechooser', async (fileChooser) => {
+      const filePath = path.join(
+        process.cwd(),
+        'tests',
+        'fixtures',
+        'sample-document.txt',
+      );
+      const fileBuffer = fs.readFileSync(filePath);
+
+      await fileChooser.setFiles({
+        name: 'sample-document.txt',
+        mimeType: 'text/plain',
+        buffer: fileBuffer,
+      });
+    });
+
+    const button = this.page.getByTestId('attachments-button');
+    await button.waitFor({ state: 'visible' });
+    await button.click();
   }
 
   public async getSelectedModel() {

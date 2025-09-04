@@ -3,11 +3,13 @@ import { adminDb, adminStorage } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as pdf from 'pdf-parse';
 import * as mammoth from 'mammoth';
-
+import { generateEmbeddings } from '../../lib/ai/embeddings';
+import { vectorSearchService } from '../../lib/ai/vector-search';
 // The Cloud Storage bucket to process documents from. This must be set via
 // environment variable so the function doesn't accidentally process files from
 // unintended buckets.
 const BUCKET_NAME = process.env.GCLOUD_STORAGE_BUCKET;
+
 
 async function getTextFromPdf(fileBuffer: Buffer): Promise<string> {
   const data = await pdf(fileBuffer);
@@ -70,13 +72,13 @@ export const processDocumentOnUpload = functions.storage
     const documentRef = snapshot.docs[0].ref;
     const documentId = documentRef.id;
 
+
     try {
       console.log(`Processing document ${documentId} for file: ${filePath}`);
       await documentRef.update({
         status: 'processing',
         updatedAt: FieldValue.serverTimestamp(),
       });
-
       // Read the file from the configured bucket.
       const fileBuffer = await adminStorage
         .bucket(BUCKET_NAME)
@@ -113,12 +115,14 @@ export const processDocumentOnUpload = functions.storage
       chunks.forEach((chunk, index) => {
         const chunkRef = chunksCollectionRef.doc(`chunk_${index}`);
         batch.set(chunkRef, {
+
           content: chunk,
           chunkNumber: index + 1,
           charCount: chunk.length,
         });
       });
       await batch.commit();
+
 
       await documentRef.update({
         status: 'processed',

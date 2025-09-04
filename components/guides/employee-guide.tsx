@@ -11,11 +11,11 @@ export function EmployeeGuide() {
         </p>
         <h3>Chat</h3>
         <p>
-          The chat page allows you to have a conversation with the Benefits
-          AI Chatbot. You can ask the chatbot questions about your company&apos;s
+          The chat page allows you to have a conversation with the Benefits AI
+          Chatbot. You can ask the chatbot questions about your company&apos;s
           benefits, and it will provide you with an answer. You can start a new
-          conversation by clicking the &quot;New Chat&quot; button. You can also clear
-          the chat history by clicking the &quot;Clear Chat&quot; button.
+          conversation by clicking the &quot;New Chat&quot; button. You can also
+          clear the chat history by clicking the &quot;Clear Chat&quot; button.
         </p>
         <h3>Onboarding</h3>
         <p>

@@ -30,7 +30,7 @@ class NotificationService {
     to: string,
     subject: string,
     html: string,
-    text?: string
+    text?: string,
   ): Promise<boolean> {
     try {
       if (!process.env.RESEND_API_KEY) {
@@ -64,7 +64,7 @@ class NotificationService {
       return true;
     } catch (error) {
       console.error('Email send error:', error);
-      
+
       // Log failed notification
       await this.logNotification({
         userId: to,
@@ -74,7 +74,7 @@ class NotificationService {
         status: 'failed',
         metadata: { error: (error as Error).message },
       });
-      
+
       return false;
     }
   }
@@ -86,11 +86,11 @@ class NotificationService {
     userId: string,
     title: string,
     message: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): Promise<boolean> {
     try {
       const notificationRef = db.collection('notifications').doc();
-      
+
       await notificationRef.set({
         id: notificationRef.id,
         userId,
@@ -117,7 +117,7 @@ class NotificationService {
   async getUserNotifications(
     userId: string,
     limit = 50,
-    unreadOnly = false
+    unreadOnly = false,
   ): Promise<Notification[]> {
     try {
       let query = db
@@ -132,10 +132,13 @@ class NotificationService {
 
       const snapshot = await query.get();
 
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as Notification));
+      return snapshot.docs.map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+          }) as Notification,
+      );
     } catch (error) {
       console.error('Failed to get user notifications:', error);
       return [];
@@ -147,7 +150,9 @@ class NotificationService {
    */
   async markAsRead(notificationId: string, userId: string): Promise<boolean> {
     try {
-      const notificationRef = db.collection('notifications').doc(notificationId);
+      const notificationRef = db
+        .collection('notifications')
+        .doc(notificationId);
       const doc = await notificationRef.get();
 
       if (!doc.exists || doc.data()?.userId !== userId) {
@@ -172,7 +177,7 @@ class NotificationService {
   async sendWelcomeEmail(
     email: string,
     name: string,
-    companyName?: string
+    companyName?: string,
   ): Promise<boolean> {
     const subject = 'Welcome to Benefits Assistant!';
     const html = `
@@ -189,7 +194,7 @@ class NotificationService {
       <br>
       <p>Best regards,<br>The Benefits Assistant Team</p>
     `;
-    
+
     return this.sendEmail(email, subject, html);
   }
 
@@ -198,7 +203,7 @@ class NotificationService {
    */
   async sendPasswordResetEmail(
     email: string,
-    resetLink: string
+    resetLink: string,
   ): Promise<boolean> {
     const subject = 'Reset Your Password';
     const html = `
@@ -211,7 +216,7 @@ class NotificationService {
       <br>
       <p>Best regards,<br>The Benefits Assistant Team</p>
     `;
-    
+
     return this.sendEmail(email, subject, html);
   }
 
@@ -221,7 +226,7 @@ class NotificationService {
   async sendEnrollmentConfirmation(
     email: string,
     planName: string,
-    details: Record<string, any>
+    details: Record<string, any>,
   ): Promise<boolean> {
     const subject = `Enrollment Confirmed: ${planName}`;
     const html = `
@@ -229,15 +234,15 @@ class NotificationService {
       <p>Your enrollment in ${planName} has been confirmed!</p>
       <h3>Enrollment Details:</h3>
       <ul>
-        ${Object.entries(details).map(([key, value]) => 
-          `<li><strong>${key}:</strong> ${value}</li>`
-        ).join('')}
+        ${Object.entries(details)
+          .map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`)
+          .join('')}
       </ul>
       <p>You can view and manage your benefits anytime by logging into your account.</p>
       <br>
       <p>Best regards,<br>The Benefits Assistant Team</p>
     `;
-    
+
     return this.sendEmail(email, subject, html);
   }
 
@@ -245,11 +250,11 @@ class NotificationService {
    * Log notification to database
    */
   private async logNotification(
-    notification: Omit<Notification, 'id' | 'createdAt'>
+    notification: Omit<Notification, 'id' | 'createdAt'>,
   ): Promise<void> {
     try {
       const notificationRef = db.collection('notification_logs').doc();
-      
+
       await notificationRef.set({
         id: notificationRef.id,
         ...notification,
@@ -267,16 +272,16 @@ class NotificationService {
     try {
       const collectionRef = db.collection('notification_logs');
       let queryRef: any;
-      
+
       if (companyId) {
         // Would need to add companyId to notifications
         queryRef = collectionRef.where('companyId', '==', companyId);
       } else {
         queryRef = collectionRef;
       }
-      
+
       const snapshot = await queryRef.get();
-      
+
       const stats: any = {
         total: snapshot.size,
         sent: 0,
@@ -288,8 +293,8 @@ class NotificationService {
           sms: 0,
         },
       };
-      
-      snapshot.docs.forEach(doc => {
+
+      snapshot.docs.forEach((doc) => {
         const data = doc.data();
         if (data.status && stats[data.status] !== undefined) {
           stats[data.status]++;
@@ -298,7 +303,7 @@ class NotificationService {
           stats.byType[data.type]++;
         }
       });
-      
+
       return stats;
     } catch (error) {
       console.error('Failed to get notification stats:', error);

@@ -6,7 +6,7 @@ export function checkPipelineMetrics() {
     lintPassed: false,
     testsPassed: false,
     powValid: false,
-    buildSuccess: false
+    buildSuccess: false,
   };
 
   try {
