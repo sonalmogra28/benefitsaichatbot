@@ -103,12 +103,32 @@ pnpm install
 cp .env.example .env.local
 # Never commit real `.env` files or secrets to version control.
 
-# Required environment variables:
-FIREBASE_PROJECT_ID=       # Firebase project identifier
-FIREBASE_CLIENT_EMAIL=     # Service account client email
-FIREBASE_PRIVATE_KEY=      # Base64-encoded private key
+# Review .env.local and fill in the required variables
+# See .env.local.example for a complete list
+
+# Validate your environment
+pnpm run validate-env
 
 ```
+
+### Required Environment Variables
+
+The application relies on the following variables:
+
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `NEXT_PUBLIC_FIREBASE_DATABASE_URL`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `RESEND_API_KEY`
+- `GOOGLE_GENERATIVE_AI_API_KEY` (or another AI provider key)
+
+See `.env.example` for the complete list and descriptions.
 
 #### Google Cloud Setup
 

@@ -39,9 +39,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_FIREBASE_APP_ID: z.string().min(1, 'Firebase App ID is required'),
 
   // Firebase Admin SDK (Required for server-side)
-  FIREBASE_ADMIN_PROJECT_ID: z.string().optional(), // Uses NEXT_PUBLIC_FIREBASE_PROJECT_ID if not set
-  FIREBASE_ADMIN_CLIENT_EMAIL: z.string().email().optional(), // Only needed if not using ADC
-  FIREBASE_ADMIN_PRIVATE_KEY: z.string().optional(), // Only needed if not using ADC
+  FIREBASE_PROJECT_ID: z.string().optional(), // Uses NEXT_PUBLIC_FIREBASE_PROJECT_ID if not set
+  FIREBASE_CLIENT_EMAIL: z.string().email().optional(), // Only needed if not using ADC
+  FIREBASE_PRIVATE_KEY: z.string().optional(), // Only needed if not using ADC
+  
 
   // AI Provider Keys (At least one required)
   GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
@@ -110,7 +111,7 @@ try {
   console.log(`   App URL: ${env.NEXT_PUBLIC_APP_URL}`);
   // Firebase Admin SDK check
   console.log('\n🔐 Firebase Admin SDK:');
-  if (env.FIREBASE_ADMIN_CLIENT_EMAIL && env.FIREBASE_ADMIN_PRIVATE_KEY) {
+  if (env.FIREBASE_CLIENT_EMAIL && env.FIREBASE_PRIVATE_KEY) {
     console.log('   Using service account credentials');
   } else if (env.GOOGLE_APPLICATION_CREDENTIALS) {
     console.log(
