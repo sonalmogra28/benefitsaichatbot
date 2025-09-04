@@ -23,7 +23,8 @@
     "reset-auth": "pnpm tsx scripts/reset-all-user-passwords.ts",
     "db:seed": "pnpm tsx scripts/seed-benefits-data.ts",
     "db:backup": "./scripts/backup.sh",
-    "db:process-docs": "pnpm tsx scripts/process-documents.ts"
+    "db:process-docs": "pnpm tsx scripts/process-documents.ts",
+    "alerts:function-failures": "pnpm tsx scripts/create-function-failure-alert.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.5",
@@ -41,6 +42,8 @@
     "@firebase/storage": "^0.14.0",
     "@google-cloud/aiplatform": "^5.5.0",
     "@google-cloud/documentai": "^9.3.0",
+    "@google-cloud/logging": "^11.2.1",
+    "@google-cloud/monitoring": "^5.3.0",
     "@google-cloud/storage": "^7.17.0",
     "@google-cloud/vertexai": "^1.10.0",
     "@hookform/resolvers": "^5.2.1",

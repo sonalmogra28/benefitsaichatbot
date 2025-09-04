@@ -22,13 +22,13 @@ export const processDocumentOnUpload = functions.storage
     const { bucket, name: filePath, contentType } = object;
 
   if (!filePath || !contentType) {
-    console.log('File path or content type is missing.');
+    functions.logger.warn('File path or content type is missing', { object });
     return;
   }
-  
+
   // For this project, we only care about documents in the 'documents' folder
   if (!filePath.startsWith('documents/')) {
-    console.log(`File ${filePath} is not in a 'documents' folder, skipping.`);
+    functions.logger.info('File not in documents folder, skipping', { filePath });
     return;
   }
 
@@ -37,14 +37,14 @@ export const processDocumentOnUpload = functions.storage
   const snapshot = await documentsRef.where('storagePath', '==', filePath).limit(1).get();
 
   if (snapshot.empty) {
-    console.error(`No Firestore document found for storage path: ${filePath}`);
+    functions.logger.error('No Firestore document found for storage path', { filePath });
     return;
   }
   const documentRef = snapshot.docs[0].ref;
   const documentId = documentRef.id;
 
   try {
-    console.log(`Processing document ${documentId} for file: ${filePath}`);
+    functions.logger.info('Processing document', { documentId, filePath });
     await documentRef.update({ status: 'processing', updatedAt: FieldValue.serverTimestamp() });
 
     const fileBuffer = await adminStorage.bucket(bucket).file(filePath).download();
@@ -55,7 +55,7 @@ export const processDocumentOnUpload = functions.storage
     } else if (contentType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       content = await getTextFromDocx(fileBuffer[0]);
     } else {
-      console.warn(`Unsupported content type: ${contentType}. Skipping.`);
+      functions.logger.warn('Unsupported content type', { contentType });
       await documentRef.update({ status: 'failed', error: 'Unsupported file type', updatedAt: FieldValue.serverTimestamp() });
 
       return;
@@ -101,15 +101,15 @@ export const processDocumentOnUpload = functions.storage
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    console.log(`[SUCCESS] Stored ${chunks.length} chunks for document ${documentId}`);
+    functions.logger.info('Stored document chunks', { documentId, chunkCount: chunks.length });
   } catch (error) {
-    console.error(`[FAIL] Could not process document ${documentId}:`, error);
-    await documentRef.update({
-      status: 'failed',
-      error: (error as Error).message,
-      updatedAt: FieldValue.serverTimestamp(),
-    }).catch((err: unknown) =>
-      console.error('Failed to update document status to "failed":', err),
-    );
+    functions.logger.error('Could not process document', { documentId, error });
+    await documentRef
+      .update({
+        status: 'failed',
+        error: (error as Error).message,
+        updatedAt: FieldValue.serverTimestamp(),
+      })
+      .catch((err) => functions.logger.error('Failed to update document status to failed', { documentId, error: err }));
   }
   });
