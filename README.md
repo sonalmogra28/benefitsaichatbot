@@ -130,38 +130,38 @@ To use Vertex AI and Document AI features:
    - `VERTEX_ENDPOINT_ID`
    - `DOCUMENT_AI_PROCESSOR_ID`
 
+
+## Quick Start Commands
+
 ### Development
 ```bash
-# Run database migrations
-pnpm db:migrate
+# Install dependencies
+pnpm install
 
 # Start development server
-pnpm dev
+pnpm run dev
+
+# Start Firebase emulators
+firebase emulators:start
+```
+
+### Build & Testing
+```bash
+# Build application
+pnpm run build
+
+# Type checking
+pnpm run typecheck
 
 # Run tests
 pnpm test
 
-# Check types
-pnpm tsc --noEmit
+# Linting
+pnpm run lint
+pnpm run lint:fix
 
-# Lint and format
-pnpm lint:fix
-pnpm format
-```
-
-### Database Management
-```bash
-# Generate migration
-pnpm db:generate
-
-# Run migrations
-pnpm db:migrate
-
-# Open Drizzle Studio
-pnpm db:studio
-
-# Push schema changes (dev only)
-pnpm db:push
+# Format code
+pnpm run format
 ```
 
 ## 🧪 Testing Strategy
