@@ -3,7 +3,14 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { vectorSearchService } from './vector-search';
 import { generateEmbedding } from './embeddings';
 
-// ... (interfaces remain the same)
+interface DocumentMetadata {
+  [key: string]: unknown;
+}
+
+interface SearchResult {
+  chunk: any;
+  score: number;
+}
 
 class RAGSystem {
 
@@ -81,24 +88,26 @@ class RAGSystem {
       return [];
     }
   
-    const chunkIds = neighbors.map(n => n.datapoint.datapointId);
+    const chunkIds = neighbors.map((n: any) => n.datapoint.datapointId);
     
     // Fetch chunk content from Firestore based on IDs from vector search
     const chunkDocs = await adminDb.collection('document_chunks').where('id', 'in', chunkIds).get();
     
-    const chunksById = new Map();
-    chunkDocs.forEach(doc => chunksById.set(doc.id, doc.data()));
+    const chunksById = new Map<string, any>();
+    chunkDocs.forEach((doc) => chunksById.set(doc.id, doc.data()));
     
-    return neighbors.map(neighbor => {
+    return neighbors.map((neighbor: any) => {
       const chunk = chunksById.get(neighbor.datapoint.datapointId);
       return {
         chunk,
         score: neighbor.distance, // Vertex AI returns distance, can be converted to similarity
       };
-    }).filter(result => result.chunk && result.chunk.companyId === companyId);
+    }).filter((result: any) => result.chunk && result.chunk.companyId === companyId);
   }
 
-  // ... (keywordSearch, splitIntoChunks, cosineSimilarity, generateContext remain the same)
+  private splitIntoChunks(text: string, size = 1000): string[] {
+    return text.match(new RegExp(`.{1,${size}}`, 'g')) || [];
+  }
 }
 
 export const ragSystem = new RAGSystem();

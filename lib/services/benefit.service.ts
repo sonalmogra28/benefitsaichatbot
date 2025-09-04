@@ -1,7 +1,7 @@
 
 import { db } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { BenefitPlan } from '@/lib/types/benefit';
+import type { BenefitPlan } from '@/lib/types/benefit-plan.type';
 
 class BenefitService {
   private benefitPlansCollection = db.collection('benefitPlans');

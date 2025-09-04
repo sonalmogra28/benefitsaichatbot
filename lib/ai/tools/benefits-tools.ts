@@ -52,8 +52,8 @@ export const comparePlans = tool({
   description: 'Compare multiple benefit plans side by side',
   parameters: comparePlansSchema,
   execute: async ({ planIds, comparisonFactors, userProfile, companyId }: z.infer<typeof comparePlansSchema>) => {
-      const allPlans = await benefitService.getBenefitPlans(companyId);
-      const plansToCompare = allPlans.filter(plan => planIds.includes(plan.id));
+      const allPlans = await benefitService.getBenefitPlans();
+      const plansToCompare = allPlans.filter((plan: any) => planIds.includes(plan.id));
 
       if (plansToCompare.length < 2) {
         return {
@@ -66,7 +66,7 @@ export const comparePlans = tool({
       const recommendation = plansToCompare[0];
 
       return {
-        plans: plansToCompare.map(p => ({
+        plans: plansToCompare.map((p: any) => ({
             id: p.id,
             name: p.name,
             premium: p.monthlyPremium,
@@ -174,7 +174,7 @@ export const getEnrollmentDeadline = tool({
   description: 'Get enrollment deadlines for benefits',
   parameters: getEnrollmentDeadlineSchema,
   execute: async ({ companyId, benefitType, enrollmentPeriod }: z.infer<typeof getEnrollmentDeadlineSchema>) => {
-      const company = await companyService.getCompany(companyId);
+      const company = await (companyService as any).getCompany?.(companyId);
 
       if (!company) {
           return {

@@ -1,10 +1,8 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { adminDb, adminStorage } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import * as pdf from 'pdf-parse';
-import * as mammoth from 'mammoth';
-
-const BUCKET_NAME = process.env.GCLOUD_STORAGE_BUCKET || 'your-default-bucket-name';
+import pdf from 'pdf-parse';
+import mammoth from 'mammoth';
 
 async function getTextFromPdf(fileBuffer: Buffer): Promise<string> {
   const data = await pdf(fileBuffer);
@@ -16,8 +14,10 @@ async function getTextFromDocx(fileBuffer: Buffer): Promise<string> {
   return value;
 }
 
-export const processDocumentOnUpload = functions.storage.object().onFinalize(async (object) => {
-  const { bucket, name: filePath, contentType } = object;
+export const processDocumentOnUpload = functions.storage
+  .object()
+  .onFinalize(async (object: functions.storage.ObjectMetadata) => {
+    const { bucket, name: filePath, contentType } = object;
 
   if (!filePath || !contentType) {
     console.log('File path or content type is missing.');
@@ -91,6 +91,8 @@ export const processDocumentOnUpload = functions.storage.object().onFinalize(asy
       status: 'failed',
       error: (error as Error).message,
       updatedAt: FieldValue.serverTimestamp(),
-    }).catch(err => console.error(`Failed to update document status to "failed":`, err));
+    }).catch((err: unknown) =>
+      console.error('Failed to update document status to "failed":', err),
+    );
   }
-});
+  });

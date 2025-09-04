@@ -53,8 +53,8 @@ export const compareBenefitsPlans = tool({
       }
 
       // Get the specified benefit plans for comparison
-      const allPlans = await benefitService.getBenefitPlans(user.companyId);
-      const plans = allPlans.filter(p => planIds.includes(p.id));
+      const allPlans = await benefitService.getBenefitPlans();
+      const plans = allPlans.filter((p: any) => planIds.includes(p.id));
 
       if (plans.length === 0) {
         return {
@@ -65,7 +65,7 @@ export const compareBenefitsPlans = tool({
 
       // Calculate costs and prepare comparison data
       const coverageType = userContext?.coverageType || 'individual';
-      const plansWithAnalysis = plans.map((plan) => {
+      const plansWithAnalysis = plans.map((plan: any) => {
         const monthlyCost = plan.monthlyPremium || 0;
         const annualCost = monthlyCost * 12;
         const deductible = coverageType === 'family' ? plan.deductibleFamily || 0 : plan.deductibleIndividual || 0;
@@ -98,21 +98,21 @@ export const compareBenefitsPlans = tool({
         coverageType,
         costComparison: {
           lowestMonthlyCost: Math.min(
-            ...plansWithAnalysis.map((p) => p.costs.monthlyCost),
+            ...plansWithAnalysis.map((p: any) => p.costs.monthlyCost),
           ),
           highestMonthlyCost: Math.max(
-            ...plansWithAnalysis.map((p) => p.costs.monthlyCost),
+            ...plansWithAnalysis.map((p: any) => p.costs.monthlyCost),
           ),
           averageDeductible:
             plansWithAnalysis.reduce(
-              (sum, p) => sum + p.costs.deductible,
+              (sum: any, p: any) => sum + p.costs.deductible,
               0,
             ) / plansWithAnalysis.length,
           lowestDeductible: Math.min(
-            ...plansWithAnalysis.map((p) => p.costs.deductible),
+            ...plansWithAnalysis.map((p: any) => p.costs.deductible),
           ),
           highestDeductible: Math.max(
-            ...plansWithAnalysis.map((p) => p.costs.deductible),
+            ...plansWithAnalysis.map((p: any) => p.costs.deductible),
           ),
         },
         recommendations: generateRecommendations(

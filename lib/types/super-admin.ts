@@ -1,4 +1,4 @@
-import type { Company, User, } from '@/lib/db/schema';
+import type { Company, User } from '@/lib/db/schema';
 
 // Super Admin specific types
 export interface SuperAdminProfile {
@@ -64,6 +64,7 @@ export type BillingPlan = 'free' | 'starter' | 'professional' | 'enterprise';
 
 // User management types
 export interface UserWithCompany extends User {
+  companyId?: string;
   company?: Company;
   lastActive?: Date;
   chatCount: number;
@@ -108,6 +109,13 @@ export interface SystemAnalytics {
     byPlan: { plan: BillingPlan; count: number; revenue: number }[];
     churnRate: number;
   };
+}
+
+export interface PlatformStats {
+  totalUsers: number;
+  totalDocuments: number;
+  totalBenefitPlans: number;
+  storageUsed: number;
 }
 
 // Audit log types

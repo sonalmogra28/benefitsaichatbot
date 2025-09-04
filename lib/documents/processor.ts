@@ -1,6 +1,6 @@
 import { extractText } from 'unpdf';
 import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
-import { vectorSearchService } from '@/lib/ai/vector-search';
+import { vectorSearchService, upsertDocumentChunks } from '@/lib/ai/vector-search';
 import { generateEmbeddings } from '@/lib/ai/embeddings';
 
 /**

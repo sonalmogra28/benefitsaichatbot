@@ -56,6 +56,8 @@ export interface Document {
   kind: 'text' | 'code';
   language?: string;
   content: string;
+  createdAt?: string | Date;
+  companyId?: string;
 }
 
 // DBMessage type for database messages

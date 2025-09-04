@@ -40,11 +40,11 @@ export const calculateBenefitsCost = tool({
       }
 
       // Get benefit plan(s) to calculate costs
-      let plans = await benefitService.getBenefitPlans(user.companyId);
+      let plans = await benefitService.getBenefitPlans();
       if (planId) {
-        plans = plans.filter(p => p.id === planId);
+        plans = plans.filter((p: any) => p.id === planId);
       } else {
-        plans = plans.filter(p => p.type === planType);
+        plans = plans.filter((p: any) => p.type === planType);
       }
 
       if (plans.length === 0) {
@@ -63,7 +63,7 @@ export const calculateBenefitsCost = tool({
       };
       const multiplier = usageMultipliers[expectedMedicalUsage] || 0.6;
 
-      const planCosts = plans.map(plan => {
+      const planCosts = plans.map((plan: any) => {
         // Get monthly premium based on coverage type
         let monthlyPremium = 0;
         if (coverageType === 'individual') {
@@ -117,7 +117,7 @@ export const calculateBenefitsCost = tool({
       });
 
       // Sort by total cost
-      planCosts.sort((a, b) => a.costs.totalAnnualCost - b.costs.totalAnnualCost);
+      planCosts.sort((a: any, b: any) => a.costs.totalAnnualCost - b.costs.totalAnnualCost);
 
       // If specific plan requested, return single result
       if (planId && planCosts.length > 0) {

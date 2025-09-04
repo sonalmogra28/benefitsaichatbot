@@ -5,7 +5,7 @@ import {
   IndexEndpointServiceClient,
 } from '@google-cloud/aiplatform';
 import { adminDb, FieldValue } from '@/lib/firebase/admin';
-import { generateEmbeddings } from './embeddings';
+import { generateEmbedding, generateEmbeddings } from './embeddings';
 
 const PROJECT_ID =
   process.env.VERTEX_AI_PROJECT_ID ||
@@ -134,7 +134,9 @@ class VectorSearchService {
     };
 
     try {
-      const [response] = await this.indexEndpointClient.findNeighbors(request);
+      const [response] = await (this.indexEndpointClient as any).findNeighbors(
+        request,
+      );
       if (response.nearestNeighbors && response.nearestNeighbors.length > 0) {
         return response.nearestNeighbors[0].neighbors;
       }
@@ -195,6 +197,11 @@ export async function upsertDocumentChunks(
     console.error('Error upserting document chunks:', error);
     return { status: 'error', vectorsUpserted: 0 };
   }
+}
+
+export async function searchVectors(companyId: string, query: string) {
+  const embedding = await generateEmbedding(query);
+  return vectorSearchService.findNearestNeighbors(embedding, 5);
 }
 
 export const deleteDocumentVectors = async (

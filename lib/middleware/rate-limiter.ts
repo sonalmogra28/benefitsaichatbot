@@ -317,7 +317,7 @@ export async function getRateLimitStatus(
   } catch (error) {
     return {
       used: 0,
-      limit: aconfig.maxRequests,
+      limit: config.maxRequests,
       remaining: config.maxRequests,
       resetAt: new Date(now + config.windowMs)
     };

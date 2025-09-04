@@ -30,7 +30,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
   try {
     const model = getEmbeddingModel();
-    const result = await model.embedContent({
+    const result = await (model as any).embedContent({
       content: { parts: [{ text: truncatedText }] },
     });
     return result.embedding?.values ?? [];
@@ -50,12 +50,12 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
 
   try {
     const model = getEmbeddingModel();
-    const response = await model.batchEmbedContents({
-      requests: texts.map(text => ({
+    const response = await (model as any).batchEmbedContents({
+      requests: texts.map((text) => ({
         content: { parts: [{ text }] },
       })),
     });
-    return response.embeddings?.map(e => e.values) ?? [];
+    return response.embeddings?.map((e: any) => e.values) ?? [];
   } catch (error) {
     console.error('Vertex AI batch embedding error:', error);
     throw new Error('Failed to generate embeddings');
