@@ -109,6 +109,23 @@ OPENAI_API_KEY=            # For GPT-4 fallback
 XAI_API_KEY=               # For Grok-2 (primary)
 ```
 
+#### Google Cloud Setup
+
+To use Vertex AI and Document AI features:
+
+1. Enable the Vertex AI and Document AI APIs in your Google Cloud project.
+2. Create a Vertex AI index and endpoint, and note their IDs.
+3. Create a Document AI processor for the documents you need to process.
+4. Grant your service account the following IAM roles:
+   - Vertex AI User (`roles/aiplatform.user`)
+   - Document AI Editor (`roles/documentai.editor`)
+5. Add the following variables to your `.env.local` file:
+   - `GOOGLE_CLOUD_PROJECT`
+   - `GOOGLE_CLOUD_LOCATION`
+   - `VERTEX_INDEX_ID`
+   - `VERTEX_ENDPOINT_ID`
+   - `DOCUMENT_AI_PROCESSOR_ID`
+
 ### Development
 ```bash
 # Run database migrations
