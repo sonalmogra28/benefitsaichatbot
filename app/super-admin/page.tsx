@@ -2,42 +2,30 @@
 'use client';
 
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase/client';
+import { auth, db } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import useSWR from 'swr';
+import { useCollection } from 'react-firebase-hooks/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, FileText, BarChart3, AlertTriangle, Briefcase } from 'lucide-react';
+import { Users, FileText, BarChart3, AlertTriangle, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-
-const fetcher = async (url: string) => {
-  const token = await auth.currentUser?.getIdToken();
-  if (!token) {
-    throw new Error('Not authenticated');
-  }
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!res.ok) {
-    const error = new Error('An error occurred while fetching the data.');
-    // @ts-ignore
-    error.info = await res.json();
-    // @ts-ignore
-    error.status = res.status;
-    throw error;
-  }
-
-  return res.json();
-};
 
 export default function SuperAdminDashboard() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
-  const { data: stats, error, isLoading } = useSWR('/api/super-admin/stats', fetcher);
+  const [usersSnapshot, usersLoading, usersError] = useCollection(
+    collection(db, 'users')
+  );
+  const [documentsSnapshot, documentsLoading, documentsError] = useCollection(
+    collection(db, 'documents')
+  );
+  const [activeChatsSnapshot, chatsLoading, chatsError] = useCollection(
+    query(collection(db, 'chats'), where('isActive', '==', true))
+  );
+  const error = usersError || documentsError || chatsError;
+  const isLoading = usersLoading || documentsLoading || chatsLoading;
 
   useEffect(() => {
     if (loading) return;
@@ -80,14 +68,14 @@ export default function SuperAdminDashboard() {
         </Card>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalUsers ?? '--'}</div>
+            <div className="text-2xl font-bold">{usersSnapshot?.size ?? '--'}</div>
             <p className="text-xs text-muted-foreground">All users on the platform</p>
           </CardContent>
         </Card>
@@ -98,30 +86,19 @@ export default function SuperAdminDashboard() {
             <FileText className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalDocuments ?? '--'}</div>
+            <div className="text-2xl font-bold">{documentsSnapshot?.size ?? '--'}</div>
             <p className="text-xs text-muted-foreground">All processed documents</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Benefit Plans</CardTitle>
-            <Briefcase className="size-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Active Chats</CardTitle>
+            <MessageSquare className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalBenefitPlans ?? '--'}</div>
-            <p className="text-xs text-muted-foreground">Available benefit plans</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Enrollments</CardTitle>
-            <BarChart3 className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeEnrollments ?? 'N/A'}</div>
-            <p className="text-xs text-muted-foreground">Currently active plan enrollments</p>
+            <div className="text-2xl font-bold">{activeChatsSnapshot?.size ?? '--'}</div>
+            <p className="text-xs text-muted-foreground">Chats currently active</p>
           </CardContent>
         </Card>
       </div>
