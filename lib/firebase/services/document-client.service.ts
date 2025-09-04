@@ -65,6 +65,42 @@ export class DocumentClientService {
       throw error;
     }
   }
+
+  /**
+   * Delete a document and trigger cleanup
+   */
+  async deleteDocument(documentId: string, url?: string) {
+    try {
+      const headers = await this.getAuthHeader();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const idTokenResult = await user.getIdTokenResult();
+      const companyId = idTokenResult.claims.companyId;
+      if (!companyId) {
+        throw new Error('User has no company assigned');
+      }
+
+      const response = await fetch(
+        `/api/admin/companies/${companyId}/documents/${documentId}`,
+        {
+          method: 'DELETE',
+          headers,
+          body: JSON.stringify({ url }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to delete document');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance for client-side use
