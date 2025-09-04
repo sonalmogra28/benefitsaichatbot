@@ -39,12 +39,6 @@ const envSchema = z.object({
   // External Services (Required)
   RESEND_API_KEY: z.string().min(1, 'Resend API Key is required for email functionality'),
   
-  // Optional Services
-  REDIS_URL: z.string().url().optional(),
-  PINECONE_API_KEY: z.string().optional(),
-  PINECONE_ENVIRONMENT: z.string().optional(),
-  PINECONE_INDEX: z.string().optional(),
-  
   // App Configuration
   NEXT_PUBLIC_APP_URL: z.string().url().optional().default('http://localhost:3000'),
   NODE_ENV: z.enum(['development', 'production', 'test']).optional().default('development'),
@@ -79,17 +73,6 @@ try {
     console.log(`   Available: ${aiProviders.join(', ')}`);
   }
   
-  // Check external services
-  console.log('\n📧 External Services:');
-  console.log(`   Email (Resend): ${env.RESEND_API_KEY ? '✓ Configured' : '✗ Missing'}`);
-  console.log(`   Redis: ${env.REDIS_URL ? '✓ Configured' : '○ Not configured (optional)'}`);
-  console.log(`   Pinecone: ${env.PINECONE_API_KEY ? '✓ Configured' : '○ Not configured (optional)'}`);
-  
-  // Check environment
-  console.log('\n🌍 Environment:');
-  console.log(`   Mode: ${env.NODE_ENV}`);
-  console.log(`   App URL: ${env.NEXT_PUBLIC_APP_URL}`);
-  
   // Firebase Admin SDK check
   console.log('\n🔐 Firebase Admin SDK:');
   if (env.FIREBASE_ADMIN_CLIENT_EMAIL && env.FIREBASE_ADMIN_PRIVATE_KEY) {
@@ -100,24 +83,7 @@ try {
     console.log('   Using Application Default Credentials (ADC)');
     console.log('   Make sure you have run: gcloud auth application-default login');
   }
-  
-  // Warnings for production
-  if (env.NODE_ENV === 'production') {
-    console.log('\n⚠️  Production Environment Checks:');
-    
-    if (!env.NEXT_PUBLIC_APP_URL?.startsWith('https://')) {
-      console.warn('   - APP_URL should use HTTPS in production');
-    }
-    
-    if (!env.REDIS_URL) {
-      console.warn('   - Redis is recommended for rate limiting in production');
-    }
-    
-    if (!env.GOOGLE_CLOUD_PROJECT) {
-      console.warn('   - Google Cloud Project recommended for Vertex AI in production');
-    }
-  }
-  
+
   console.log('\n✨ Environment validation complete!');
   
 } catch (error) {
@@ -131,7 +97,6 @@ try {
     
     console.log('\n📝 Required environment variables:');
     console.log('   - All NEXT_PUBLIC_FIREBASE_* variables');
-    console.log('   - RESEND_API_KEY (for email functionality)');
     console.log('   - At least one AI provider key (GOOGLE_GENERATIVE_AI_API_KEY recommended)');
     
     console.log('\n💡 Tip: Copy .env.local.example to .env.local and fill in your values');
