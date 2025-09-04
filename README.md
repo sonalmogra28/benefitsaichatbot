@@ -35,11 +35,33 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
 - SSO integration
 - Analytics engine
 
-## 🛠️ Tech Stack
+## 🛠 Tech Stack
 
-- **Frontend**: Next.js 15, TypeScript, Tailwind CSS, shadcn/ui, SWR, etc.
-- **Backend & Infrastructure**: Firebase Auth, Firestore, Cloud Storage, Cloud Functions, Vertex AI, fallback LLMs, vector search, email, caching.
-- **Development Tools**: Biome for lint/format, Vitest/React Testing Library/Playwright, Firebase CLI, pnpm.
+### Frontend
+- Next.js 15
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- SWR
+
+### Backend & Infrastructure
+- Firebase Auth
+- Firestore
+- Cloud Storage
+- Cloud Functions
+- Vertex AI
+- Fallback LLMs
+- Vector search
+- Email
+- Caching
+
+### Development Tools
+- Biome (lint/format)
+- Vitest
+- React Testing Library
+- Playwright
+- Firebase CLI
+- pnpm
 
 ## 📚 Documentation
 
