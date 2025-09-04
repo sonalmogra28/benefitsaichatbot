@@ -7,8 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function AnalyticsDashboard() {
   const [users, usersLoading] = useCollection(collection(db, 'users'));
-  const [companies, companiesLoading] = useCollection(collection(db, 'companies'));
-  const [documents, documentsLoading] = useCollection(collection(db, 'documents'));
+  const [companies, companiesLoading] = useCollection(
+    collection(db, 'companies'),
+  );
+  const [documents, documentsLoading] = useCollection(
+    collection(db, 'documents'),
+  );
 
   return (
     <div>

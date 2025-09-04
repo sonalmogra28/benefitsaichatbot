@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Upload, CheckCircle2, XCircle } from 'lucide-react';
 
@@ -18,7 +24,9 @@ interface DocumentUploadSectionProps {
   companies: Company[];
 }
 
-export default function DocumentUploadSection({ companies }: DocumentUploadSectionProps) {
+export default function DocumentUploadSection({
+  companies,
+}: DocumentUploadSectionProps) {
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -47,7 +55,7 @@ export default function DocumentUploadSection({ companies }: DocumentUploadSecti
     if (!selectedCompany || !file || !title || !documentType) {
       setUploadStatus({
         type: 'error',
-        message: 'Please fill in all required fields'
+        message: 'Please fill in all required fields',
       });
       return;
     }
@@ -58,17 +66,23 @@ export default function DocumentUploadSection({ companies }: DocumentUploadSecti
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('metadata', JSON.stringify({
-        title,
-        documentType,
-        category: category || undefined,
-        tags: tags ? tags.split(',').map(t => t.trim()) : undefined
-      }));
+      formData.append(
+        'metadata',
+        JSON.stringify({
+          title,
+          documentType,
+          category: category || undefined,
+          tags: tags ? tags.split(',').map((t) => t.trim()) : undefined,
+        }),
+      );
 
-      const response = await fetch(`/api/admin/companies/${selectedCompany}/documents/upload`, {
-        method: 'POST',
-        body: formData
-      });
+      const response = await fetch(
+        `/api/admin/companies/${selectedCompany}/documents/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        },
+      );
 
       const data = await response.json();
 
@@ -78,7 +92,7 @@ export default function DocumentUploadSection({ companies }: DocumentUploadSecti
 
       setUploadStatus({
         type: 'success',
-        message: `Document "${title}" uploaded successfully!`
+        message: `Document "${title}" uploaded successfully!`,
       });
 
       // Reset form
@@ -86,7 +100,9 @@ export default function DocumentUploadSection({ companies }: DocumentUploadSecti
       setTitle('');
       setCategory('');
       setTags('');
-      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      const fileInput = document.getElementById(
+        'file-upload',
+      ) as HTMLInputElement;
       if (fileInput) fileInput.value = '';
 
       // Trigger document processing
@@ -95,17 +111,16 @@ export default function DocumentUploadSection({ companies }: DocumentUploadSecti
           await fetch('/api/cron/process-documents', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ documentId: data.document.id })
+            body: JSON.stringify({ documentId: data.document.id }),
           });
         } catch (error) {
           console.error('Failed to trigger processing:', error);
         }
       }, 1000);
-
     } catch (error) {
       setUploadStatus({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Upload failed'
+        message: error instanceof Error ? error.message : 'Upload failed',
       });
     } finally {
       setUploading(false);
@@ -181,7 +196,9 @@ export default function DocumentUploadSection({ companies }: DocumentUploadSecti
       </div>
 
       <div>
-        <Label htmlFor="file-upload">File * (PDF, DOC, DOCX, TXT - Max 50MB)</Label>
+        <Label htmlFor="file-upload">
+          File * (PDF, DOC, DOCX, TXT - Max 50MB)
+        </Label>
         <Input
           id="file-upload"
           type="file"
@@ -197,7 +214,9 @@ export default function DocumentUploadSection({ companies }: DocumentUploadSecti
       </div>
 
       {uploadStatus.type && (
-        <Alert variant={uploadStatus.type === 'error' ? 'destructive' : 'default'}>
+        <Alert
+          variant={uploadStatus.type === 'error' ? 'destructive' : 'default'}
+        >
           {uploadStatus.type === 'success' ? (
             <CheckCircle2 className="size-4" />
           ) : (
@@ -209,7 +228,9 @@ export default function DocumentUploadSection({ companies }: DocumentUploadSecti
 
       <Button
         onClick={handleUpload}
-        disabled={uploading || !selectedCompany || !file || !title || !documentType}
+        disabled={
+          uploading || !selectedCompany || !file || !title || !documentType
+        }
         className="w-full"
       >
         {uploading ? (

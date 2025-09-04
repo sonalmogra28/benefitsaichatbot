@@ -1253,13 +1253,14 @@ export async function chatWithTools(
 ```typescript
 // lib/ai/embeddings-service.ts
 import { VertexAI } from '@google-cloud/vertexai';
-import { Pinecone } from '@pinecone-database/pinecone';
+import { IndexEndpointServiceClient } from '@google-cloud/aiplatform';
 import { documentService } from '@/lib/firebase/firestore-service';
 
 export class EmbeddingsService {
   private vertexAI: VertexAI;
-  private pinecone: Pinecone;
+  private indexEndpoint: IndexEndpointServiceClient;
   private embeddingModel: any;
+  private indexEndpointName: string;
 
   constructor() {
     this.vertexAI = new VertexAI({
@@ -1271,9 +1272,9 @@ export class EmbeddingsService {
       model: 'text-embedding-004',
     });
 
-    this.pinecone = new Pinecone({
-      apiKey: process.env.PINECONE_API_KEY!,
-      environment: process.env.PINECONE_ENVIRONMENT!
+    this.vectorSearch = new Vertex AI Vector Search({
+      apiKey: process.env.VERTEX_AI_API_KEY!,
+      environment: process.env.VERTEX_AI_ENVIRONMENT!
     });
   }
 
@@ -1289,8 +1290,8 @@ export class EmbeddingsService {
       chunks.map(chunk => this.generateEmbedding(chunk))
     );
 
-    // Store in Pinecone
-    const index = this.pinecone.index('benefits-docs');
+    // Store in Vertex AI Vector Search
+    const index = this.vectorSearch.index('benefits-docs');
     const vectors = embeddings.map((embedding, i) => ({
       id: `${documentId}_chunk_${i}`,
       values: embedding,
@@ -1325,8 +1326,8 @@ export class EmbeddingsService {
     // Generate query embedding
     const queryEmbedding = await this.generateEmbedding(query);
 
-    // Search in Pinecone
-    const index = this.pinecone.index('benefits-docs');
+    // Search in Vertex AI Vector Search
+    const index = this.vectorSearch.index('benefits-docs');
     const results = await index.query({
       vector: queryEmbedding,
       topK: limit,
