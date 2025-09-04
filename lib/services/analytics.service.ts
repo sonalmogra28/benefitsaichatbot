@@ -207,8 +207,8 @@ class AnalyticsService {
       const activities: UserActivity[] = [];
 
       for (const userDoc of usersSnapshot.docs) {
-        const userData = userDoc.data();
-
+        const userData = userDoc.data() as Record<string, any>;
+        
         // Get user's conversations
         const conversationsQuery = query(
           collection(db, 'conversations'),
@@ -218,7 +218,7 @@ class AnalyticsService {
 
         let messageCount = 0;
         conversationsSnapshot.forEach((doc) => {
-          const data = doc.data();
+          const data = doc.data() as Record<string, any>;
           messageCount += data.messages?.length || 0;
         });
 
@@ -257,9 +257,9 @@ class AnalyticsService {
       let totalMessages = 0;
       const topQuestions: { [key: string]: number } = {};
       const hourlyActivity: { [key: number]: number } = {};
-
+      
       conversationsSnapshot.forEach((doc) => {
-        const data = doc.data();
+        const data = doc.data() as Record<string, any>;
         const messages = data.messages || [];
         totalMessages += messages.length;
 

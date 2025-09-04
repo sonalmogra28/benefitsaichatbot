@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { RATE_LIMITS } from '@/lib/config';
+import { RATE_LIMITS } from '@/lib/config/index';
 import { FirestoreRateLimiter, InMemoryRateLimiter } from './firestore-limiter';
 import { adminAuth } from '../firebase/admin';
 
@@ -52,7 +52,9 @@ const rateLimiter = getRateLimiter();
  */
 function getRateLimitConfig(path: string): { max: number; windowMs: number } {
   // Find matching rate limit config
-  for (const [pattern, config] of Object.entries(RATE_LIMITS)) {
+  for (const [pattern, config] of Object.entries(
+    RATE_LIMITS as Record<string, { max: number; windowMs: number }>,
+  )) {
     if (pattern === 'default') continue;
 
     // Simple pattern matching (could be enhanced with regex)
@@ -62,7 +64,7 @@ function getRateLimitConfig(path: string): { max: number; windowMs: number } {
   }
 
   // Default rate limit
-  return RATE_LIMITS.default;
+  return RATE_LIMITS.default as { max: number; windowMs: number };
 }
 
 /**

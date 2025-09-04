@@ -1,11 +1,15 @@
+
 import admin from 'firebase-admin';
 
-// Initialize the Admin SDK once in the Cloud Functions environment
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
+const adminAuth = admin.auth();
 const adminDb = admin.firestore();
+const db = admin.firestore();
 const adminStorage = admin.storage();
+const FieldValue = admin.firestore.FieldValue;
+const Timestamp = admin.firestore.Timestamp;
 
-export { adminDb, adminStorage };
+export { adminAuth, adminDb, db, adminStorage, FieldValue, Timestamp };

@@ -121,134 +121,27 @@ class RAGSystem {
       return [];
     }
 
-    const chunkIds = neighbors.map((n) => n.datapoint.datapointId);
+    const chunkIds = neighbors.map((n: any) => n.datapoint.datapointId);
+    
+    // Fetch chunk content from Firestore based on IDs from vector search
+    const chunkDocs = await adminDb.collection('document_chunks').where('id', 'in', chunkIds).get();
+    
+    const chunksById = new Map<string, any>();
+    chunkDocs.forEach((doc) => chunksById.set(doc.id, doc.data()));
+    
+    return neighbors.map((neighbor: any) => {
+      const chunk = chunksById.get(neighbor.datapoint.datapointId);
+      return {
+        chunk,
+        score: neighbor.distance, // Vertex AI returns distance, can be converted to similarity
+      };
+    }).filter((result: any) => result.chunk && result.chunk.companyId === companyId);
 
-    const chunkDocs = await adminDb
-      .collection('document_chunks')
-      .where('id', 'in', chunkIds)
-      .get();
-    const chunksById = new Map<string, Chunk>();
-    chunkDocs.forEach((doc) => chunksById.set(doc.id, doc.data() as Chunk));
-
-    return neighbors
-      .map((neighbor) => {
-        const chunk = chunksById.get(neighbor.datapoint.datapointId);
-        return {
-          chunk,
-          score: 1 / (1 + neighbor.distance),
-        } as SearchResult;
-      })
-      .filter((result) => result.chunk && result.chunk.companyId === companyId);
   }
 
-  private async keywordSearch(
-    query: string,
-    companyId: string,
-    limit: number,
-  ): Promise<SearchResult[]> {
-    const keywords = query
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((k) => k.length > 2);
-    if (keywords.length === 0) return [];
+  private splitIntoChunks(text: string, size = 1000): string[] {
+    return text.match(new RegExp(`.{1,${size}}`, 'g')) || [];
 
-    const snapshot = await adminDb
-      .collection('document_chunks')
-      .where('companyId', '==', companyId)
-      .limit(limit * 3)
-      .get();
-
-    const results: SearchResult[] = [];
-    snapshot.docs.forEach((doc) => {
-      const chunk = doc.data() as Chunk;
-      const content = chunk.content.toLowerCase();
-      let score = 0;
-      for (const keyword of keywords) {
-        const matches = content.match(new RegExp(keyword, 'g'));
-        if (matches) score += matches.length;
-      }
-      if (score > 0) {
-        results.push({ chunk, score });
-      }
-    });
-
-    return results.sort((a, b) => b.score - a.score).slice(0, limit);
-  }
-
-  splitIntoChunks(content: string, chunkSize = 1000): string[] {
-    const chunks: string[] = [];
-    const sentences = content.match(/[^.!?]+[.!?]+/g) || [content];
-
-    let currentChunk = '';
-    for (const sentence of sentences) {
-      if ((currentChunk + sentence).length > chunkSize && currentChunk) {
-        chunks.push(currentChunk.trim());
-        currentChunk = sentence;
-      } else {
-        currentChunk += ` ${sentence}`;
-      }
-    }
-    if (currentChunk.trim()) {
-      chunks.push(currentChunk.trim());
-    }
-    return chunks;
-  }
-
-  private cosineSimilarity(a: number[], b: number[]): number {
-    if (a.length !== b.length) return 0;
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < a.length; i++) {
-      dotProduct += a[i] * b[i];
-      normA += a[i] * a[i];
-      normB += b[i] * b[i];
-    }
-    normA = Math.sqrt(normA);
-    normB = Math.sqrt(normB);
-    if (normA === 0 || normB === 0) return 0;
-    return dotProduct / (normA * normB);
-  }
-  private splitIntoChunks(text: string, chunkSize: number = 1000): string[] {
-    const chunks: string[] = [];
-    const sentences = text.split('. ');
-    let currentChunk = '';
-
-    for (const sentence of sentences) {
-      const tentative = currentChunk ? `${currentChunk}. ${sentence}` : sentence;
-      if (tentative.length > chunkSize) {
-        if (currentChunk) {
-          chunks.push(currentChunk);
-        }
-        currentChunk = sentence;
-      } else {
-        currentChunk = tentative;
-      }
-    }
-
-    if (currentChunk) {
-      chunks.push(currentChunk);
-    }
-
-    return chunks;
-  generateContext(results: SearchResult[]): string {
-    if (results.length === 0) {
-      return 'No relevant documents found.';
-    }
-
-    const context = results
-      .map((result, index) => {
-        const { chunk } = result;
-        return `
-[Document ${index + 1}]
-Title: ${chunk.metadata.title}
-Section: ${chunk.metadata.section || 'General'}
-Content: ${chunk.content}
----`;
-      })
-      .join('\n');
-
-    return `Based on the following relevant documents:\n\n${context}`;
   }
 }
 

@@ -293,8 +293,8 @@ class NotificationService {
           sms: 0,
         },
       };
-
-      snapshot.docs.forEach((doc) => {
+      
+      snapshot.docs.forEach((doc: any) => {
         const data = doc.data();
         if (data.status && stats[data.status] !== undefined) {
           stats[data.status]++;
