@@ -2,12 +2,12 @@
 
 A multi-tenant, AI-powered benefits management platform that transforms employee benefits decisions through conversational AI, visual analytics, and intelligent automation.
 
-## 🚀 Current Status
+## 📦 Project Overview
 
-**Version**: MVP (Single-tenant)  
-**Stack**: Next.js 15, TypeScript, Drizzle ORM, Neon PostgreSQL, Vercel AI SDK  
-**Deployment**: Vercel (Production)  
-**AI Model**: xAI Grok-2 (with OpenAI GPT-4 fallback ready)
+- Version `3.1.0`
+- Firebase/Google Cloud deployment
+- Vertex AI as primary model (OpenAI/Claude fallbacks)
+- Migration status: PostgreSQL ➜ Firebase
 
 ### ✅ Completed Features
 - Basic conversational AI with benefits personality
@@ -86,8 +86,6 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
 ### Prerequisites
 - Node.js >= 20.0.0
 - pnpm >= 8.0.0
-- PostgreSQL (via Neon)
-- Vercel CLI (for deployment)
 
 ### Environment Setup
 ```bash
@@ -106,8 +104,6 @@ cp .env.example .env.local
 FIREBASE_PROJECT_ID=       # Firebase project identifier
 FIREBASE_CLIENT_EMAIL=     # Service account client email
 FIREBASE_PRIVATE_KEY=      # Base64-encoded private key
-POSTGRES_URL=              # Neon PostgreSQL URL
-POSTGRES_URL_NON_POOLING=  # Neon direct connection
 AUTH_SECRET=               # NextAuth secret (generate with: openssl rand -base64 32)
 OPENAI_API_KEY=            # For GPT-4 fallback
 XAI_API_KEY=               # For Grok-2 (primary)
@@ -157,9 +153,6 @@ pnpm db:generate
 # Run migrations
 pnpm db:migrate
 
-# Open Drizzle Studio
-pnpm db:studio
-
 # Push schema changes (dev only)
 pnpm db:push
 ```
@@ -192,25 +185,6 @@ pnpm test:e2e           # Run E2E tests with Playwright
 # - Security audit
 ```
 
-## 🚀 Deployment
-
-### Vercel Deployment (Production)
-```bash
-# Deploy to production
-vercel --prod
-
-# Deploy to preview
-vercel
-
-# Check deployment status
-vercel ls
-```
-
-### Environment Configuration
-- **Development**: Local PostgreSQL, development API keys
-- **Staging**: Neon PostgreSQL (staging), test API keys
-- **Production**: Neon PostgreSQL (production), production API keys
-
 ## 📁 Project Structure
 
 ```
@@ -229,7 +203,7 @@ benefits-chatbot/
 │   │   ├── prompts/       # System prompts
 │   │   └── context/       # Context management
 │   ├── db/                # Database layer
-│   │   ├── schema/        # Drizzle schemas
+│   │   ├── schema/        # Database schemas
 │   │   ├── repositories/  # Data access layer
 │   │   └── migrations/    # SQL migrations
 │   └── utils/             # Utility functions
@@ -249,7 +223,6 @@ benefits-chatbot/
 
 ### Data Protection
 - End-to-end encryption (TLS 1.3)
-- Row-level security in PostgreSQL
 - Encrypted environment variables
 - No PII/PHI storage in logs
 
@@ -288,7 +261,6 @@ When using AI coding assistants:
 ## 📊 Monitoring & Analytics
 
 ### Production Monitoring
-- **Vercel Analytics**: Page views, Web Vitals
 - **Error Tracking**: Sentry (to be configured)
 - **AI Metrics**: Token usage, response times
 - **Business Metrics**: Custom analytics dashboard
