@@ -2,7 +2,6 @@ import { Toaster } from 'sonner';
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseProvider } from '@/components/firebase-provider';
-import { AuthProvider } from '@/context/auth-context'; // Corrected import path
 import { TRPCProvider } from '@/components/trpc-provider';
 
 import './globals.css';
@@ -57,17 +56,15 @@ export default async function RootLayout({
       <body className="antialiased">
         <TRPCProvider>
           <FirebaseProvider>
-            <AuthProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
-              >
-                <Toaster position="top-center" />
-                {children}
-              </ThemeProvider>
-            </AuthProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <Toaster position="top-center" />
+              {children}
+            </ThemeProvider>
           </FirebaseProvider>
         </TRPCProvider>
       </body>

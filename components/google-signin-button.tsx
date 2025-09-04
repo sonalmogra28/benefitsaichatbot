@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/context/auth-context';
 import { Icons } from '@/components/ui/icons';
+import { useAuth } from '@/hooks/use-auth';
 
 export function GoogleSignInButton() {
   const { signInWithGoogle, isSigningIn } = useAuth();
