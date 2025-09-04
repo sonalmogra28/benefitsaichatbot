@@ -35,7 +35,9 @@ class SuperAdminService {
    */
   async getRecentActivity(limit = 10): Promise<AuditLog[]> {
     try {
-      const response = await fetch(`${API_URL}?action=getRecentActivity&limit=${limit}`);
+      const response = await fetch(
+        `${API_URL}?action=getRecentActivity&limit=${limit}`,
+      );
       if (!response.ok) {
         throw new Error('Failed to fetch activity logs');
       }

@@ -15,7 +15,13 @@ interface AuthFormProps {
   loading: boolean;
 }
 
-export function AuthForm({ type, onSubmit, onGoogleClick, error, loading }: AuthFormProps) {
+export function AuthForm({
+  type,
+  onSubmit,
+  onGoogleClick,
+  error,
+  loading,
+}: AuthFormProps) {
   return (
     <div className="space-y-4">
       <form onSubmit={onSubmit} className="space-y-4">
@@ -38,7 +44,9 @@ export function AuthForm({ type, onSubmit, onGoogleClick, error, loading }: Auth
             name="password"
             type="password"
             required
-            autoComplete={type === 'login' ? 'current-password' : 'new-password'}
+            autoComplete={
+              type === 'login' ? 'current-password' : 'new-password'
+            }
             disabled={loading}
           />
         </div>
@@ -48,7 +56,13 @@ export function AuthForm({ type, onSubmit, onGoogleClick, error, loading }: Auth
           </Alert>
         )}
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? (type === 'login' ? 'Signing in...' : 'Creating account...') : (type === 'login' ? 'Sign In' : 'Create Account')}
+          {loading
+            ? type === 'login'
+              ? 'Signing in...'
+              : 'Creating account...'
+            : type === 'login'
+              ? 'Sign In'
+              : 'Create Account'}
         </Button>
       </form>
 
@@ -63,7 +77,12 @@ export function AuthForm({ type, onSubmit, onGoogleClick, error, loading }: Auth
         </div>
       </div>
 
-      <Button variant="outline" className="w-full" onClick={onGoogleClick} disabled={loading}>
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={onGoogleClick}
+        disabled={loading}
+      >
         {loading ? 'Please wait...' : 'Google'}
       </Button>
     </div>

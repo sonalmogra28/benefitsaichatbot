@@ -11,7 +11,7 @@ export interface SuperAdminProfile {
   twoFactorEnabled: boolean;
 }
 
-export type SuperAdminPermission = 
+export type SuperAdminPermission =
   | 'manage_all_companies'
   | 'manage_all_users'
   | 'view_all_data'
@@ -51,7 +51,7 @@ export interface CompanyWithStats extends Company {
   monthlyActiveUsers: number;
 }
 
-export type CompanyFeature = 
+export type CompanyFeature =
   | 'chat_enabled'
   | 'document_upload'
   | 'custom_branding'
@@ -132,7 +132,7 @@ export interface AuditLog {
   userAgent?: string;
 }
 
-export type AuditAction = 
+export type AuditAction =
   | 'company.created'
   | 'company.updated'
   | 'company.deleted'
@@ -159,7 +159,7 @@ export interface DataExportRequest {
   format: 'json' | 'csv' | 'excel';
 }
 
-export type DataExportType = 
+export type DataExportType =
   | 'companies'
   | 'users'
   | 'documents'

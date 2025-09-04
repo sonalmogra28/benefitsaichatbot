@@ -3,16 +3,8 @@
   "powEnhanced": true,
   "metricsScript": "created",
   "rollbackConfig": {
-    "triggers": [
-      "pow-failure",
-      "test-failure",
-      "build-failure"
-    ],
-    "actions": [
-      "revert-commit",
-      "notify-team",
-      "block-deploy"
-    ],
+    "triggers": ["pow-failure", "test-failure", "build-failure"],
+    "actions": ["revert-commit", "notify-team", "block-deploy"],
     "enabled": true
   },
   "rollbackTests": 4,

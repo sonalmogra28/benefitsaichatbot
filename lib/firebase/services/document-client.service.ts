@@ -14,8 +14,8 @@ export class DocumentClientService {
     }
     const token = await user.getIdToken();
     return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
     };
   }
 
@@ -27,7 +27,7 @@ export class DocumentClientService {
       const headers = await this.getAuthHeader();
       const response = await fetch('/api/documents', {
         method: 'GET',
-        headers
+        headers,
       });
 
       if (!response.ok) {
@@ -51,7 +51,7 @@ export class DocumentClientService {
       const response = await fetch('/api/documents', {
         method: 'POST',
         headers,
-        body: JSON.stringify(documentData)
+        body: JSON.stringify(documentData),
       });
 
       if (!response.ok) {
@@ -62,6 +62,42 @@ export class DocumentClientService {
       return data.id;
     } catch (error) {
       console.error('Error creating document:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a document and trigger cleanup
+   */
+  async deleteDocument(documentId: string, url?: string) {
+    try {
+      const headers = await this.getAuthHeader();
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const idTokenResult = await user.getIdTokenResult();
+      const companyId = idTokenResult.claims.companyId;
+      if (!companyId) {
+        throw new Error('User has no company assigned');
+      }
+
+      const response = await fetch(
+        `/api/admin/companies/${companyId}/documents/${documentId}`,
+        {
+          method: 'DELETE',
+          headers,
+          body: JSON.stringify({ url }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to delete document');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting document:', error);
       throw error;
     }
   }

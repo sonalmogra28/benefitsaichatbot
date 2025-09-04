@@ -1,5 +1,5 @@
 import { adminDb } from '@/lib/firebase/admin';
-import { User } from '@/lib/db/schema';
+import type { User } from '@/lib/db/schema';
 import type { SuperAdminStats } from '@/types/api';
 
 /**

@@ -7,7 +7,16 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Building2, Search, Plus, Users, FileText, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import {
+  Building2,
+  Search,
+  Plus,
+  Users,
+  FileText,
+  MoreVertical,
+  Edit,
+  Trash2,
+} from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -41,16 +50,20 @@ export default function AdminCompaniesPage() {
       router.push('/login');
     } else if (user) {
       user.getIdTokenResult().then((idTokenResult) => {
-        if (!idTokenResult.claims.platform_admin && !idTokenResult.claims.super_admin) {
+        if (
+          !idTokenResult.claims.platform_admin &&
+          !idTokenResult.claims.super_admin
+        ) {
           router.push('/');
         }
       });
     }
   }, [user, loading, router]);
 
-  const filteredCompanies = companies.filter(company =>
-    company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.domain.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCompanies = companies.filter(
+    (company) =>
+      company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      company.domain.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   const getStatusBadge = (status: string) => {
@@ -67,7 +80,11 @@ export default function AdminCompaniesPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -75,7 +92,9 @@ export default function AdminCompaniesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Company Management</h1>
-          <p className="text-muted-foreground">Manage platform companies and organizations</p>
+          <p className="text-muted-foreground">
+            Manage platform companies and organizations
+          </p>
         </div>
         <Link href="/admin/companies/new">
           <Button>
@@ -88,12 +107,16 @@ export default function AdminCompaniesPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Companies
+            </CardTitle>
             <Building2 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{companies.length}</div>
-            <p className="text-xs text-muted-foreground">Registered organizations</p>
+            <p className="text-xs text-muted-foreground">
+              Registered organizations
+            </p>
           </CardContent>
         </Card>
 
@@ -104,7 +127,7 @@ export default function AdminCompaniesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {companies.filter(c => c.status === 'active').length}
+              {companies.filter((c) => c.status === 'active').length}
             </div>
             <p className="text-xs text-muted-foreground">Currently active</p>
           </CardContent>
@@ -112,14 +135,18 @@ export default function AdminCompaniesPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Employees
+            </CardTitle>
             <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {companies.reduce((acc, c) => acc + c.employeeCount, 0)}
             </div>
-            <p className="text-xs text-muted-foreground">Across all companies</p>
+            <p className="text-xs text-muted-foreground">
+              Across all companies
+            </p>
           </CardContent>
         </Card>
 
@@ -130,7 +157,7 @@ export default function AdminCompaniesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {companies.filter(c => c.status === 'pending').length}
+              {companies.filter((c) => c.status === 'pending').length}
             </div>
             <p className="text-xs text-muted-foreground">Need configuration</p>
           </CardContent>
@@ -156,7 +183,9 @@ export default function AdminCompaniesPage() {
               <Building2 className="mx-auto size-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No companies found</p>
               <p className="text-sm text-muted-foreground mt-2">
-                {searchTerm ? 'Try adjusting your search' : 'Add your first company to get started'}
+                {searchTerm
+                  ? 'Try adjusting your search'
+                  : 'Add your first company to get started'}
               </p>
             </div>
           ) : (
@@ -170,23 +199,24 @@ export default function AdminCompaniesPage() {
                 <div className="col-span-1">Actions</div>
               </div>
               {filteredCompanies.map((company) => (
-                <div key={company.id} className="grid grid-cols-12 gap-4 py-3 border-b items-center hover:bg-muted/50 transition-colors">
+                <div
+                  key={company.id}
+                  className="grid grid-cols-12 gap-4 py-3 border-b items-center hover:bg-muted/50 transition-colors"
+                >
                   <div className="col-span-3">
                     <div className="font-medium">{company.name}</div>
-                    <div className="text-sm text-muted-foreground">{company.adminEmail}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {company.adminEmail}
+                    </div>
                   </div>
-                  <div className="col-span-2 text-sm">
-                    {company.domain}
-                  </div>
+                  <div className="col-span-2 text-sm">{company.domain}</div>
                   <div className="col-span-2">
                     <div className="flex items-center text-sm">
                       <Users className="size-3 mr-1 text-muted-foreground" />
                       {company.employeeCount}
                     </div>
                   </div>
-                  <div className="col-span-2 text-sm">
-                    {company.planType}
-                  </div>
+                  <div className="col-span-2 text-sm">{company.planType}</div>
                   <div className="col-span-2">
                     {getStatusBadge(company.status)}
                   </div>

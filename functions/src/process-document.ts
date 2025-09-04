@@ -1,7 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import { adminDb, adminStorage } from './firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-
 import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 
@@ -81,10 +80,10 @@ export const processDocumentOnUpload = functions.storage
       );
       return;
     }
-    const documentDoc = snapshot.docs[0];
-    const documentRef = documentDoc.ref;
+
+    const documentRef = snapshot.docs[0].ref;
     const documentId = documentRef.id;
-    const companyId = documentDoc.get('companyId');
+
 
     try {
       console.log(`Processing document ${documentId} for file: ${filePath}`);
@@ -92,7 +91,6 @@ export const processDocumentOnUpload = functions.storage
         status: 'processing',
         updatedAt: FieldValue.serverTimestamp(),
       });
-
     });
     await batch.commit();
 

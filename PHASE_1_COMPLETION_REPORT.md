@@ -97,7 +97,7 @@ export NODE_OPTIONS="--max-old-space-size=4096"
    - `getConversation` not exported from conversation service
 
 4. **Missing Dependencies**
-   - `redis` module not installed
+   - Caching module not configured
 
 ### Linting Warnings (Cosmetic)
 - 50+ Tailwind CSS shorthand suggestions (h-4 w-4 → size-4)
@@ -167,7 +167,7 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 1. Implement getEmbedding function
 2. Create getConversation service method
 3. Remove Drizzle ORM references
-4. Install redis dependency (or remove)
+4. Implement Firebase caching or remove dependency
 
 ### Priority 3: Connect Real Data
 1. Replace mock data with Firestore queries
