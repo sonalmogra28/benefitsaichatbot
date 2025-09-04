@@ -65,7 +65,7 @@ export const POST = withAuth(
         );
       }
 
-      // Upload to Vercel Blob
+      // Upload to Firebase Cloud Storage
       const uploadResult = await uploadDocument(file, companyId, {
         uploadedBy: user.uid,
         documentType: parsedMetadata.documentType,

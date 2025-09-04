@@ -48,16 +48,6 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
 
-  // External Services (Required)
-  RESEND_API_KEY: z
-    .string()
-    .min(1, 'Resend API Key is required for email functionality'),
-
-  // Optional Services
-  REDIS_URL: z.string().url().optional(),
-  PINECONE_API_KEY: z.string().optional(),
-  PINECONE_ENVIRONMENT: z.string().optional(),
-  PINECONE_INDEX: z.string().optional(),
 
   // App Configuration
   NEXT_PUBLIC_APP_URL: z
@@ -118,7 +108,6 @@ try {
   console.log('\n🌍 Environment:');
   console.log(`   Mode: ${env.NODE_ENV}`);
   console.log(`   App URL: ${env.NEXT_PUBLIC_APP_URL}`);
-
   // Firebase Admin SDK check
   console.log('\n🔐 Firebase Admin SDK:');
   if (env.FIREBASE_ADMIN_CLIENT_EMAIL && env.FIREBASE_ADMIN_PRIVATE_KEY) {
@@ -133,7 +122,6 @@ try {
       '   Make sure you have run: gcloud auth application-default login',
     );
   }
-
   // Warnings for production
   if (env.NODE_ENV === 'production') {
     console.log('\n⚠️  Production Environment Checks:');
@@ -173,6 +161,11 @@ try {
     console.log(
       '\n💡 Tip: Copy .env.local.example to .env.local and fill in your values',
     );
+
+    console.log('   - At least one AI provider key (GOOGLE_GENERATIVE_AI_API_KEY recommended)');
+    
+    console.log('\n💡 Tip: Copy .env.local.example to .env.local and fill in your values');
+    
 
     process.exit(1);
   }
