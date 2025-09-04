@@ -8,6 +8,10 @@ export interface DocumentBase {
   updatedAt: Timestamp | FieldValue;
 }
 
+export interface Company extends DocumentBase {
+  name: string;
+}
+
 // User Profile Schema
 export interface User extends DocumentBase {
   uid: string;
@@ -33,7 +37,15 @@ export interface User extends DocumentBase {
 // Benefit Plan Schema
 export interface BenefitPlan extends DocumentBase {
   name: string;
-  type: 'health' | 'dental' | 'vision' | 'life' | 'disability' | '401k' | 'hsa' | 'fsa';
+  type:
+    | 'health'
+    | 'dental'
+    | 'vision'
+    | 'life'
+    | 'disability'
+    | '401k'
+    | 'hsa'
+    | 'fsa';
   provider: string;
   description: string;
   annualCost: number; // Base annual cost for employee
@@ -58,6 +70,7 @@ export interface Document extends DocumentBase {
   fileType: string; // e.g., 'application/pdf'
   storagePath: string;
   status: 'uploaded' | 'processing' | 'processed' | 'failed';
+  companyId?: string;
   processing?: {
     startedAt?: Timestamp | FieldValue;
     completedAt?: Timestamp | FieldValue;

@@ -68,7 +68,9 @@ test.describe
       expect(retrievedDocuments).toHaveLength(1);
 
       const [retrievedDocument] = retrievedDocuments;
-      expect(retrievedDocument).toMatchObject(document);
+      expect(retrievedDocument).toMatchObject(
+        document as unknown as Record<string, unknown>,
+      );
     });
 
     test('Ada can save a new version of the document', async ({
@@ -111,8 +113,12 @@ test.describe
 
       const [firstRetrievedDocument, secondRetrievedDocument] =
         retrievedDocuments;
-      expect(firstRetrievedDocument).toMatchObject(firstDocument);
-      expect(secondRetrievedDocument).toMatchObject(secondDocument);
+      expect(firstRetrievedDocument).toMatchObject(
+        firstDocument as unknown as Record<string, unknown>,
+      );
+      expect(secondRetrievedDocument).toMatchObject(
+        secondDocument as unknown as Record<string, unknown>,
+      );
     });
 
     test('Ada cannot delete a document without specifying an id', async ({
@@ -155,7 +161,9 @@ test.describe
       expect(deletedDocuments).toHaveLength(1);
 
       const [deletedDocument] = deletedDocuments;
-      expect(deletedDocument).toMatchObject(secondDocument);
+      expect(deletedDocument).toMatchObject(
+        secondDocument as unknown as Record<string, unknown>,
+      );
     });
 
     test('Ada can retrieve documents without deleted versions', async ({
@@ -172,7 +180,9 @@ test.describe
       expect(retrievedDocuments).toHaveLength(1);
 
       const [firstRetrievedDocument] = retrievedDocuments;
-      expect(firstRetrievedDocument).toMatchObject(firstDocument);
+      expect(firstRetrievedDocument).toMatchObject(
+        firstDocument as unknown as Record<string, unknown>,
+      );
     });
 
     test("Babbage cannot update Ada's document", async ({ babbageContext }) => {

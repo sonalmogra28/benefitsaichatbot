@@ -10,7 +10,10 @@ export function handleError(error: unknown): {
   statusCode: number;
 } {
   // Use logger service instead of console
-  logger.error('Error occurred', error instanceof Error ? error : new Error(String(error)));
+  logger.error(
+    'Error occurred',
+    error instanceof Error ? error : new Error(String(error)),
+  );
 
   // Basic error handling without Sentry for now
   if (error instanceof Error) {
@@ -27,7 +30,8 @@ export function handleError(error: unknown): {
 }
 
 export function logError(error: unknown, context?: Record<string, any>): void {
-  const errorInstance = error instanceof Error ? error : new Error(String(error));
+  const errorInstance =
+    error instanceof Error ? error : new Error(String(error));
   logger.error('Error logged', errorInstance, {
     metadata: {
       ...context,

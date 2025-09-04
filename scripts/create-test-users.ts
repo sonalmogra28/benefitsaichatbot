@@ -10,7 +10,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 // Initialize Firebase Admin
 if (!getApps().length) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT 
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
     ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
     : undefined;
 
@@ -80,7 +80,7 @@ async function createTestCompany(companyId: string, companyName: string) {
   try {
     const companyRef = db.collection('companies').doc(companyId);
     const companyDoc = await companyRef.get();
-    
+
     if (!companyDoc.exists) {
       await companyRef.set({
         id: companyId,
@@ -117,7 +117,7 @@ async function createTestUser(testUser: TestUser) {
     try {
       userRecord = await auth.getUserByEmail(testUser.email);
       console.log(`ℹ️  User exists: ${testUser.email}`);
-      
+
       // Update the user's password
       await auth.updateUser(userRecord.uid, {
         password: testUser.password,
@@ -138,7 +138,7 @@ async function createTestUser(testUser: TestUser) {
     const customClaims: any = {
       role: testUser.role,
     };
-    
+
     if (testUser.companyId) {
       customClaims.companyId = testUser.companyId;
     }
@@ -148,18 +148,21 @@ async function createTestUser(testUser: TestUser) {
 
     // Create/update user document in Firestore
     const userDocRef = db.collection('users').doc(userRecord.uid);
-    await userDocRef.set({
-      uid: userRecord.uid,
-      email: testUser.email,
-      displayName: testUser.displayName,
-      role: testUser.role,
-      companyId: testUser.companyId || null,
-      companyName: testUser.companyName || null,
-      emailVerified: true,
-      status: 'active',
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
+    await userDocRef.set(
+      {
+        uid: userRecord.uid,
+        email: testUser.email,
+        displayName: testUser.displayName,
+        role: testUser.role,
+        companyId: testUser.companyId || null,
+        companyName: testUser.companyName || null,
+        emailVerified: true,
+        status: 'active',
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
 
     // If company user, also add to company's users subcollection
     if (testUser.companyId) {
@@ -168,16 +171,19 @@ async function createTestUser(testUser: TestUser) {
         .doc(testUser.companyId)
         .collection('users')
         .doc(userRecord.uid);
-      
-      await companyUserRef.set({
-        uid: userRecord.uid,
-        email: testUser.email,
-        displayName: testUser.displayName,
-        role: testUser.role,
-        status: 'active',
-        joinedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
-      
+
+      await companyUserRef.set(
+        {
+          uid: userRecord.uid,
+          email: testUser.email,
+          displayName: testUser.displayName,
+          role: testUser.role,
+          status: 'active',
+          joinedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+
       // Update employee count
       const companyRef = db.collection('companies').doc(testUser.companyId);
       const companyDoc = await companyRef.get();
@@ -189,7 +195,6 @@ async function createTestUser(testUser: TestUser) {
         });
       }
     }
-
   } catch (error) {
     console.error(`❌ Error creating user ${testUser.email}:`, error);
   }
@@ -233,7 +238,7 @@ async function createTestBenefitPlans(companyId: string) {
         .doc(companyId)
         .collection('benefitPlans')
         .doc(plan.id);
-      
+
       await planRef.set({
         ...plan,
         companyId,
@@ -242,13 +247,13 @@ async function createTestBenefitPlans(companyId: string) {
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
-      
+
       console.log(`✅ Created benefit plan: ${plan.name}`);
     } catch (error) {
       console.error(`❌ Error creating plan ${plan.name}:`, error);
     }
   }
-  
+
   // Update plan count
   const companyRef = db.collection('companies').doc(companyId);
   await companyRef.update({
@@ -259,31 +264,33 @@ async function createTestBenefitPlans(companyId: string) {
 
 async function main() {
   console.log('🚀 Creating test users and data...\n');
-  
+
   // Create all test users
   for (const testUser of TEST_USERS) {
     await createTestUser(testUser);
   }
-  
+
   // Create benefit plans for ACME Corporation
   console.log('\n📋 Creating test benefit plans...');
   await createTestBenefitPlans('acme-corp');
-  
+
   console.log('\n✅ Test data creation complete!\n');
   console.log('📝 Test Credentials:');
   console.log('────────────────────');
-  TEST_USERS.forEach(user => {
-    console.log(`${user.role.padEnd(15)} | ${user.email.padEnd(25)} | ${user.password}`);
+  TEST_USERS.forEach((user) => {
+    console.log(
+      `${user.role.padEnd(15)} | ${user.email.padEnd(25)} | ${user.password}`,
+    );
   });
   console.log('────────────────────\n');
-  
+
   console.log('🔗 Test URLs:');
   console.log('  - Employee Chat: http://localhost:3000');
   console.log('  - Login: http://localhost:3000/login');
   console.log('  - Super Admin: http://localhost:3000/super-admin');
   console.log('  - Company Admin: http://localhost:3000/company-admin');
   console.log('  - Platform Admin: http://localhost:3000/admin\n');
-  
+
   process.exit(0);
 }
 

@@ -12,13 +12,16 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    
+
     // Verify the token
     try {
       const decodedToken = await adminAuth.verifyIdToken(token);
-      
+
       // Check if user has super admin role
-      if (decodedToken.role !== USER_ROLES.SUPER_ADMIN && decodedToken.role !== USER_ROLES.PLATFORM_ADMIN) {
+      if (
+        decodedToken.role !== USER_ROLES.SUPER_ADMIN &&
+        decodedToken.role !== USER_ROLES.PLATFORM_ADMIN
+      ) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     } catch (error) {
@@ -32,13 +35,13 @@ export async function GET(request: NextRequest) {
 
     // Fetch recent activity
     const activity = await superAdminService.getRecentActivity(limit);
-    
+
     return NextResponse.json(activity);
   } catch (error) {
     console.error('Error in super-admin activity API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

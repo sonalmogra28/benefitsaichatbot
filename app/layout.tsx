@@ -3,11 +3,14 @@ import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseProvider } from '@/components/firebase-provider';
 import { TRPCProvider } from '@/components/trpc-provider';
+import { getConfig } from '@/config/environments';
 
 import './globals.css';
 
+const { appUrl } = getConfig();
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://chat.vercel.ai'),
+  metadataBase: new URL(appUrl),
   title: 'Benefits AI Assistant',
   description: 'Your personal benefits advisor powered by AI',
 };
@@ -42,10 +45,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-    >
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -70,4 +70,4 @@ export default async function RootLayout({
       </body>
     </html>
   );
-};
+}

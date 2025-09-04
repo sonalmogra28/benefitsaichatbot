@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 interface TokenRecord {
   userId: string;
@@ -51,7 +51,9 @@ if (process.env.NODE_ENV === 'test') {
     private collection = adminDb.collection('refreshTokens');
 
     async save(hash: string, record: TokenRecord) {
-      await this.collection.doc(hash).set({ ...record, createdAt: FieldValue.serverTimestamp() });
+      await this.collection
+        .doc(hash)
+        .set({ ...record, createdAt: FieldValue.serverTimestamp() });
     }
 
     async find(hash: string) {
@@ -64,7 +66,9 @@ if (process.env.NODE_ENV === 'test') {
     }
 
     async findByUserId(userId: string) {
-      const snapshot = await this.collection.where('userId', '==', userId).get();
+      const snapshot = await this.collection
+        .where('userId', '==', userId)
+        .get();
       return snapshot.docs.map((d) => d.id);
     }
 
@@ -84,9 +88,16 @@ function hashToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
 
-export async function storeRefreshToken(token: string, userId: string, ttl: number = DEFAULT_TTL) {
+export async function storeRefreshToken(
+  token: string,
+  userId: string,
+  ttl: number = DEFAULT_TTL,
+) {
   const tokenHash = hashToken(token);
-  await tokenStore.save(tokenHash, { userId, expiresAt: Date.now() + ttl * 1000 });
+  await tokenStore.save(tokenHash, {
+    userId,
+    expiresAt: Date.now() + ttl * 1000,
+  });
 }
 
 export async function verifyRefreshToken(token: string) {
@@ -100,7 +111,12 @@ export async function verifyRefreshToken(token: string) {
   return { ...record, tokenHash };
 }
 
-export async function rotateRefreshToken(oldToken: string, newToken: string, userId: string, ttl: number = DEFAULT_TTL) {
+export async function rotateRefreshToken(
+  oldToken: string,
+  newToken: string,
+  userId: string,
+  ttl: number = DEFAULT_TTL,
+) {
   const existing = await verifyRefreshToken(oldToken);
   if (!existing || existing.userId !== userId) return false;
   await tokenStore.delete(existing.tokenHash);

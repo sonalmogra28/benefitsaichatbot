@@ -5,7 +5,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AuthForm } from '@/components/auth-form';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 
 export default function RegisterPage() {
@@ -60,8 +64,8 @@ export default function RegisterPage() {
           Get started with your benefits assistant.
         </p>
       </div>
-      <AuthForm 
-        type="register" 
+      <AuthForm
+        type="register"
         onSubmit={handleRegister}
         onGoogleClick={handleGoogleRegister}
         error={error}

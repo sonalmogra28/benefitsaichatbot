@@ -10,9 +10,9 @@
 
 ### ⚠️ Legacy Dependencies Found
 1. **@vercel/blob** (line 56, package.json) - Needs migration to Firebase Storage
-2. **Redis dependency** (line 96, package.json) - Consider Firebase alternatives
+2. **Legacy caching dependency** (line 96, package.json) - Replace with Firebase Memorystore or Firestore caching
 3. **Unused Vercel Blob storage module** (/lib/storage/blob.ts)
-4. **Redis rate limiting** (/lib/rate-limit/redis.ts)
+4. **Legacy rate limiting** (deprecated rate limiter module)
 
 ### 🔧 Current Tech Stack
 - **Frontend**: Next.js 15, TypeScript, Tailwind CSS
@@ -28,18 +28,18 @@
 - [ ] Migrate any blob storage references to Firebase Storage
 - [ ] Update all document upload endpoints to use Firebase Storage
 
-### Priority 2: Replace Redis with Firebase Alternatives
+### Priority 2: Replace Legacy Caching with Firebase Alternatives
 - [ ] Migrate rate limiting to Firestore counters or Firebase Extensions
-- [ ] Remove Redis dependency from package.json
-- [ ] Delete `/lib/rate-limit/redis.ts`
+- [ ] Remove legacy cache dependency from package.json
+- [ ] Delete legacy rate limiter module
 - [ ] Implement Firebase-based caching strategy:
   - Option A: Firestore with TTL documents
   - Option B: Firebase Hosting CDN caching
-  - Option C: Memory store for Cloud Run
+  - Option C: Memorystore for Cloud Run
 
 ### Priority 3: Environment Variable Cleanup
-- [ ] Remove REDIS_URL references
-- [ ] Remove PINECONE_* variables (migrate to Vertex AI Vector Search)
+- [ ] Remove legacy cache URL references
+- [ ] Remove legacy vector search variables (migrate to Vertex AI Vector Search)
 - [ ] Consolidate AI provider keys (focus on Google/Vertex AI)
 - [ ] Update .env.local.example with production-ready config
 
@@ -68,7 +68,7 @@
   - [ ] Set up form parser for benefits documents
 
 - [ ] **Vector Search Migration**:
-  - [ ] Migrate from Pinecone to Vertex AI Vector Search
+  - [ ] Implement Vertex AI Vector Search
   - [ ] Update embedding generation pipeline
   - [ ] Implement semantic search with Vertex AI
 
@@ -254,7 +254,7 @@
    - Update package.json
 
 2. **This Week**:
-   - Migrate Redis to Firebase solution
+   - Migrate caching to Firebase solution
    - Clean up environment variables
    - Test Firebase deployment
 

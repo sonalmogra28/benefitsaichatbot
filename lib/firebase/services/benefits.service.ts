@@ -4,34 +4,54 @@ import { z } from 'zod';
 // Benefit plan schema
 export const benefitPlanSchema = z.object({
   name: z.string().min(1).max(255),
-  type: z.enum(['health', 'dental', 'vision', 'life', 'disability', '401k', 'fsa', 'hsa', 'other']),
+  type: z.enum([
+    'health',
+    'dental',
+    'vision',
+    'life',
+    'disability',
+    '401k',
+    'fsa',
+    'hsa',
+    'other',
+  ]),
   provider: z.string(),
   description: z.string().optional(),
-  coverage: z.object({
-    individual: z.number().optional(),
-    family: z.number().optional(),
-    deductible: z.number().optional(),
-    outOfPocketMax: z.number().optional()
-  }).optional(),
+  coverage: z
+    .object({
+      individual: z.number().optional(),
+      family: z.number().optional(),
+      deductible: z.number().optional(),
+      outOfPocketMax: z.number().optional(),
+    })
+    .optional(),
   costs: z.object({
     employeeMonthly: z.number(),
     employerMonthly: z.number(),
-    totalAnnual: z.number().optional()
+    totalAnnual: z.number().optional(),
   }),
-  eligibility: z.object({
-    waitingPeriod: z.number().default(0), // days
-    minimumHours: z.number().default(0), // weekly hours
-    employeeTypes: z.array(z.string()).default(['full-time'])
-  }).optional(),
-  enrollmentPeriod: z.object({
-    start: z.string().datetime(),
-    end: z.string().datetime()
-  }).optional(),
-  documents: z.array(z.object({
-    name: z.string(),
-    url: z.string().url(),
-    uploadedAt: z.string().datetime()
-  })).optional()
+  eligibility: z
+    .object({
+      waitingPeriod: z.number().default(0), // days
+      minimumHours: z.number().default(0), // weekly hours
+      employeeTypes: z.array(z.string()).default(['full-time']),
+    })
+    .optional(),
+  enrollmentPeriod: z
+    .object({
+      start: z.string().datetime(),
+      end: z.string().datetime(),
+    })
+    .optional(),
+  documents: z
+    .array(
+      z.object({
+        name: z.string(),
+        url: z.string().url(),
+        uploadedAt: z.string().datetime(),
+      }),
+    )
+    .optional(),
 });
 
 export type BenefitPlan = z.infer<typeof benefitPlanSchema> & {
@@ -49,17 +69,28 @@ export const enrollmentSchema = z.object({
   userId: z.string(),
   planId: z.string(),
   companyId: z.string(),
-  coverageLevel: z.enum(['individual', 'family', 'employee_spouse', 'employee_children']),
+  coverageLevel: z.enum([
+    'individual',
+    'family',
+    'employee_spouse',
+    'employee_children',
+  ]),
   effectiveDate: z.string().datetime(),
   terminationDate: z.string().datetime().optional(),
-  dependents: z.array(z.object({
-    name: z.string(),
-    relationship: z.enum(['spouse', 'child', 'domestic_partner', 'other']),
-    dateOfBirth: z.string().datetime(),
-    ssn: z.string().optional() // Should be encrypted
-  })).optional(),
+  dependents: z
+    .array(
+      z.object({
+        name: z.string(),
+        relationship: z.enum(['spouse', 'child', 'domestic_partner', 'other']),
+        dateOfBirth: z.string().datetime(),
+        ssn: z.string().optional(), // Should be encrypted
+      }),
+    )
+    .optional(),
   selections: z.record(z.any()).optional(),
-  status: z.enum(['pending', 'active', 'terminated', 'cancelled']).default('pending')
+  status: z
+    .enum(['pending', 'active', 'terminated', 'cancelled'])
+    .default('pending'),
 });
 
 export type Enrollment = z.infer<typeof enrollmentSchema> & {
@@ -79,17 +110,17 @@ export class BenefitsService {
   async createBenefitPlan(
     companyId: string,
     planData: z.infer<typeof benefitPlanSchema>,
-    createdBy: string
+    createdBy: string,
   ): Promise<string> {
     try {
       const validated = benefitPlanSchema.parse(planData);
-      
+
       const planRef = adminDb
         .collection('companies')
         .doc(companyId)
         .collection('benefitPlans')
         .doc();
-      
+
       const planId = planRef.id;
 
       await planRef.set({
@@ -100,7 +131,7 @@ export class BenefitsService {
         status: 'active',
         enrolledCount: 0,
         createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       return planId;
@@ -117,7 +148,10 @@ export class BenefitsService {
   /**
    * Get benefit plan by ID
    */
-  async getBenefitPlan(companyId: string, planId: string): Promise<BenefitPlan | null> {
+  async getBenefitPlan(
+    companyId: string,
+    planId: string,
+  ): Promise<BenefitPlan | null> {
     try {
       const planDoc = await adminDb
         .collection('companies')
@@ -125,7 +159,7 @@ export class BenefitsService {
         .collection('benefitPlans')
         .doc(planId)
         .get();
-      
+
       if (!planDoc.exists) {
         return null;
       }
@@ -146,7 +180,7 @@ export class BenefitsService {
       type?: string;
       status?: 'active' | 'inactive' | 'archived';
       limit?: number;
-    }
+    },
   ): Promise<BenefitPlan[]> {
     try {
       let query = adminDb
@@ -168,10 +202,13 @@ export class BenefitsService {
 
       const snapshot = await query.get();
       return snapshot.docs
-        .filter(doc => doc.id !== '_init')
-        .map(doc => doc.data() as BenefitPlan);
+        .filter((doc) => doc.id !== '_init')
+        .map((doc) => doc.data() as BenefitPlan);
     } catch (error) {
-      console.error(`Failed to list benefit plans for company ${companyId}:`, error);
+      console.error(
+        `Failed to list benefit plans for company ${companyId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -182,11 +219,11 @@ export class BenefitsService {
   async updateBenefitPlan(
     companyId: string,
     planId: string,
-    updates: Partial<z.infer<typeof benefitPlanSchema>>
+    updates: Partial<z.infer<typeof benefitPlanSchema>>,
   ): Promise<void> {
     try {
       const validated = benefitPlanSchema.partial().parse(updates);
-      
+
       await adminDb
         .collection('companies')
         .doc(companyId)
@@ -194,7 +231,7 @@ export class BenefitsService {
         .doc(planId)
         .update({
           ...validated,
-          updatedAt: FieldValue.serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp(),
         });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -210,13 +247,16 @@ export class BenefitsService {
    * Create an enrollment
    */
   async createEnrollment(
-    enrollmentData: z.infer<typeof enrollmentSchema>
+    enrollmentData: z.infer<typeof enrollmentSchema>,
   ): Promise<string> {
     try {
       const validated = enrollmentSchema.parse(enrollmentData);
-      
+
       // Verify plan exists
-      const plan = await this.getBenefitPlan(validated.companyId, validated.planId);
+      const plan = await this.getBenefitPlan(
+        validated.companyId,
+        validated.planId,
+      );
       if (!plan) {
         throw new Error(`Benefit plan ${validated.planId} not found`);
       }
@@ -224,7 +264,7 @@ export class BenefitsService {
       // Calculate monthly premium based on coverage level
       const monthlyPremium = this.calculateMonthlyPremium(
         plan,
-        validated.coverageLevel
+        validated.coverageLevel,
       );
 
       const enrollmentRef = adminDb.collection('enrollments').doc();
@@ -235,7 +275,7 @@ export class BenefitsService {
         ...validated,
         monthlyPremium,
         createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       // Update enrolled count on the plan
@@ -245,7 +285,7 @@ export class BenefitsService {
         .collection('benefitPlans')
         .doc(validated.planId)
         .update({
-          enrolledCount: FieldValue.increment(1)
+          enrolledCount: FieldValue.increment(1),
         });
 
       // Add enrollment to user's subcollection
@@ -259,7 +299,7 @@ export class BenefitsService {
           planId: validated.planId,
           companyId: validated.companyId,
           status: validated.status,
-          effectiveDate: validated.effectiveDate
+          effectiveDate: validated.effectiveDate,
         });
 
       return enrollmentId;
@@ -278,10 +318,10 @@ export class BenefitsService {
    */
   private calculateMonthlyPremium(
     plan: BenefitPlan,
-    coverageLevel: string
+    coverageLevel: string,
   ): number {
     const basePremium = plan.costs.employeeMonthly;
-    
+
     switch (coverageLevel) {
       case 'family':
         return basePremium * 2.5; // Family typically costs 2.5x individual
@@ -305,7 +345,7 @@ export class BenefitsService {
         .where('status', 'in', ['active', 'pending'])
         .get();
 
-      return snapshot.docs.map(doc => doc.data() as Enrollment);
+      return snapshot.docs.map((doc) => doc.data() as Enrollment);
     } catch (error) {
       console.error(`Failed to get enrollments for user ${userId}:`, error);
       throw error;
@@ -317,7 +357,7 @@ export class BenefitsService {
    */
   async updateEnrollmentStatus(
     enrollmentId: string,
-    status: 'pending' | 'active' | 'terminated' | 'cancelled'
+    status: 'pending' | 'active' | 'terminated' | 'cancelled',
   ): Promise<void> {
     try {
       const enrollmentRef = adminDb.collection('enrollments').doc(enrollmentId);
@@ -331,7 +371,7 @@ export class BenefitsService {
 
       await enrollmentRef.update({
         status,
-        updatedAt: FieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       // Update user's enrollment subcollection
@@ -350,11 +390,14 @@ export class BenefitsService {
           .collection('benefitPlans')
           .doc(enrollment.planId)
           .update({
-            enrolledCount: FieldValue.increment(-1)
+            enrolledCount: FieldValue.increment(-1),
           });
       }
     } catch (error) {
-      console.error(`Failed to update enrollment ${enrollmentId} status:`, error);
+      console.error(
+        `Failed to update enrollment ${enrollmentId} status:`,
+        error,
+      );
       throw error;
     }
   }
@@ -364,7 +407,7 @@ export class BenefitsService {
    */
   async comparePlans(
     companyId: string,
-    planIds: string[]
+    planIds: string[],
   ): Promise<{
     plans: BenefitPlan[];
     comparison: {
@@ -375,10 +418,10 @@ export class BenefitsService {
   }> {
     try {
       const plans = await Promise.all(
-        planIds.map(id => this.getBenefitPlan(companyId, id))
+        planIds.map((id) => this.getBenefitPlan(companyId, id)),
       );
 
-      const validPlans = plans.filter(p => p !== null) as BenefitPlan[];
+      const validPlans = plans.filter((p) => p !== null) as BenefitPlan[];
 
       if (validPlans.length === 0) {
         throw new Error('No valid plans found for comparison');
@@ -386,19 +429,25 @@ export class BenefitsService {
 
       // Find plan with lowest employee cost
       const lowestCost = validPlans.reduce((prev, current) =>
-        prev.costs.employeeMonthly < current.costs.employeeMonthly ? prev : current
+        prev.costs.employeeMonthly < current.costs.employeeMonthly
+          ? prev
+          : current,
       );
 
       // Find plan with best coverage (lowest deductible)
       const bestCoverage = validPlans.reduce((prev, current) => {
-        const prevDeductible = prev.coverage?.deductible || Number.POSITIVE_INFINITY;
-        const currentDeductible = current.coverage?.deductible || Number.POSITIVE_INFINITY;
+        const prevDeductible =
+          prev.coverage?.deductible || Number.POSITIVE_INFINITY;
+        const currentDeductible =
+          current.coverage?.deductible || Number.POSITIVE_INFINITY;
         return prevDeductible < currentDeductible ? prev : current;
       });
 
       // Find most popular (highest enrollment)
       const mostPopular = validPlans.reduce((prev, current) =>
-        (prev.enrolledCount || 0) > (current.enrolledCount || 0) ? prev : current
+        (prev.enrolledCount || 0) > (current.enrolledCount || 0)
+          ? prev
+          : current,
       );
 
       return {
@@ -406,8 +455,8 @@ export class BenefitsService {
         comparison: {
           lowestCost: lowestCost.id,
           bestCoverage: bestCoverage.id,
-          mostPopular: mostPopular.id
-        }
+          mostPopular: mostPopular.id,
+        },
       };
     } catch (error) {
       console.error('Failed to compare plans:', error);
