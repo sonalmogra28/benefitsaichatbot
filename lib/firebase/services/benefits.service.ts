@@ -1,6 +1,5 @@
-import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
+import { adminDb, FieldValue } from '@/lib/firebase/admin';
 import { z } from 'zod';
-import type { FieldValue } from 'firebase-admin/firestore';
 
 // Benefit plan schema
 export const benefitPlanSchema = z.object({
@@ -38,8 +37,8 @@ export const benefitPlanSchema = z.object({
 export type BenefitPlan = z.infer<typeof benefitPlanSchema> & {
   id: string;
   companyId: string;
-  createdAt: FieldValue | Date;
-  updatedAt: FieldValue | Date;
+  createdAt: any;
+  updatedAt: any;
   createdBy: string;
   status: 'active' | 'inactive' | 'archived';
   enrolledCount?: number;
@@ -65,8 +64,8 @@ export const enrollmentSchema = z.object({
 
 export type Enrollment = z.infer<typeof enrollmentSchema> & {
   id: string;
-  createdAt: FieldValue | Date;
-  updatedAt: FieldValue | Date;
+  createdAt: any;
+  updatedAt: any;
   monthlyPremium: number;
 };
 
@@ -100,8 +99,8 @@ export class BenefitsService {
         createdBy,
         status: 'active',
         enrolledCount: 0,
-        createdAt: AdminFieldValue.serverTimestamp(),
-        updatedAt: AdminFieldValue.serverTimestamp()
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
       });
 
       return planId;
@@ -195,7 +194,7 @@ export class BenefitsService {
         .doc(planId)
         .update({
           ...validated,
-          updatedAt: AdminFieldValue.serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp()
         });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -235,8 +234,8 @@ export class BenefitsService {
         id: enrollmentId,
         ...validated,
         monthlyPremium,
-        createdAt: AdminFieldValue.serverTimestamp(),
-        updatedAt: AdminFieldValue.serverTimestamp()
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp()
       });
 
       // Update enrolled count on the plan
@@ -246,7 +245,7 @@ export class BenefitsService {
         .collection('benefitPlans')
         .doc(validated.planId)
         .update({
-          enrolledCount: AdminFieldValue.increment(1)
+          enrolledCount: FieldValue.increment(1)
         });
 
       // Add enrollment to user's subcollection
@@ -332,7 +331,7 @@ export class BenefitsService {
 
       await enrollmentRef.update({
         status,
-        updatedAt: AdminFieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp()
       });
 
       // Update user's enrollment subcollection
@@ -351,7 +350,7 @@ export class BenefitsService {
           .collection('benefitPlans')
           .doc(enrollment.planId)
           .update({
-            enrolledCount: AdminFieldValue.increment(-1)
+            enrolledCount: FieldValue.increment(-1)
           });
       }
     } catch (error) {
@@ -392,8 +391,8 @@ export class BenefitsService {
 
       // Find plan with best coverage (lowest deductible)
       const bestCoverage = validPlans.reduce((prev, current) => {
-        const prevDeductible = prev.coverage?.deductible || Infinity;
-        const currentDeductible = current.coverage?.deductible || Infinity;
+        const prevDeductible = prev.coverage?.deductible || Number.POSITIVE_INFINITY;
+        const currentDeductible = current.coverage?.deductible || Number.POSITIVE_INFINITY;
         return prevDeductible < currentDeductible ? prev : current;
       });
 

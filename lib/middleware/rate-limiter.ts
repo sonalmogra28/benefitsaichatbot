@@ -3,9 +3,9 @@
  * Implements token bucket algorithm with Redis/Firestore backend
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 // Rate limit configurations per endpoint type
 export const RATE_LIMIT_CONFIGS = {
@@ -106,7 +106,15 @@ async function isRateLimited(
       };
     }
 
-    const data = doc.data()!;
+    const data = doc.data();
+    if (!data) {
+      // Handle case where document exists but data is empty
+      return {
+        limited: false,
+        remaining: config.maxRequests,
+        resetAt: new Date(now + config.windowMs)
+      };
+    }
     const requests = data.requests || [];
     
     // Filter out requests outside the current window
@@ -282,7 +290,15 @@ export async function getRateLimitStatus(
       };
     }
     
-    const data = doc.data()!;
+    const data = doc.data();
+    if (!data) {
+      return {
+        used: 0,
+        limit: config.maxRequests,
+        remaining: config.maxRequests,
+        resetAt: new Date(now + config.windowMs)
+      };
+    }
     const requests = data.requests || [];
     const recentRequests = requests.filter(
       (r: { timestamp: number }) => r.timestamp > windowStart
@@ -301,7 +317,7 @@ export async function getRateLimitStatus(
   } catch (error) {
     return {
       used: 0,
-      limit: config.maxRequests,
+      limit: aconfig.maxRequests,
       remaining: config.maxRequests,
       resetAt: new Date(now + config.windowMs)
     };

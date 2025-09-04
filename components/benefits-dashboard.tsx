@@ -1,3 +1,5 @@
+'use client';
+
 import { motion } from 'framer-motion';
 import { Shield, Heart, Eye, Users, PiggyBank, TrendingUp, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -240,8 +242,8 @@ function BenefitsDashboardSkeleton() {
         </CardContent>
       </Card>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {[...Array(3)].map((_, i) => (
-          <Card key={i}>
+        {['skeleton-1', 'skeleton-2', 'skeleton-3'].map((key) => (
+          <Card key={key}>
             <CardContent className="p-4">
               <Skeleton className="h-6 w-3/4 mb-2" />
               <Skeleton className="h-4 w-1/2" />

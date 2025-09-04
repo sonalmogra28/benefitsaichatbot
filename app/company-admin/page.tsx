@@ -41,18 +41,18 @@ export default function CompanyAdminDashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Company Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage your organization's benefits</p>
+          <p className="text-muted-foreground">Manage your organization&apos;s benefits</p>
         </div>
         <div className="space-x-2">
           <Link href="/company-admin/employees/new">
             <Button variant="outline">
-              <UserPlus className="mr-2 h-4 w-4" />
+              <UserPlus className="mr-2 size-4" />
               Add Employee
             </Button>
           </Link>
           <Link href="/company-admin/documents/upload">
             <Button>
-              <Upload className="mr-2 h-4 w-4" />
+              <Upload className="mr-2 size-4" />
               Upload Document
             </Button>
           </Link>
@@ -63,7 +63,7 @@ export default function CompanyAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{companyStats.totalEmployees}</div>
@@ -74,7 +74,7 @@ export default function CompanyAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Plans</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{companyStats.activePlans}</div>
@@ -85,7 +85,7 @@ export default function CompanyAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Monthly Spend</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${companyStats.monthlySpend.toLocaleString()}</div>
@@ -96,7 +96,7 @@ export default function CompanyAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{companyStats.totalDocuments}</div>
@@ -107,7 +107,7 @@ export default function CompanyAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Enrollment Rate</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <BarChart3 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{companyStats.enrollmentRate}%</div>
@@ -125,25 +125,25 @@ export default function CompanyAdminDashboard() {
           <CardContent className="space-y-2">
             <Link href="/company-admin/employees" className="block">
               <Button variant="outline" className="w-full justify-start">
-                <Users className="mr-2 h-4 w-4" />
+                <Users className="mr-2 size-4" />
                 Employee Management
               </Button>
             </Link>
             <Link href="/company-admin/benefits" className="block">
               <Button variant="outline" className="w-full justify-start">
-                <FileText className="mr-2 h-4 w-4" />
+                <FileText className="mr-2 size-4" />
                 Benefits Plans
               </Button>
             </Link>
             <Link href="/company-admin/documents" className="block">
               <Button variant="outline" className="w-full justify-start">
-                <Upload className="mr-2 h-4 w-4" />
+                <Upload className="mr-2 size-4" />
                 Document Library
               </Button>
             </Link>
             <Link href="/company-admin/benefits/compare" className="block">
               <Button variant="outline" className="w-full justify-start">
-                <BarChart3 className="mr-2 h-4 w-4" />
+                <BarChart3 className="mr-2 size-4" />
                 Plan Comparison
               </Button>
             </Link>

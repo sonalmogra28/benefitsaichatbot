@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 // Seed Database with Sample Benefits Data
 
-import { db, auth } from '../lib/firebase/admin';
+import { db, } from '../lib/firebase/admin';
 import { ragSystem } from '../lib/ai/rag-system';
 import { FieldValue } from 'firebase-admin/firestore';
 

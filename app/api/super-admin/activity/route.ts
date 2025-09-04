@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { superAdminService } from '@/lib/services/super-admin.service';
-import { auth } from '@/lib/firebase/admin';
+import { adminAuth } from '@/lib/firebase/admin';
 import { USER_ROLES } from '@/lib/constants/roles';
 
 export async function GET(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     
     // Verify the token
     try {
-      const decodedToken = await auth.verifyIdToken(token);
+      const decodedToken = await adminAuth.verifyIdToken(token);
       
       // Check if user has super admin role
       if (decodedToken.role !== USER_ROLES.SUPER_ADMIN && decodedToken.role !== USER_ROLES.PLATFORM_ADMIN) {
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     // Get limit from query params
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const limit = Number.parseInt(searchParams.get('limit') || '10', 10);
 
     // Fetch recent activity
     const activity = await superAdminService.getRecentActivity(limit);

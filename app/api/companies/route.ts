@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth, db } from '@/lib/firebase/admin';
+import { type NextRequest, NextResponse } from 'next/server';
+import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { USER_ROLES } from '@/lib/constants/roles';
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.split('Bearer ')[1];
     
     try {
-      const decodedToken = await auth.verifyIdToken(token);
+      const decodedToken = await adminAuth.verifyIdToken(token);
       
       // Check if user has super admin or platform admin role
       if (decodedToken.role !== USER_ROLES.SUPER_ADMIN && decodedToken.role !== USER_ROLES.PLATFORM_ADMIN) {
@@ -27,19 +27,19 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const limit = Number.parseInt(searchParams.get('limit') || '20', 10);
     const startAfter = searchParams.get('startAfter');
     const status = searchParams.get('status'); // active, suspended, inactive
 
     // Build query
-    let query = db.collection('companies').orderBy('createdAt', 'desc');
+    let query = adminDb.collection('companies').orderBy('createdAt', 'desc');
 
     if (status) {
       query = query.where('status', '==', status);
     }
 
     if (startAfter) {
-      const startDoc = await db.collection('companies').doc(startAfter).get();
+      const startDoc = await adminDb.collection('companies').doc(startAfter).get();
       if (startDoc.exists) {
         query = query.startAfter(startDoc);
       }
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.split('Bearer ')[1];
     
     try {
-      const decodedToken = await auth.verifyIdToken(token);
+      const decodedToken = await adminAuth.verifyIdToken(token);
       
       // Check if user has super admin role
       if (decodedToken.role !== USER_ROLES.SUPER_ADMIN && decodedToken.role !== USER_ROLES.PLATFORM_ADMIN) {
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     // Check if company with same domain already exists
     if (domain) {
-      const existingCompany = await db
+      const existingCompany = await adminDb
         .collection('companies')
         .where('domain', '==', domain)
         .limit(1)
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create company document
-    const companyRef = db.collection('companies').doc();
+    const companyRef = adminDb.collection('companies').doc();
     const companyData = {
       id: companyRef.id,
       name,
@@ -145,11 +145,11 @@ export async function POST(request: NextRequest) {
     await companyRef.set(companyData);
 
     // Log activity
-    const activityRef = db.collection('activity_logs').doc();
+    const activityRef = adminDb.collection('activity_logs').doc();
     await activityRef.set({
       id: activityRef.id,
       type: 'company_added',
-      message: `New company "${name}" created`,
+      message: `New company \"${name}\" created`,
       metadata: { companyId: companyRef.id },
       timestamp: FieldValue.serverTimestamp(),
     });

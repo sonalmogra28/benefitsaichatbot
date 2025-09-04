@@ -77,7 +77,7 @@ export function MfaEnrollment() {
 
   return (
     <div className="space-y-4">
-      <div id="recaptcha-container"></div>
+      <div id="recaptcha-container" />
       <div>
         <Input
           type="tel"

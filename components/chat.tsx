@@ -159,11 +159,11 @@ export function Chat({
               className="text-center mb-8"
             >
               <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4" style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>WELCOME TO BENEFITS AI ASSISTANT</h1>
-              <p className="text-lg md:text-xl" style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>I'm here to help you understand and choose your employee benefits.</p>
+              <p className="text-lg md:text-xl" style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>I&apos;m here to help you understand and choose your employee benefits.</p>
             </motion.div>
             <BenefitsQuickActions
               onActionClick={(prompt) => {
-                // Set the input to show what's being sent
+                // Set the input to show what&apos;s being sent
                 setInput(prompt);
                 // Send the message directly without form submission
                 sendMessage({

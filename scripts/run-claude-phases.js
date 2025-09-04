@@ -18,13 +18,14 @@ const phasesPath = path.resolve(
 
 // Parse JSONC (JSON with comments)
 function parseJSONC(content) {
+  let jsoncContent = content;
   // Remove single-line comments
-  content = content.replace(/\/\/.*$/gm, '');
+  jsoncContent = jsoncContent.replace(/\/\/.*$/gm, '');
   // Remove multi-line comments
-  content = content.replace(/\/\*[\s\S]*?\*\//g, '');
+  jsoncContent = jsoncContent.replace(/\/\*[\s\S]*?\*\//g, '');
   // Remove trailing commas
-  content = content.replace(/,\s*([}\]])/g, '$1');
-  return JSON.parse(content);
+  jsoncContent = jsoncContent.replace(/,\s*([}\]])/g, '$1');
+  return JSON.parse(jsoncContent);
 }
 
 const customInstructions = parseJSONC(

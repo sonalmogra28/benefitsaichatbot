@@ -100,7 +100,7 @@ class ErrorTracker {
         if (!acc[error.fingerprint]) {
           acc[error.fingerprint] = { ...error, count: 1 };
         } else {
-          acc[error.fingerprint].count! += 1;
+          acc[error.fingerprint].count = (acc[error.fingerprint].count || 0) + 1;
         }
         return acc;
       }, {} as Record<string, TrackedError>);
@@ -235,7 +235,7 @@ class ErrorTracker {
     }
   }
 
-  public async getErrorStats(hours: number = 24): Promise<{
+  public async getErrorStats(hours = 24): Promise<{
     total: number;
     bySeverity: Record<string, number>;
     byType: Record<string, number>;

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building2, Users, FileText, BarChart3, TrendingUp, Activity, DollarSign, Clock } from 'lucide-react';
+import { Building2, Users, FileText, BarChart3, Activity, DollarSign, Clock } from 'lucide-react';
 import { AnalyticsDashboard } from './analytics-dashboard';
 import Link from 'next/link';
 
@@ -131,6 +131,10 @@ export function SuperAdminDashboard() {
     return `${Math.floor(seconds / 86400)} days ago`;
   };
 
+  const handleExportAnalytics = () => {
+    window.location.href = '/api/super-admin/export';
+  };
+
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
@@ -138,7 +142,7 @@ export function SuperAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <Building2 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalCompanies}</div>
@@ -151,7 +155,7 @@ export function SuperAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalUsers}</div>
@@ -162,7 +166,7 @@ export function SuperAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Chats</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <Activity className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.activeChats}</div>
@@ -173,7 +177,7 @@ export function SuperAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">System Health</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <Activity className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold capitalize ${getHealthColor(stats.systemHealth)}`}>
@@ -189,13 +193,13 @@ export function SuperAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">API Usage</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <BarChart3 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.apiUsage.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">Calls this month</p>
             <div className="mt-3 h-2 bg-gray-200 rounded">
-              <div className="h-2 bg-blue-600 rounded" style={{ width: '65%' }}></div>
+              <div className="h-2 bg-blue-600 rounded" style={{ width: '65%' }} />
             </div>
             <p className="text-xs text-muted-foreground mt-1">65% of monthly limit</p>
           </CardContent>
@@ -204,13 +208,13 @@ export function SuperAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Storage Used</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.storageUsed} GB</div>
             <p className="text-xs text-muted-foreground">Of 100 GB total</p>
             <div className="mt-3 h-2 bg-gray-200 rounded">
-              <div className="h-2 bg-green-600 rounded" style={{ width: '32%' }}></div>
+              <div className="h-2 bg-green-600 rounded" style={{ width: '32%' }} />
             </div>
             <p className="text-xs text-muted-foreground mt-1">32% capacity</p>
           </CardContent>
@@ -219,7 +223,7 @@ export function SuperAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Monthly Cost</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$2,451</div>
@@ -241,8 +245,8 @@ export function SuperAdminDashboard() {
           <CardContent className="space-y-3">
             {recentActivity.map((activity) => (
               <div key={activity.id} className="flex items-start space-x-3">
-                <div className="flex-shrink-0">
-                  <Clock className="h-4 w-4 text-muted-foreground mt-1" />
+                <div className="shrink-0">
+                  <Clock className="size-4 text-muted-foreground mt-1" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm">{activity.message}</p>
@@ -268,28 +272,28 @@ export function SuperAdminDashboard() {
           <CardContent className="space-y-2">
             <Link href="/super-admin/companies/new" className="block">
               <Button variant="outline" className="w-full justify-start">
-                <Building2 className="mr-2 h-4 w-4" />
+                <Building2 className="mr-2 size-4" />
                 Add New Company
               </Button>
             </Link>
             <Link href="/super-admin/users/new" className="block">
               <Button variant="outline" className="w-full justify-start">
-                <Users className="mr-2 h-4 w-4" />
+                <Users className="mr-2 size-4" />
                 Create Admin User
               </Button>
             </Link>
             <Link href="/super-admin/documents" className="block">
               <Button variant="outline" className="w-full justify-start">
-                <FileText className="mr-2 h-4 w-4" />
+                <FileText className="mr-2 size-4" />
                 Manage Documents
               </Button>
             </Link>
             <Button 
               variant="outline" 
               className="w-full justify-start"
-              onClick={() => window.location.href = '/api/super-admin/export'}
+              onClick={handleExportAnalytics}
             >
-              <BarChart3 className="mr-2 h-4 w-4" />
+              <BarChart3 className="mr-2 size-4" />
               Export Analytics
             </Button>
           </CardContent>

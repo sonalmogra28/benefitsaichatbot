@@ -265,8 +265,8 @@ class NotificationService {
    */
   async getNotificationStats(companyId?: string) {
     try {
-      let collectionRef = db.collection('notification_logs');
-      let queryRef;
+      const collectionRef = db.collection('notification_logs');
+      let queryRef: any;
       
       if (companyId) {
         // Would need to add companyId to notifications

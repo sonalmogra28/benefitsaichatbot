@@ -50,7 +50,7 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
         },
         body: JSON.stringify({
           ...formData,
-          employeeCount: parseInt(formData.employeeCount) || 0
+          employeeCount: Number.parseInt(formData.employeeCount) || 0
         }),
       });
 
@@ -100,7 +100,7 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
       <DialogTrigger asChild>
         {children || (
           <Button>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             Add Company
           </Button>
         )}
@@ -244,12 +244,12 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
             <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 size-4 animate-spin" />
                   Creating...
                 </>
               ) : (
                 <>
-                  <Building2 className="mr-2 h-4 w-4" />
+                  <Building2 className="mr-2 size-4" />
                   Create Company
                 </>
               )}

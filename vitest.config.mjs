@@ -1,6 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
@@ -12,7 +16,7 @@ export default defineConfig({
       provider: 'v8',
     },
     resolveSnapshotPath: (testPath, snapExtension) =>
-      resolve(__dirname, '__snapshots__', `${testPath}${snapExtension}`),
+      path.resolve(__dirname, '__snapshots__', `${testPath}${snapExtension}`),
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
@@ -23,15 +27,15 @@ export default defineConfig({
       'tests/routes/**',
       'tests/db/**',
     ],
-    env: {
-      NEXT_PUBLIC_STACK_PROJECT_ID: 'test-project-id',
-      STACK_SECRET_SERVER_KEY: 'test-secret-key',
-      NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: 'test-client-key',
-    },
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, '.'),
+      '@': path.resolve(__dirname, '.'),
     },
+  },
+  define: {
+    'process.env.NEXT_PUBLIC_STACK_PROJECT_ID': JSON.stringify('test-project-id'),
+    'process.env.STACK_SECRET_SERVER_KEY': JSON.stringify('test-secret-key'),
+    'process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY': JSON.stringify('test-client-key'),
   },
 });

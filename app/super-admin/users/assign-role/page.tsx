@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,11 +19,7 @@ export default function AssignRolePage() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/super-admin/users');
       const data = await response.json();
@@ -37,7 +33,11 @@ export default function AssignRolePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const updateUserRole = async (userId: string, newRole: string) => {
     try {
@@ -63,6 +63,10 @@ export default function AssignRolePage() {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleBackToDashboard = () => {
+    window.location.href = '/super-admin';
   };
 
   if (loading) return <div>Loading...</div>;
@@ -104,7 +108,7 @@ export default function AssignRolePage() {
       </div>
 
       <div className="mt-8">
-        <Button onClick={() => window.location.href = '/super-admin'}>
+        <Button onClick={handleBackToDashboard}>
           Back to Dashboard
         </Button>
       </div>

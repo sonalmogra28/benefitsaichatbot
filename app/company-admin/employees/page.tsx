@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, UserPlus, Search, Mail, Phone, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Search, Mail, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,10 +76,10 @@ export default function CompanyEmployeesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Employee Management</h1>
-          <p className="text-muted-foreground">Manage your organization's employees and their benefits</p>
+          <p className="text-muted-foreground">Manage your organization&apos;s employees and their benefits</p>
         </div>
         <Button onClick={() => router.push('/company-admin/employees/new')}>
-          <UserPlus className="mr-2 h-4 w-4" />
+          <UserPlus className="mr-2 size-4" />
           Add Employee
         </Button>
       </div>
@@ -88,7 +88,7 @@ export default function CompanyEmployeesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{employees.length}</div>
@@ -99,7 +99,7 @@ export default function CompanyEmployeesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Enrolled</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -112,7 +112,7 @@ export default function CompanyEmployeesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -125,7 +125,7 @@ export default function CompanyEmployeesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Not Enrolled</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -140,7 +140,7 @@ export default function CompanyEmployeesPage() {
         <CardHeader>
           <CardTitle>Employee Directory</CardTitle>
           <div className="flex items-center space-x-2 mt-4">
-            <Search className="h-4 w-4 text-muted-foreground" />
+            <Search className="size-4 text-muted-foreground" />
             <Input
               placeholder="Search employees..."
               value={searchTerm}
@@ -152,7 +152,7 @@ export default function CompanyEmployeesPage() {
         <CardContent>
           {filteredEmployees.length === 0 ? (
             <div className="text-center py-12">
-              <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <Users className="mx-auto size-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No employees found</p>
               <p className="text-sm text-muted-foreground mt-2">
                 {searchTerm ? 'Try adjusting your search' : 'Add your first employee to get started'}
@@ -176,7 +176,7 @@ export default function CompanyEmployeesPage() {
                   </div>
                   <div className="col-span-2">
                     <div className="flex items-center text-sm">
-                      <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
+                      <Mail className="size-3 mr-1 text-muted-foreground" />
                       {employee.email}
                     </div>
                   </div>
@@ -193,22 +193,22 @@ export default function CompanyEmployeesPage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
+                          <MoreVertical className="size-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
+                          <Edit className="mr-2 size-4" />
                           Edit Details
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <Mail className="mr-2 h-4 w-4" />
+                          <Mail className="mr-2 size-4" />
                           Send Invitation
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash2 className="mr-2 size-4" />
                           Remove Employee
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -228,15 +228,15 @@ export default function CompanyEmployeesPage() {
         </CardHeader>
         <CardContent className="flex space-x-2">
           <Button variant="outline">
-            <Mail className="mr-2 h-4 w-4" />
+            <Mail className="mr-2 size-4" />
             Send Bulk Invitations
           </Button>
           <Button variant="outline">
-            <Users className="mr-2 h-4 w-4" />
+            <Users className="mr-2 size-4" />
             Export Employee List
           </Button>
           <Button variant="outline">
-            <UserPlus className="mr-2 h-4 w-4" />
+            <UserPlus className="mr-2 size-4" />
             Import Employees
           </Button>
         </CardContent>

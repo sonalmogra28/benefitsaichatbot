@@ -28,7 +28,7 @@ export function sanitizePrompt(input: string): string {
     /\[INST\]/gi,
     /\[\/INST\]/gi,
     /<<SYS>>/gi,
-    /<<\/SYS>>/gi,
+    /<\/SYS>>/gi,
     
     // Instruction injection attempts
     /ignore\s+previous\s+instructions?/gi,
@@ -162,18 +162,20 @@ export function sanitizeFileName(fileName: string): string {
     return '';
   }
 
+  let sanitizedFileName = fileName;
+
   // Remove path traversal attempts
-  fileName = fileName.replace(/[\/\\\.]+/g, '_');
+  sanitizedFileName = sanitizedFileName.replace(/[\/\\\.]+/g, '_');
   
   // Remove special characters except dots and hyphens
-  fileName = fileName.replace(/[^a-zA-Z0-9._\-]/g, '_');
+  sanitizedFileName = sanitizedFileName.replace(/[^a-zA-Z0-9._\-]/g, '_');
   
   // Ensure it doesn't start with a dot (hidden files)
-  if (fileName.startsWith('.')) {
-    fileName = '_' + fileName.substring(1);
+  if (sanitizedFileName.startsWith('.')) {
+    sanitizedFileName = `_${sanitizedFileName.substring(1)}`;
   }
   
-  return fileName.substring(0, 255);
+  return sanitizedFileName.substring(0, 255);
 }
 
 /**

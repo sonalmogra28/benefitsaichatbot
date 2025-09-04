@@ -8,11 +8,11 @@ import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/ui/icons';
-import { Building2, Users, Bot, AlertCircle, ArrowRight, Mail, Shield, Zap, ChevronRight } from 'lucide-react';
+import { Bot, AlertCircle, Mail, Shield, Zap, ChevronRight } from 'lucide-react';
 import { USER_ROLES } from '@/lib/constants/roles';
 
 export default function LoginPage() {
@@ -182,7 +182,7 @@ export default function LoginPage() {
               Reset Password
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-400 font-medium">
-              We'll send you a link to reset your password
+              We&apos;ll send you a link to reset your password
             </p>
           </div>
 
@@ -207,7 +207,7 @@ export default function LoginPage() {
                 
                 {error && (
                   <Alert variant="destructive" className="border-red-200">
-                    <AlertCircle className="h-5 w-5" />
+                    <AlertCircle className="size-5" />
                     <AlertDescription className="text-base font-medium">{error}</AlertDescription>
                   </Alert>
                 )}
@@ -221,12 +221,12 @@ export default function LoginPage() {
                 >
                   {loading ? (
                     <>
-                      <Icons.spinner className="mr-2 h-5 w-5 animate-spin" />
+                      <Icons.spinner className="mr-2 size-5 animate-spin" />
                       Sending...
                     </>
                   ) : (
                     <>
-                      <Mail className="mr-2 h-5 w-5" />
+                      <Mail className="mr-2 size-5" />
                       Send Reset Link
                     </>
                   )}
@@ -260,8 +260,8 @@ export default function LoginPage() {
             {/* Logo & Title */}
             <div className="space-y-3">
               <div className="flex items-center gap-3 mb-6">
-                <div className="h-12 w-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
-                  <Shield className="h-7 w-7 text-white" />
+                <div className="size-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
+                  <Shield className="size-7 text-white" />
                 </div>
                 <span className="text-2xl font-black tracking-tight">Benefits AI</span>
               </div>
@@ -323,14 +323,14 @@ export default function LoginPage() {
               
               {error && (
                 <Alert variant="destructive" className="border-red-200 bg-red-50 dark:bg-red-950/20">
-                  <AlertCircle className="h-5 w-5" />
+                  <AlertCircle className="size-5" />
                   <AlertDescription className="text-base font-medium">{error}</AlertDescription>
                 </Alert>
               )}
               
               {resetEmailSent && (
                 <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
-                  <Mail className="h-5 w-5 text-green-600" />
+                  <Mail className="size-5 text-green-600" />
                   <AlertDescription className="text-base font-medium text-green-700 dark:text-green-400">
                     Password reset email sent! Check your inbox.
                   </AlertDescription>
@@ -345,13 +345,13 @@ export default function LoginPage() {
                 >
                   {loading ? (
                     <>
-                      <Icons.spinner className="mr-2 h-5 w-5 animate-spin" />
+                      <Icons.spinner className="mr-2 size-5 animate-spin" />
                       Signing in...
                     </>
                   ) : (
                     <>
                       Sign In
-                      <ChevronRight className="ml-2 h-5 w-5" />
+                      <ChevronRight className="ml-2 size-5" />
                     </>
                   )}
                 </Button>
@@ -374,7 +374,7 @@ export default function LoginPage() {
                   onClick={handleGoogleLogin}
                   disabled={loading}
                 >
-                  <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
+                  <svg className="mr-3 size-5" viewBox="0 0 24 24">
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                       fill="#4285F4"
@@ -397,7 +397,7 @@ export default function LoginPage() {
               </div>
               
               <p className="text-center text-base text-gray-600 dark:text-gray-400">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link href="/register" className="font-semibold text-blue-600 hover:text-blue-700 transition-colors">
                   Sign up
                 </Link>
@@ -420,9 +420,9 @@ export default function LoginPage() {
 
             <div className="space-y-8">
               <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <div className="h-12 w-12 bg-white/20 rounded-lg flex items-center justify-center">
-                    <Bot className="h-6 w-6" />
+                <div className="shrink-0">
+                  <div className="size-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Bot className="size-6" />
                   </div>
                 </div>
                 <div>
@@ -434,23 +434,23 @@ export default function LoginPage() {
               </div>
 
               <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <div className="h-12 w-12 bg-white/20 rounded-lg flex items-center justify-center">
-                    <Zap className="h-6 w-6" />
+                <div className="shrink-0">
+                  <div className="size-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Zap className="size-6" />
                   </div>
                 </div>
                 <div>
                   <h3 className="text-xl font-bold mb-2">Instant Insights</h3>
                   <p className="text-base text-blue-100 leading-relaxed">
-                    Compare plans, calculate costs, and see what's best for your situation.
+                    Compare plans, calculate costs, and see what&apos;s best for your situation.
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <div className="h-12 w-12 bg-white/20 rounded-lg flex items-center justify-center">
-                    <Shield className="h-6 w-6" />
+                <div className="shrink-0">
+                  <div className="size-12 bg-white/20 rounded-lg flex items-center justify-center">
+                    <Shield className="size-6" />
                   </div>
                 </div>
                 <div>

@@ -119,7 +119,7 @@ export async function listCompanyDocuments(companyId: string) {
         return {
           url: `https://storage.googleapis.com/${bucket.name}/${file.name}`,
           pathname: file.name,
-          size: parseInt(String(metadata.size || '0')),
+          size: Number.parseInt(String(metadata.size || '0')),
           uploadedAt: new Date(metadata.updated || metadata.timeCreated || Date.now()),
           metadata: metadata.metadata || {},
         };
@@ -143,7 +143,7 @@ export async function getDocumentMetadata(pathname: string) {
     const [metadata] = await file.getMetadata();
     
     return {
-      size: parseInt(String(metadata.size || '0')),
+      size: Number.parseInt(String(metadata.size || '0')),
       contentType: metadata.contentType,
       uploadedAt: new Date(metadata.updated || metadata.timeCreated || Date.now()),
       metadata: metadata.metadata || {},
@@ -157,7 +157,7 @@ export async function getDocumentMetadata(pathname: string) {
 /**
  * Get a signed URL for temporary access to a private file
  */
-export async function getSignedUrl(pathname: string, expiresInMinutes: number = 60) {
+export async function getSignedUrl(pathname: string, expiresInMinutes = 60) {
   try {
     const bucket = adminStorage.bucket();
     const file = bucket.file(pathname);

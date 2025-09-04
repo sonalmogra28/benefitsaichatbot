@@ -2,7 +2,6 @@ import type {
   CoreAssistantMessage,
   CoreToolMessage,
   UIMessage,
-  UIMessagePart,
 } from 'ai';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';

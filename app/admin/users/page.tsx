@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Search, UserPlus, Shield, Mail, MoreVertical, Edit, Trash2, Key } from 'lucide-react';
@@ -102,7 +102,7 @@ export default function AdminUsersPage() {
           <p className="text-muted-foreground">Manage platform users and permissions</p>
         </div>
         <Button onClick={() => router.push('/admin/users/new')}>
-          <UserPlus className="mr-2 h-4 w-4" />
+          <UserPlus className="mr-2 size-4" />
           Add User
         </Button>
       </div>
@@ -111,7 +111,7 @@ export default function AdminUsersPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{users.length}</div>
@@ -122,7 +122,7 @@ export default function AdminUsersPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -135,7 +135,7 @@ export default function AdminUsersPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Admins</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <Shield className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -152,7 +152,7 @@ export default function AdminUsersPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -167,7 +167,7 @@ export default function AdminUsersPage() {
         <CardHeader>
           <CardTitle>Users</CardTitle>
           <div className="flex items-center space-x-2 mt-4">
-            <Search className="h-4 w-4 text-muted-foreground" />
+            <Search className="size-4 text-muted-foreground" />
             <Input
               placeholder="Search users..."
               value={searchTerm}
@@ -179,7 +179,7 @@ export default function AdminUsersPage() {
         <CardContent>
           {filteredUsers.length === 0 ? (
             <div className="text-center py-12">
-              <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <Users className="mx-auto size-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No users found</p>
               <p className="text-sm text-muted-foreground mt-2">
                 {searchTerm ? 'Try adjusting your search' : 'No users registered yet'}
@@ -205,7 +205,7 @@ export default function AdminUsersPage() {
                   </div>
                   <div className="col-span-2">
                     <div className="flex items-center text-sm">
-                      <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
+                      <Mail className="size-3 mr-1 text-muted-foreground" />
                       {user.email}
                     </div>
                   </div>
@@ -222,26 +222,26 @@ export default function AdminUsersPage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
+                          <MoreVertical className="size-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
+                          <Edit className="mr-2 size-4" />
                           Edit User
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <Key className="mr-2 h-4 w-4" />
+                          <Key className="mr-2 size-4" />
                           Reset Password
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <Shield className="mr-2 h-4 w-4" />
+                          <Shield className="mr-2 size-4" />
                           Change Role
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash2 className="mr-2 size-4" />
                           Delete User
                         </DropdownMenuItem>
                       </DropdownMenuContent>

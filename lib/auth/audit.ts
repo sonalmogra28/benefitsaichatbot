@@ -1,5 +1,5 @@
-import { db } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { adminDb } from '@/lib/firebase/admin';
+import { FieldValue, type QueryDocumentSnapshot } from 'firebase-admin/firestore';
 
 export interface AuditEvent {
   userId?: string;
@@ -33,10 +33,10 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
     };
     
     // Log to audit_logs collection
-    await db.collection('audit_logs').add(auditEntry);
+    await adminDb.collection('audit_logs').add(auditEntry);
     
     // Also log to analytics_events for tracking
-    await db.collection('analytics_events').add({
+    await adminDb.collection('analytics_events').add({
       userId: event.userId || null,
       companyId: event.companyId || null,
       eventType: `audit:${event.action}`,
@@ -129,7 +129,7 @@ export async function getAuditLogs(
   },
   limit = 100
 ) {
-  let query = db.collection('audit_logs').orderBy('createdAt', 'desc');
+  let query = adminDb.collection('audit_logs').orderBy('createdAt', 'desc');
   
   if (filters.userId) {
     query = query.where('userId', '==', filters.userId);
@@ -152,7 +152,7 @@ export async function getAuditLogs(
   }
   
   const snapshot = await query.limit(limit).get();
-  return snapshot.docs.map(doc => ({
+  return snapshot.docs.map((doc: QueryDocumentSnapshot) => ({
     id: doc.id,
     ...doc.data()
   }));
@@ -162,14 +162,14 @@ export async function getAuditLogs(
  * Get recent security events for a user
  */
 export async function getUserSecurityEvents(userId: string, limit = 20) {
-  const snapshot = await db.collection('audit_logs')
+  const snapshot = await adminDb.collection('audit_logs')
     .where('userId', '==', userId)
     .where('resource', '==', 'auth')
     .orderBy('createdAt', 'desc')
     .limit(limit)
     .get();
     
-  return snapshot.docs.map(doc => ({
+  return snapshot.docs.map((doc: QueryDocumentSnapshot) => ({
     id: doc.id,
     ...doc.data()
   }));
@@ -182,7 +182,7 @@ export async function checkSuspiciousActivity(userId: string): Promise<boolean> 
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
   
   // Check for multiple failed login attempts
-  const failedLogins = await db.collection('audit_logs')
+  const failedLogins = await adminDb.collection('audit_logs')
     .where('userId', '==', userId)
     .where('action', '==', 'login')
     .where('success', '==', false)
@@ -194,7 +194,7 @@ export async function checkSuspiciousActivity(userId: string): Promise<boolean> 
   }
   
   // Check for permission denied events
-  const permissionDenied = await db.collection('audit_logs')
+  const permissionDenied = await adminDb.collection('audit_logs')
     .where('userId', '==', userId)
     .where('action', '==', 'permission_denied')
     .where('createdAt', '>=', oneHourAgo)

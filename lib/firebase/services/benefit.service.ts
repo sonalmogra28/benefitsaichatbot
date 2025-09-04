@@ -2,7 +2,7 @@ import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import { z } from 'zod';
 import type { FieldValue } from 'firebase-admin/firestore';
 
-// Benefit Plan schema
+// Simplified Benefit Plan schema
 export const benefitPlanSchema = z.object({
   name: z.string().min(1).max(255),
   type: z.enum(['health', 'dental', 'vision', 'life', 'disability', 'retirement']),
@@ -18,15 +18,14 @@ export const benefitPlanSchema = z.object({
 
 export type BenefitPlan = z.infer<typeof benefitPlanSchema> & {
   id: string;
-  companyId: string;
   createdAt: FieldValue | Date;
   updatedAt: FieldValue | Date;
 };
 
-// Benefit Enrollment schema
+// Simplified Benefit Enrollment schema
 export const benefitEnrollmentSchema = z.object({
   benefitPlanId: z.string(),
-  status: z.enum(['active', 'waived', 'pending']),
+  status: z.enum(['active', 'waived', 'pending', 'cancelled']),
   coverageType: z.enum(['individual', 'family']),
   monthlyCost: z.number(),
   electedOn: z.string().datetime(),
@@ -35,31 +34,28 @@ export const benefitEnrollmentSchema = z.object({
 export type BenefitEnrollment = z.infer<typeof benefitEnrollmentSchema> & {
   id: string;
   userId: string;
-  companyId: string;
   createdAt: FieldValue | Date;
   updatedAt: FieldValue | Date;
 };
 
 /**
- * Service for managing benefit data in Firebase
+ * Service for managing benefit data in a single-tenant Firestore structure
  */
 export class BenefitService {
+  private benefitPlansCollection = adminDb.collection('benefitPlans');
+
   /**
-   * Create a new benefit plan
+   * Create a new benefit plan in the top-level 'benefitPlans' collection
    */
-  async createBenefitPlan(
-    companyId: string,
-    planData: z.infer<typeof benefitPlanSchema>
-  ): Promise<string> {
+  async createBenefitPlan(planData: z.infer<typeof benefitPlanSchema>): Promise<string> {
     try {
       const validated = benefitPlanSchema.parse(planData);
       
-      const planRef = adminDb.collection('companies').doc(companyId).collection('benefitPlans').doc();
+      const planRef = this.benefitPlansCollection.doc();
       const planId = planRef.id;
 
       await planRef.set({
         id: planId,
-        companyId,
         ...validated,
         createdAt: AdminFieldValue.serverTimestamp(),
         updatedAt: AdminFieldValue.serverTimestamp()
@@ -77,14 +73,14 @@ export class BenefitService {
   }
 
   /**
-   * Get all benefit plans for a company
+   * Get all benefit plans from the top-level 'benefitPlans' collection
    */
-  async getBenefitPlans(companyId: string): Promise<BenefitPlan[]> {
+  async getBenefitPlans(): Promise<BenefitPlan[]> {
     try {
-      const snapshot = await adminDb.collection('companies').doc(companyId).collection('benefitPlans').get();
+      const snapshot = await this.benefitPlansCollection.get();
       return snapshot.docs.map(doc => doc.data() as BenefitPlan);
     } catch (error) {
-      console.error(`Failed to get benefit plans for company ${companyId}:`, error);
+      console.error('Failed to get benefit plans:', error);
       throw error;
     }
   }
@@ -94,7 +90,6 @@ export class BenefitService {
    */
   async enrollInBenefitPlan(
     userId: string,
-    companyId: string,
     enrollmentData: z.infer<typeof benefitEnrollmentSchema>
   ): Promise<string> {
     try {
@@ -106,7 +101,6 @@ export class BenefitService {
       await enrollmentRef.set({
         id: enrollmentId,
         userId,
-        companyId,
         ...validated,
         createdAt: AdminFieldValue.serverTimestamp(),
         updatedAt: AdminFieldValue.serverTimestamp()

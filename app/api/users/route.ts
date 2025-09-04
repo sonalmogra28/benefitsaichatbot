@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth, db } from '@/lib/firebase/admin';
+import { type NextRequest, NextResponse } from 'next/server';
+import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { USER_ROLES } from '@/lib/constants/roles';
 
@@ -12,10 +12,10 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    let decodedToken;
+    let decodedToken: any;
     
     try {
-      decodedToken = await auth.verifyIdToken(token);
+      decodedToken = await adminAuth.verifyIdToken(token);
     } catch (error) {
       console.error('Token verification failed:', error);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const limit = Number.parseInt(searchParams.get('limit') || '20', 10);
     const startAfter = searchParams.get('startAfter');
     const companyId = searchParams.get('companyId');
     const role = searchParams.get('role');
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const isHRAdmin = decodedToken.role === USER_ROLES.HR_ADMIN;
 
     // Build query based on permissions
-    let query = db.collection('users').orderBy('createdAt', 'desc');
+    let query = adminDb.collection('users').orderBy('createdAt', 'desc');
 
     // If not super admin, restrict to their company
     if (!isSuperAdmin) {
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
     // Pagination
     if (startAfter) {
-      const startDoc = await db.collection('users').doc(startAfter).get();
+      const startDoc = await adminDb.collection('users').doc(startAfter).get();
       if (startDoc.exists) {
         query = query.startAfter(startDoc);
       }
@@ -108,10 +108,10 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    let decodedToken;
+    let decodedToken: any;
     
     try {
-      decodedToken = await auth.verifyIdToken(token);
+      decodedToken = await adminAuth.verifyIdToken(token);
     } catch (error) {
       console.error('Token verification failed:', error);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role assignment
-    let targetRole = role || USER_ROLES.EMPLOYEE;
+    const targetRole = role || USER_ROLES.EMPLOYEE;
     if (!isSuperAdmin) {
       // Company admins can't create super admins or platform admins
       if (targetRole === USER_ROLES.SUPER_ADMIN || targetRole === USER_ROLES.PLATFORM_ADMIN) {
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Create Firebase Auth user
-      const userRecord = await auth.createUser({
+      const userRecord = await adminAuth.createUser({
         email,
         password,
         displayName,
@@ -176,10 +176,10 @@ export async function POST(request: NextRequest) {
         customClaims.companyId = targetCompanyId;
       }
 
-      await auth.setCustomUserClaims(userRecord.uid, customClaims);
+      await adminAuth.setCustomUserClaims(userRecord.uid, customClaims);
 
       // Create user document in Firestore
-      const userDocRef = db.collection('users').doc(userRecord.uid);
+      const userDocRef = adminDb.collection('users').doc(userRecord.uid);
       const userData = {
         uid: userRecord.uid,
         email,
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
 
       // If company user, add to company's users subcollection
       if (targetCompanyId) {
-        const companyUserRef = db
+        const companyUserRef = adminDb
           .collection('companies')
           .doc(targetCompanyId)
           .collection('users')
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Update employee count
-        const companyRef = db.collection('companies').doc(targetCompanyId);
+        const companyRef = adminDb.collection('companies').doc(targetCompanyId);
         await companyRef.update({
           employeeCount: FieldValue.increment(1),
           updatedAt: FieldValue.serverTimestamp(),
@@ -221,11 +221,11 @@ export async function POST(request: NextRequest) {
       }
 
       // Log activity
-      const activityRef = db.collection('activity_logs').doc();
+      const activityRef = adminDb.collection('activity_logs').doc();
       await activityRef.set({
         id: activityRef.id,
         type: 'user_created',
-        message: `New user "${displayName}" created`,
+        message: `New user \"${displayName}\" created`,
         metadata: { 
           userId: userRecord.uid,
           role: targetRole,

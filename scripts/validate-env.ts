@@ -2,8 +2,8 @@
 
 import { z } from 'zod';
 import dotenv from 'dotenv';
-import { existsSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // Load environment variables
 const envPath = resolve(process.cwd(), '.env.local');
@@ -142,5 +142,3 @@ try {
   console.error('Unexpected error:', error);
   process.exit(1);
 }
-
-export {};

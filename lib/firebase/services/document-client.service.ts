@@ -1,4 +1,4 @@
-import { auth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase/client';
 
 /**
  * Client-side document service that calls API routes

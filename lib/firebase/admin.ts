@@ -1,59 +1,46 @@
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
-import { getStorage } from 'firebase-admin/storage';
+import admin from 'firebase-admin';
+import { FIREBASE_ADMIN_CONFIG } from '@/lib/config/env.server';
 
-let app: App | undefined;
-
-function initializeAdminApp() {
-  if (getApps().length > 0) {
-    return getApps()[0];
+const initializeAdminApp = () => {
+  if (admin.apps.length > 0) {
+    return admin.app();
   }
 
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  // When emulators are running, the Admin SDK can connect without credentials.
+  const isEmulator = 
+    process.env.FIRESTORE_EMULATOR_HOST ||
+    process.env.FIREBASE_AUTH_EMULATOR_HOST ||
+    process.env.FIREBASE_STORAGE_EMULATOR_HOST;
 
-  try {
-    // Check if the key is a valid JSON object before parsing
-    if (serviceAccountKey && serviceAccountKey.trim().startsWith('{')) {
-      const serviceAccount = JSON.parse(serviceAccountKey);
-      app = initializeApp({
-        credential: cert(serviceAccount),
-        databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-      });
-      console.log("Firebase Admin SDK initialized successfully using service account key.");
-      return app;
-    } else {
-      if (serviceAccountKey) {
-        // Log a warning if the key is present but not in the expected format
-        console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is set but does not appear to be a valid JSON object. Falling back to Application Default Credentials.");
-      }
-      // Initialize with Application Default Credentials for GCP environments
-      app = initializeApp();
-      console.log("Initialized with Application Default Credentials.");
-      return app;
-    }
-  } catch (error) {
-    console.error("Critical: Firebase Admin SDK initialization failed.", error);
-    // Fallback one last time in case of parsing errors
-    if (!getApps().length) {
-        console.log("Attempting final fallback to Application Default Credentials.");
-        app = initializeApp();
-        return app;
-    }
-    throw new Error("Could not initialize Firebase Admin SDK. Check server logs for details.");
+  if (isEmulator) {
+    console.log('Firebase Emulators detected. Initializing Admin SDK without credentials.');
+    return admin.initializeApp({
+      // Using a static project ID is fine for emulators.
+      projectId: 'benefitschatbotac-383', 
+    });
   }
-}
 
-app = initializeAdminApp();
+  // For production or environments without emulators, a service account is required.
+  if (!FIREBASE_ADMIN_CONFIG.serviceAccount) {
+    console.error('Firebase Admin SDK initialization failed.');
+    console.error('Service account credentials are not configured.');
+    console.error('To fix this, you have two options:');
+    console.error('1. Provide credentials in a .env.local file (see .env.example).');
+    console.error('2. For local development, run the Firebase Emulators with `firebase emulators:start`.');
+    throw new Error('Firebase service account not found. Check server logs for details.');
+  }
 
-export const adminAuth = getAuth(app);
-export const adminDb = getFirestore(app);
-export const adminStorage = getStorage(app);
+  return admin.initializeApp({
+    credential: admin.credential.cert(FIREBASE_ADMIN_CONFIG.serviceAccount),
+    databaseURL: FIREBASE_ADMIN_CONFIG.databaseURL,
+  });
+};
 
-// Export Firestore utilities
-export { FieldValue, Timestamp };
+const adminApp = initializeAdminApp();
 
-// Also export with shorter names for backward compatibility
-export const auth = adminAuth;
-export const db = adminDb;
-export const storage = adminStorage;
+export const adminAuth = adminApp.auth();
+export const adminDb = adminApp.firestore();
+export const db = adminApp.firestore(); // alias for adminDb
+export const adminStorage = adminApp.storage();
+
+export const { FieldValue, Timestamp } = admin.firestore;

@@ -191,7 +191,7 @@ export function DashboardErrorBoundary({
       fallback={({ error, reset }) => (
         <div className="flex min-h-96 items-center justify-center rounded-lg border border-red-200 bg-red-50 p-8">
           <div className="text-center">
-            <AlertTriangle className="mx-auto h-12 w-12 text-red-600" />
+            <AlertTriangle className="mx-auto size-12 text-red-600" />
             <h3 className="mt-4 text-lg font-medium text-red-800">
               Dashboard Error
             </h3>
@@ -231,7 +231,7 @@ export function DocumentErrorBoundary({
       fallback={({ error, reset }) => (
         <div className="flex h-48 items-center justify-center rounded-lg border border-red-200 bg-red-50 p-4">
           <div className="text-center">
-            <AlertTriangle className="mx-auto h-8 w-8 text-red-600" />
+            <AlertTriangle className="mx-auto size-8 text-red-600" />
             <h3 className="mt-2 font-medium text-red-800">Document Error</h3>
             <p className="mt-1 text-sm text-red-600">Failed to load document</p>
             <Button onClick={reset} size="sm" className="mt-3">

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase/admin';
+import { type NextRequest, NextResponse } from 'next/server';
+import { adminAuth } from '@/lib/firebase/admin';
 import { withAuth } from '@/lib/auth/admin-middleware';
 import { USER_ROLES } from '@/lib/constants/roles';
 
@@ -11,7 +11,7 @@ async function handler(
   const { id } = params;
 
   try {
-    await auth.setCustomUserClaims(id, { role, companyId });
+    await adminAuth.setCustomUserClaims(id, { role, companyId });
     return NextResponse.json({ success: true });
   } catch (error)  {
     return NextResponse.json({ success: false, error }, { status: 500 });

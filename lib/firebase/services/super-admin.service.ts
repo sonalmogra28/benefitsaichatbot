@@ -1,33 +1,30 @@
 import { adminDb } from '@/lib/firebase/admin';
 
 /**
- * Service for super admin operations
+ * Service for super admin operations in a single-tenant environment
  */
 export class SuperAdminService {
   /**
-   * Get platform statistics
+   * Get platform-wide statistics for the single-tenant application
    */
   async getPlatformStats() {
-    const companiesSnapshot = await adminDb.collection('companies').get();
+    // Get total number of users
     const usersSnapshot = await adminDb.collection('users').get();
-    
-    // This is a simplified version. In a real application, you would need to
-    // query for benefit plans and enrollments across all companies and users.
-    // This is not efficient with Firestore and would require a different data model.
-    const benefitPlansCount = 0;
+
+    // Get total number of documents
+    const documentsSnapshot = await adminDb.collection('documents').get();
+
+    // Get total number of benefit plans (assuming a top-level collection)
+    const benefitPlansSnapshot = await adminDb.collection('benefitPlans').get();
+
+    // Active enrollments calculation is noted as a future task.
     const activeEnrollmentsCount = 0;
 
-    const recentCompanies = companiesSnapshot.docs
-      .map(doc => doc.data())
-      .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
-      .slice(0, 5);
-
     return {
-      totalCompanies: companiesSnapshot.size,
       totalUsers: usersSnapshot.size,
-      totalPlans: benefitPlansCount,
+      totalDocuments: documentsSnapshot.size,
+      totalBenefitPlans: benefitPlansSnapshot.size,
       activeEnrollments: activeEnrollmentsCount,
-      recentCompanies,
     };
   }
 }

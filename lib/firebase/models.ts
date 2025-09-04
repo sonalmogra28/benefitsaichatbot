@@ -3,7 +3,7 @@
  * All timestamps use Firestore Timestamp type for consistency
  */
 
-import { Timestamp } from 'firebase/firestore';
+import type { Timestamp } from 'firebase/firestore';
 
 /**
  * Company entity - represents an organization using the platform

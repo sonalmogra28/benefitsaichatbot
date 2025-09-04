@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase/admin';
+import { type NextRequest, NextResponse } from 'next/server';
+import { adminAuth } from '@/lib/firebase/admin';
 
 /**
  * POST /api/auth/verify
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     try {
       // Verify the session cookie using Firebase Admin SDK
-      const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+      const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
       
       // Session is valid - return user info
       return NextResponse.json({

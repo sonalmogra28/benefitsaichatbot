@@ -4,10 +4,10 @@ import React, {
   createContext,
   useEffect,
   useState,
-  ReactNode,
+  type ReactNode,
 } from 'react';
 import { 
-  User, 
+  type User, 
   getIdTokenResult, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 

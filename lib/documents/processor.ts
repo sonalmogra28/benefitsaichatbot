@@ -2,9 +2,7 @@ import { extractText } from 'unpdf';
 import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import {
   upsertDocumentChunks,
-  type DocumentChunk,
 } from '@/lib/ai/vector-search';
-import { notificationService } from '@/lib/services/notification.service';
 
 /**
  * Process a document: extract text, chunk it, generate embeddings, and store in Vertex AI Vector Search

@@ -69,7 +69,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
   staging: {
     name: 'Staging',
     firebaseProject: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-staging',
-    apiUrl: process.env.NEXT_PUBLIC_APP_URL + '/api' || 'https://staging.benefitsbot.com/api',
+    apiUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api` || 'https://staging.benefitsbot.com/api',
     appUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://staging.benefitsbot.com',
     features: {
       aiChat: true,
@@ -99,7 +99,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
   production: {
     name: 'Production',
     firebaseProject: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-prod',
-    apiUrl: process.env.NEXT_PUBLIC_APP_URL + '/api' || 'https://benefitsbot.com/api',
+    apiUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api` || 'https://benefitsbot.com/api',
     appUrl: process.env.NEXT_PUBLIC_APP_URL || 'https://benefitsbot.com',
     features: {
       aiChat: true,

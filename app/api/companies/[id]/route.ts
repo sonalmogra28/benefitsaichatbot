@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth, db } from '@/lib/firebase/admin';
+import { type NextRequest, NextResponse } from 'next/server';
+import { adminAuth, adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { USER_ROLES } from '@/lib/constants/roles';
 
@@ -15,10 +15,10 @@ export async function GET(
     }
 
     const token = authHeader.split('Bearer ')[1];
-    let decodedToken;
+    let decodedToken: any;
     
     try {
-      decodedToken = await auth.verifyIdToken(token);
+      decodedToken = await adminAuth.verifyIdToken(token);
     } catch (error) {
       console.error('Token verification failed:', error);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
@@ -39,7 +39,7 @@ export async function GET(
     }
 
     // Fetch company
-    const companyDoc = await db.collection('companies').doc(companyId).get();
+    const companyDoc = await adminDb.collection('companies').doc(companyId).get();
     
     if (!companyDoc.exists) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
@@ -74,10 +74,10 @@ export async function PATCH(
     }
 
     const token = authHeader.split('Bearer ')[1];
-    let decodedToken;
+    let decodedToken: any;
     
     try {
-      decodedToken = await auth.verifyIdToken(token);
+      decodedToken = await adminAuth.verifyIdToken(token);
     } catch (error) {
       console.error('Token verification failed:', error);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
@@ -119,7 +119,7 @@ export async function PATCH(
     });
 
     // Check if company exists
-    const companyRef = db.collection('companies').doc(companyId);
+    const companyRef = adminDb.collection('companies').doc(companyId);
     const companyDoc = await companyRef.get();
     
     if (!companyDoc.exists) {
@@ -130,11 +130,11 @@ export async function PATCH(
     await companyRef.update(updateData);
 
     // Log activity
-    const activityRef = db.collection('activity_logs').doc();
+    const activityRef = adminDb.collection('activity_logs').doc();
     await activityRef.set({
       id: activityRef.id,
       type: 'company_updated',
-      message: `Company "${companyDoc.data()?.name}" updated`,
+      message: `Company \"${companyDoc.data()?.name}\" updated`,
       metadata: { 
         companyId,
         updatedBy: decodedToken.uid,
@@ -176,7 +176,7 @@ export async function DELETE(
     const token = authHeader.split('Bearer ')[1];
     
     try {
-      const decodedToken = await auth.verifyIdToken(token);
+      const decodedToken = await adminAuth.verifyIdToken(token);
       
       // Check if user has super admin role
       if (decodedToken.role !== USER_ROLES.SUPER_ADMIN) {
@@ -190,7 +190,7 @@ export async function DELETE(
     const companyId = params.id;
 
     // Check if company exists
-    const companyRef = db.collection('companies').doc(companyId);
+    const companyRef = adminDb.collection('companies').doc(companyId);
     const companyDoc = await companyRef.get();
     
     if (!companyDoc.exists) {
@@ -207,11 +207,11 @@ export async function DELETE(
     });
 
     // Log activity
-    const activityRef = db.collection('activity_logs').doc();
+    const activityRef = adminDb.collection('activity_logs').doc();
     await activityRef.set({
       id: activityRef.id,
       type: 'company_deleted',
-      message: `Company "${companyName}" deleted`,
+      message: `Company \"${companyName}\" deleted`,
       metadata: { companyId },
       timestamp: FieldValue.serverTimestamp(),
     });

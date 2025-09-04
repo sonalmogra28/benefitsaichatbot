@@ -1,113 +1,31 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    
-    // Helper function to check if user has admin role
+
+    // --- Simplified Single-Company Rules --- //
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isRole(role) {
+      return request.auth.token.role == role;
+    }
+
     function isAdmin() {
-      return request.auth != null && 
-        request.auth.token.role in ['super-admin', 'platform-admin'];
+      return isRole('super-admin') || isRole('company-admin');
     }
-    
-    // Helper function to check if user is company admin
-    function isCompanyAdmin(companyId) {
-      return request.auth != null && 
-        request.auth.token.companyId == companyId &&
-        request.auth.token.role in ['company-admin', 'hr-admin'];
-    }
-    
-    // Helper function to check if user belongs to company
-    function belongsToCompany(companyId) {
-      return request.auth != null && 
-        request.auth.token.companyId == companyId;
-    }
-    
-    // Helper function to validate file size (in bytes)
-    function isValidFileSize() {
-      return request.resource.size <= 10 * 1024 * 1024; // 10MB max
-    }
-    
-    // Helper function to validate file type
-    function isValidFileType() {
-      return request.resource.contentType.matches('application/pdf') ||
-             request.resource.contentType.matches('application/msword') ||
-             request.resource.contentType.matches('application/vnd.*') ||
-             request.resource.contentType.matches('image/.*') ||
-             request.resource.contentType.matches('text/.*');
-    }
-    
-    // Company documents - organized by company
-    match /companies/{companyId}/documents/{userId}/{document=**} {
-      // Users can read their own documents
-      allow read: if request.auth != null && 
-        (request.auth.uid == userId || 
-         isCompanyAdmin(companyId) || 
-         isAdmin());
-      
-      // Users can upload their own documents with validation
-      allow create: if request.auth != null && 
-        request.auth.uid == userId &&
-        belongsToCompany(companyId) &&
-        isValidFileSize() &&
-        isValidFileType();
-      
-      // Users can update their own documents
-      allow update: if request.auth != null && 
-        request.auth.uid == userId &&
-        belongsToCompany(companyId) &&
-        isValidFileSize() &&
-        isValidFileType();
-      
-      // Only admins can delete documents
-      allow delete: if isCompanyAdmin(companyId) || isAdmin();
-    }
-    
-    // Company-wide shared documents
-    match /companies/{companyId}/shared/{document=**} {
-      // All company members can read shared documents
-      allow read: if belongsToCompany(companyId) || isAdmin();
-      
-      // Only company admins can write shared documents
-      allow write: if isCompanyAdmin(companyId) || isAdmin();
-    }
-    
-    // Benefits plan documents
-    match /companies/{companyId}/benefits/{planId}/{document=**} {
-      // All company members can read benefits documents
-      allow read: if belongsToCompany(companyId) || isAdmin();
-      
-      // Only HR admins and above can modify benefits documents
-      allow write: if isCompanyAdmin(companyId) || isAdmin();
-    }
-    
-    // Profile pictures
-    match /users/{userId}/profile/{image=**} {
-      // Users can read any profile picture
-      allow read: if request.auth != null;
-      
-      // Users can only upload their own profile picture
-      allow write: if request.auth != null && 
-        request.auth.uid == userId &&
-        request.resource.size <= 5 * 1024 * 1024 && // 5MB max for images
-        request.resource.contentType.matches('image/.*');
-    }
-    
-    // System files - only platform admins
-    match /system/{document=**} {
-      allow read: if isAdmin();
+
+    // All documents are stored in a single folder.
+    match /documents/{documentId} {
+      // Any authenticated user can view any document.
+      allow get: if isAuthenticated();
+      // Only admins can upload, update, or delete documents.
       allow write: if isAdmin();
     }
-    
-    // Temporary upload area with auto-cleanup
-    match /temp/{userId}/{document=**} {
-      // Users can read/write their own temp files
-      allow read, write: if request.auth != null && 
-        request.auth.uid == userId &&
-        isValidFileSize() &&
-        isValidFileType();
-    }
-    
-    // Default deny all other paths
-    match /{document=**} {
+
+    // Deny all other access by default.
+    match /{allPaths=**} {
       allow read, write: if false;
     }
   }

@@ -59,7 +59,7 @@ export const gcsFileStorage = {
    * @param minutes The number of minutes the URL should be valid for.
    * @returns A signed URL string.
    */
-  async getSignedUrl(path: string, minutes: number = 15): Promise<string> {
+  async getSignedUrl(path: string, minutes = 15): Promise<string> {
     const options = {
       version: 'v4' as const,
       action: 'read' as const,

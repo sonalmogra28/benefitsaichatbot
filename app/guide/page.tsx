@@ -1,9 +1,5 @@
 // app/guide/page.tsx
 'use client';
-
-// import { useSession } from 'next-auth/react';
-import { SuperAdminGuide } from '@/components/guides/super-admin-guide';
-import { CompanyAdminGuide } from '@/components/guides/company-admin-guide';
 import { EmployeeGuide } from '@/components/guides/employee-guide';
 
 export default function GuidePage() {

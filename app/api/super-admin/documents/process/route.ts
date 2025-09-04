@@ -1,8 +1,7 @@
 // app/api/super-admin/documents/process/route.ts
 import { NextResponse } from 'next/server';
 import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
-import { PredictionServiceClient } from '@google-cloud/aiplatform';
-import { helpers } from '@google-cloud/aiplatform';
+import { PredictionServiceClient , helpers } from '@google-cloud/aiplatform';
 import { db } from '@/lib/firestore';
 import { collection, addDoc } from 'firebase/firestore';
 

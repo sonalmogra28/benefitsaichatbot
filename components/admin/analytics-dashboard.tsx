@@ -241,7 +241,7 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
             <CardContent>
               <div className="space-y-4">
                 {topQuestions.map((question, index) => (
-                  <div key={index} className="flex items-center justify-between">
+                  <div key={`${question.question}-${index}`} className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="text-sm font-medium">{index + 1}. {question.question}</p>
                     </div>
@@ -279,7 +279,7 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
                     dataKey="value"
                   >
                     {toolUsageData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${entry.name}-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip />
@@ -331,7 +331,7 @@ export default function AnalyticsDashboard({ analytics, topQuestions, costBreakd
             <CardContent>
               <div className="space-y-4">
                 {costBreakdown.byUser.slice(0, 10).map((user: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between">
+                  <div key={`${user.userEmail}-${index}`} className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="text-sm font-medium">{user.userEmail || 'Unknown User'}</p>
                     </div>

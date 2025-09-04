@@ -1,6 +1,7 @@
 // Simple error tracking for production
-export class ErrorTracker {
-  static log(error: any, context?: any) {
+
+export const ErrorTracker = {
+  log(error: any, context?: any) {
     const errorData = {
       timestamp: new Date().toISOString(),
       message: error?.message || 'Unknown error',
@@ -27,22 +28,22 @@ export class ErrorTracker {
     }
     
     return errorData;
-  }
+  },
   
-  static async init() {
+  async init() {
     if (typeof window !== 'undefined') {
       // Capture unhandled errors
       window.addEventListener('error', (event) => {
-        ErrorTracker.log(event.error, { type: 'unhandled' });
+        this.log(event.error, { type: 'unhandled' });
       });
       
       // Capture unhandled promise rejections
       window.addEventListener('unhandledrejection', (event) => {
-        ErrorTracker.log(event.reason, { type: 'unhandled-promise' });
+        this.log(event.reason, { type: 'unhandled-promise' });
       });
     }
   }
-}
+};
 
 // Auto-initialize on client
 if (typeof window !== 'undefined') {

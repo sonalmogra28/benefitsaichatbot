@@ -4,7 +4,7 @@ import { userService } from '@/lib/firebase/services/user.service';
 import { adminAuth } from '@/lib/firebase/admin';
 import { EmailService } from '@/lib/services/email.service.server';
 import { createUserSchema } from '@/lib/validation/schemas';
-import { type UserRole } from '@/lib/constants/roles';
+import type { UserRole } from '@/lib/constants/roles';
 import { z } from 'zod';
 
 const emailService = new EmailService();

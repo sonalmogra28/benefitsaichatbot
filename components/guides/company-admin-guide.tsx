@@ -11,26 +11,26 @@ export function CompanyAdminGuide() {
         </p>
         <h3>Benefits</h3>
         <p>
-          The benefits page allows you to manage your company's benefit plans.
-          You can compare different benefit plans by clicking the "Compare"
+          The benefits page allows you to manage your company&apos;s benefit plans.
+          You can compare different benefit plans by clicking the &quot;Compare&quot;
           button.
         </p>
         <h3>Documents</h3>
         <p>
-          The documents page allows you to upload and manage your company's
-          documents. You can upload a new document by clicking the "Upload"
+          The documents page allows you to upload and manage your company&apos;s
+          documents. You can upload a new document by clicking the &quot;Upload&quot;
           button.
         </p>
         <h3>Employees</h3>
         <p>
-          The employees page allows you to manage your company's employees.
-          You can manage an employee's settings by clicking the "Manage"
-          button next to the employee's name.
+          The employees page allows you to manage your company&apos;s employees.
+          You can manage an employee&apos;s settings by clicking the &quot;Manage&quot;
+          button next to the employee&apos;s name.
         </p>
         <h3>Settings</h3>
         <p>
-          The settings page allows you to manage your company's settings. You
-          can manage your Google Workspace integration on the "Integrations"
+          The settings page allows you to manage your company&apos;s settings. You
+          can manage your Google Workspace integration on the &quot;Integrations&quot;
           page.
         </p>
       </div>

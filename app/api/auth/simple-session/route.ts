@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth as adminAuth } from '@/lib/firebase/admin'; // Corrected import path
+import { type NextRequest, NextResponse } from 'next/server';
+import { adminAuth } from '@/lib/firebase/admin'; // Corrected import path
 
 export async function POST(req: NextRequest) {
   try {

@@ -24,7 +24,7 @@ export async function PUT(
 
     // Verify Firebase ID token
     const token = authHeader.split('Bearer ')[1];
-    let decodedToken;
+    let decodedToken: any;
     try {
       decodedToken = await adminAuth.verifyIdToken(token);
     } catch (authError) {
@@ -35,8 +35,8 @@ export async function PUT(
     }
 
     // Validate user has appropriate permissions
-    const userRole = decodedToken.role || decodedToken['custom_claims']?.role || 'employee';
-    const companyId = decodedToken.companyId || decodedToken['custom_claims']?.companyId;
+    const userRole = decodedToken.role || decodedToken.custom_claims?.role || 'employee';
+    const companyId = decodedToken.companyId || decodedToken.custom_claims?.companyId;
 
     // Build and validate document path
     const path = params.path.join('/');

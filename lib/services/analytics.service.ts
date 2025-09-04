@@ -7,7 +7,6 @@ import {
   orderBy, 
   limit,
   Timestamp,
-  DocumentData
 } from 'firebase/firestore';
 
 export interface AnalyticsData {
@@ -181,7 +180,7 @@ class AnalyticsService {
 
   async getUserActivity(userId?: string, companyId?: string): Promise<UserActivity[]> {
     try {
-      let usersQuery;
+      let usersQuery: any;
       
       if (userId) {
         usersQuery = query(
@@ -241,7 +240,7 @@ class AnalyticsService {
 
   async getChatAnalytics(companyId?: string): Promise<ChatAnalytics> {
     try {
-      let conversationsQuery;
+      let conversationsQuery: any;
       
       if (companyId) {
         conversationsQuery = query(
@@ -287,7 +286,7 @@ class AnalyticsService {
       // Format peak hours
       const peakHours = Object.entries(hourlyActivity)
         .map(([hour, count]) => ({
-          hour: parseInt(hour),
+          hour: Number.parseInt(hour),
           count
         }))
         .sort((a, b) => a.hour - b.hour);

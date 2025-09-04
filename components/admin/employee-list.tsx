@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, } from 'react';
 import useSWR, { mutate } from 'swr';
 import {
   Card,
@@ -232,11 +232,11 @@ export function EmployeeList({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active':
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+        return <CheckCircle2 className="size-4 text-green-500" />;
       case 'pending':
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+        return <AlertCircle className="size-4 text-yellow-500" />;
       case 'inactive':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="size-4 text-red-500" />;
       default:
         return null;
     }
@@ -272,7 +272,7 @@ export function EmployeeList({
       <Card>
         <CardContent className="flex items-center justify-center h-64">
           <div className="text-center">
-            <Activity className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
+            <Activity className="size-8 animate-spin text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">Loading employees...</p>
           </div>
         </CardContent>
@@ -285,7 +285,7 @@ export function EmployeeList({
       <Card>
         <CardContent className="flex items-center justify-center h-64">
           <div className="text-center">
-            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-4" />
+            <AlertCircle className="size-8 text-red-500 mx-auto mb-4" />
             <p className="text-red-500">Failed to load employees</p>
           </div>
         </CardContent>
@@ -299,7 +299,7 @@ export function EmployeeList({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="h-6 w-6" />
+            <Users className="size-6" />
             Employee Management
           </h2>
           <p className="text-muted-foreground">
@@ -312,11 +312,11 @@ export function EmployeeList({
             variant="outline"
             onClick={() => setShowBulkUploadDialog(true)}
           >
-            <Upload className="h-4 w-4 mr-2" />
+            <Upload className="size-4 mr-2" />
             Import CSV
           </Button>
           <Button onClick={() => setShowInviteDialog(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
+            <UserPlus className="size-4 mr-2" />
             Invite Employee
           </Button>
         </div>
@@ -327,7 +327,7 @@ export function EmployeeList({
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name, email, or department..."
                 value={searchQuery}
@@ -376,7 +376,7 @@ export function EmployeeList({
                   size="sm"
                   onClick={() => handleBulkAction('export')}
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="size-4 mr-2" />
                   Export
                 </Button>
                 <Button
@@ -384,7 +384,7 @@ export function EmployeeList({
                   size="sm"
                   onClick={() => handleBulkAction('send-email')}
                 >
-                  <Mail className="h-4 w-4 mr-2" />
+                  <Mail className="size-4 mr-2" />
                   Send Email
                 </Button>
                 <Button
@@ -412,7 +412,7 @@ export function EmployeeList({
               </CardDescription>
             </div>
             <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="size-4 mr-2" />
               Export All
             </Button>
           </div>
@@ -496,7 +496,7 @@ export function EmployeeList({
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="size-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -534,7 +534,7 @@ export function EmployeeList({
 
           {employees.length === 0 && (
             <div className="text-center py-8">
-              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <Users className="size-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No employees found</h3>
               <p className="text-muted-foreground">
                 {searchQuery || filterRole !== 'all' || filterStatus !== 'all'
@@ -651,7 +651,7 @@ export function EmployeeList({
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
-              <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <Upload className="size-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-sm font-medium mb-2">
                 Drop your CSV file here or click to browse
               </p>

@@ -199,10 +199,10 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
 
   const getPlanIcon = (type: string) => {
     switch (type) {
-      case 'health': return <Heart className="h-5 w-5" />;
-      case 'dental': return <Shield className="h-5 w-5" />;
-      case 'vision': return <Eye className="h-5 w-5" />;
-      default: return <Heart className="h-5 w-5" />;
+      case 'health': return <Heart className="size-5" />;
+      case 'dental': return <Shield className="size-5" />;
+      case 'vision': return <Eye className="size-5" />;
+      default: return <Heart className="size-5" />;
     }
   };
 
@@ -214,7 +214,7 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
       <Card>
         <CardContent className="flex items-center justify-center h-64">
           <div className="text-center">
-            <Activity className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
+            <Activity className="size-8 animate-spin text-muted-foreground mx-auto mb-4" />
             <p className="text-muted-foreground">Loading benefit plans...</p>
           </div>
         </CardContent>
@@ -228,7 +228,7 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <Heart className="h-6 w-6" />
+            <Heart className="size-6" />
             Benefits Administration
           </h2>
           <p className="text-muted-foreground">
@@ -236,7 +236,7 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
           </p>
         </div>
         <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="size-4 mr-2" />
           Create New Plan
         </Button>
       </div>
@@ -246,7 +246,7 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Plans</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+            <CheckCircle2 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activePlans.length}</div>
@@ -257,7 +257,7 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Enrollments</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -270,7 +270,7 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Monthly Cost</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -283,7 +283,7 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Utilization</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">72%</div>
@@ -316,14 +316,14 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
                       Active
                     </Badge>
                     <Button variant="ghost" size="sm" onClick={() => setEditingPlan(plan)}>
-                      <Edit className="h-4 w-4" />
+                      <Edit className="size-4" />
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="sm"
                       onClick={() => handleTogglePlanStatus(plan.id, true)}
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <Trash2 className="size-4 text-red-500" />
                     </Button>
                   </div>
                 </div>
@@ -369,13 +369,13 @@ export function BenefitsManagement({ companyId, companyName = 'Your Company' }: 
           {activePlans.length === 0 && (
             <Card>
               <CardContent className="text-center py-8">
-                <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <Heart className="size-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No Active Plans</h3>
                 <p className="text-muted-foreground mb-4">
                   Create your first benefit plan to get started
                 </p>
                 <Button onClick={() => setShowCreateDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="size-4 mr-2" />
                   Create First Plan
                 </Button>
               </CardContent>

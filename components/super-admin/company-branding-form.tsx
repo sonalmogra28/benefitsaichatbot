@@ -32,7 +32,7 @@ export function CompanyBrandingForm({ companyId }: { companyId: string }) {
       if (file) {
         const storageRef = ref(storage, `logos/${companyId}`);
         const uploadResult = await uploadFile(storageRef, file);
-        if (uploadResult && uploadResult.ref) {
+        if (uploadResult?.ref) {
           const companyRef = doc(db, 'companies', companyId);
           // Get download URL using getDownloadURL from firebase/storage
           const { getDownloadURL } = await import('firebase/storage');

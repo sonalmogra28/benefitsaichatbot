@@ -1,20 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../firebase/admin';
-import { USER_ROLES, UserRole, hasRoleAccess, normalizeLegacyRole } from '../constants/roles';
+import { type NextRequest, NextResponse } from 'next/server';
+import { adminAuth } from '../firebase/admin';
+import { USER_ROLES, type UserRole, hasRoleAccess, normalizeLegacyRole } from '../constants/roles';
 
 /**
  * Middleware to protect routes with authentication and role-based access control
- * @param requiredRole - Minimum role required to access the route
+ * @param requiredRoleOrHandler - Minimum role required or the route handler function for legacy support
  * @param handler - The route handler function
  */
 export function withAuth(
-  requiredRole: UserRole = USER_ROLES.EMPLOYEE,
+  requiredRoleOrHandler: UserRole | ((req: NextRequest, context: { params: any }, user: any) => Promise<Response>) = USER_ROLES.EMPLOYEE,
   handler?: (req: NextRequest, context: { params: any }, user: any) => Promise<Response>
 ) {
+  let finalHandler = handler;
+  let finalRequiredRole = requiredRoleOrHandler as UserRole;
+
   // Support legacy usage where first param is the handler
-  if (typeof requiredRole === 'function') {
-    handler = requiredRole;
-    requiredRole = USER_ROLES.SUPER_ADMIN; // Default for backward compatibility
+  if (typeof requiredRoleOrHandler === 'function') {
+    finalHandler = requiredRoleOrHandler;
+    finalRequiredRole = USER_ROLES.SUPER_ADMIN; // Default for backward compatibility
   }
 
   return async (req: NextRequest, context: { params: any }) => {
@@ -29,21 +32,21 @@ export function withAuth(
     }
 
     try {
-      const decodedToken = await auth.verifyIdToken(idToken);
+      const decodedToken = await adminAuth.verifyIdToken(idToken);
       
       // Normalize role from token (handle legacy formats)
       const userRole = normalizeLegacyRole(
         decodedToken.role || 
-        decodedToken['custom_claims']?.role || 
+        decodedToken.custom_claims?.role || 
         decodedToken.customClaims?.role
       );
 
       // Check if user has required role access
-      if (!hasRoleAccess(userRole, requiredRole)) {
+      if (!hasRoleAccess(userRole, finalRequiredRole)) {
         return NextResponse.json(
           { 
             error: 'Insufficient permissions',
-            required: requiredRole,
+            required: finalRequiredRole,
             current: userRole 
           },
           { status: 403 }
@@ -54,12 +57,12 @@ export function withAuth(
       const user = {
         ...decodedToken,
         role: userRole,
-        companyId: decodedToken.companyId || decodedToken['custom_claims']?.companyId
+        companyId: decodedToken.companyId || decodedToken.custom_claims?.companyId
       };
 
       // Call the handler with user context
-      if (handler) {
-        return handler(req, context, user);
+      if (finalHandler) {
+        return finalHandler(req, context, user);
       }
 
       // If no handler provided, just return success

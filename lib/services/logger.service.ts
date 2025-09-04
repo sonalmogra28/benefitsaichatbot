@@ -174,7 +174,7 @@ class Logger {
   public logAuthEvent(
     event: 'login' | 'logout' | 'signup' | 'password-reset',
     userId?: string,
-    success: boolean = true,
+    success = true,
     context?: LogContext
   ): void {
     const message = `Auth event: ${event} - ${success ? 'Success' : 'Failed'}`;
@@ -226,7 +226,7 @@ class Logger {
   }
 
   // Structured logging for monitoring
-  public metric(name: string, value: number, unit: string = '', tags?: Record<string, string>): void {
+  public metric(name: string, value: number, unit = '', tags?: Record<string, string>): void {
     this.info(`Metric: ${name}`, {
       metadata: {
         metricName: name,

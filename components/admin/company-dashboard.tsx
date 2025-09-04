@@ -71,7 +71,7 @@ export function CompanyDashboard({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Building2 className="h-8 w-8" />
+            <Building2 className="size-8" />
             {companyName} Dashboard
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -80,11 +80,11 @@ export function CompanyDashboard({
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="size-4 mr-2" />
             Export Data
           </Button>
           <Button size="sm">
-            <Settings className="h-4 w-4 mr-2" />
+            <Settings className="size-4 mr-2" />
             Settings
           </Button>
         </div>
@@ -97,7 +97,7 @@ export function CompanyDashboard({
             <CardTitle className="text-sm font-medium">
               Total Employees
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.employees}</div>
@@ -112,7 +112,7 @@ export function CompanyDashboard({
             <CardTitle className="text-sm font-medium">
               Enrollment Rate
             </CardTitle>
-            <Heart className="h-4 w-4 text-muted-foreground" />
+            <Heart className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -125,7 +125,7 @@ export function CompanyDashboard({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Plans</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <Shield className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.activePlans}</div>
@@ -138,7 +138,7 @@ export function CompanyDashboard({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Monthly Cost</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -171,26 +171,26 @@ export function CompanyDashboard({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
+                  <Activity className="size-5" />
                   Quick Actions
                 </CardTitle>
                 <CardDescription>Common administrative tasks</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button className="w-full justify-start" variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="size-4 mr-2" />
                   Add New Employee
                 </Button>
                 <Button className="w-full justify-start" variant="outline">
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="size-4 mr-2" />
                   Upload Benefits Document
                 </Button>
                 <Button className="w-full justify-start" variant="outline">
-                  <Heart className="h-4 w-4 mr-2" />
+                  <Heart className="size-4 mr-2" />
                   Create Benefit Plan
                 </Button>
                 <Button className="w-full justify-start" variant="outline">
-                  <BarChart3 className="h-4 w-4 mr-2" />
+                  <BarChart3 className="size-4 mr-2" />
                   View Enrollment Report
                 </Button>
               </CardContent>
@@ -200,7 +200,7 @@ export function CompanyDashboard({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
+                  <Clock className="size-5" />
                   Recent Activity
                 </CardTitle>
                 <CardDescription>
@@ -211,15 +211,15 @@ export function CompanyDashboard({
                 <div className="space-y-3">
                   {recentActivity.slice(0, 5).map((activity: any) => (
                     <div key={activity.id} className="flex items-center gap-3">
-                      <div className="flex-shrink-0">
+                      <div className="shrink-0">
                         {activity.status === 'success' && (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <CheckCircle className="size-4 text-green-500" />
                         )}
                         {activity.status === 'pending' && (
-                          <Clock className="h-4 w-4 text-yellow-500" />
+                          <Clock className="size-4 text-yellow-500" />
                         )}
                         {activity.status === 'failed' && (
-                          <AlertCircle className="h-4 w-4 text-red-500" />
+                          <AlertCircle className="size-4 text-red-500" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -243,7 +243,7 @@ export function CompanyDashboard({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
+                <TrendingUp className="size-5" />
                 Benefits Utilization
               </CardTitle>
               <CardDescription>
@@ -352,7 +352,7 @@ export function CompanyDashboard({
             </CardHeader>
             <CardContent>
               <div className="text-center py-8">
-                <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <BarChart3 className="size-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">
                   Analytics Dashboard Coming Soon
                 </h3>
@@ -361,7 +361,7 @@ export function CompanyDashboard({
                   employee engagement.
                 </p>
                 <Button>
-                  <BarChart3 className="h-4 w-4 mr-2" />
+                  <BarChart3 className="size-4 mr-2" />
                   View Reports
                 </Button>
               </div>

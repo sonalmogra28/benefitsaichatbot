@@ -1,92 +1,51 @@
-import dotenv from 'dotenv';
-dotenv.config();
+/**
+ * Raw environment variables.
+ * Do not import this file directly in your application.
+ * Instead, use the `env` object from `@/lib/config`
+ */
 
-// Firebase client configuration
-export const FIREBASE_CONFIG = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+export type Env = typeof _env;
+
+const _env = {
+  // Firebase Public Vars
+  NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  NEXT_PUBLIC_FIREBASE_DATABASE_URL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+  NODE_ENV: process.env.NODE_ENV,
+  VERCEL_URL: process.env.VERCEL_URL,
+  ENABLE_MONITORING: process.env.ENABLE_MONITORING,
 };
 
-// Firebase admin configuration
-export const FIREBASE_ADMIN_CONFIG = {
-  serviceAccount: process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-    : undefined,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-};
+// We use a proxy to ensure that all environment variables are accessed
+// through the `env` object. This is to prevent accidental typos
+// and to ensure that all environment variables are documented.
+export const env = new Proxy(_env, {
+  get(target, prop) {
+    if (prop in target) {
+      // @ts-expect-error - We know that the property exists
+      return target[prop];
+    }
+    // This should not happen
+    throw new Error(`Environment variable ${String(prop)} is not defined`);
+  },
+});
 
-// AI Provider Keys
-export const GOOGLE_GENERATIVE_AI_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-
-// External Services
-export const RESEND_API_KEY = process.env.RESEND_API_KEY;
-export const REDIS_URL = process.env.REDIS_URL;
-export const PINECONE_API_KEY = process.env.PINECONE_API_KEY;
-
-// Environment type
-export interface Env {
-  FIREBASE_CONFIG: typeof FIREBASE_CONFIG;
-  FIREBASE_ADMIN_CONFIG: typeof FIREBASE_ADMIN_CONFIG;
-  GOOGLE_GENERATIVE_AI_API_KEY: string | undefined;
-  RESEND_API_KEY: string | undefined;
-  REDIS_URL: string | undefined;
-  PINECONE_API_KEY: string | undefined;
-}
-
-// Export aggregated env object
-export const env: Env = {
-  FIREBASE_CONFIG,
-  FIREBASE_ADMIN_CONFIG,
-  GOOGLE_GENERATIVE_AI_API_KEY,
-  RESEND_API_KEY,
-  REDIS_URL,
-  PINECONE_API_KEY,
-};
-
-// Helper functions
-export const isProduction = process.env.NODE_ENV === 'production';
+export const isProduction = () => env.NODE_ENV === 'production';
 
 export const getAppUrl = () => {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL;
+  if (isProduction()) {
+    return 'https://your-production-app.com'; // Replace with your production URL
   }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  return 'http://localhost:3000';
+  return env.VERCEL_URL ? `https://${env.VERCEL_URL}` : 'http://localhost:3000';
 };
 
 export const isFeatureEnabled = (feature: string): boolean => {
-  const featureFlag = process.env[`FEATURE_${feature.toUpperCase()}`];
-  return featureFlag === 'true' || featureFlag === '1';
+  const flag = process.env[`FEATURE_${feature.toUpperCase()}`];
+  return flag === 'true';
 };
 
-export const isMonitoringEnabled = () => {
-  return process.env.ENABLE_MONITORING === 'true';
-};
-
-// Validate that all required environment variables are set
-const requiredEnvVars = [
-  'NEXT_PUBLIC_FIREBASE_API_KEY',
-  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
-  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-  'NEXT_PUBLIC_FIREBASE_APP_ID',
-  'NEXT_PUBLIC_FIREBASE_DATABASE_URL',
-  'FIREBASE_SERVICE_ACCOUNT_KEY',
-  'GOOGLE_GENERATIVE_AI_API_KEY',
-];
-
-if (process.env.NODE_ENV !== 'test') {
-  for (const varName of requiredEnvVars) {
-    if (!process.env[varName]) {
-      console.warn(`WARNING: Environment variable ${varName} is not set.`);
-    }
-  }
-}
+export const isMonitoringEnabled = () => env.ENABLE_MONITORING === 'true';

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { streamObject, tool } from 'ai';
 import type { UIMessageStreamWriter } from 'ai';
-import { db } from '@/lib/firebase/admin';
+import { adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { generateUUID } from '@/lib/utils';
 import { myProvider } from '../providers';
@@ -36,7 +36,7 @@ export const requestSuggestions = ({
     execute: async ({ documentId }: { documentId: string }) => {
       try {
         // Get document from Firestore
-        const documentRef = await db.collection('documents').doc(documentId).get();
+        const documentRef = await adminDb.collection('documents').doc(documentId).get();
         
         if (!documentRef.exists) {
           return {
@@ -91,10 +91,10 @@ export const requestSuggestions = ({
 
         // Save suggestions to Firestore
         if (suggestions.length > 0) {
-          const batch = db.batch();
+          const batch = adminDb.batch();
           
           suggestions.forEach(suggestion => {
-            const suggestionRef = db.collection('suggestions').doc(suggestion.id);
+            const suggestionRef = adminDb.collection('suggestions').doc(suggestion.id);
             batch.set(suggestionRef, {
               ...suggestion,
               createdAt: FieldValue.serverTimestamp(),
@@ -124,7 +124,7 @@ export const requestSuggestions = ({
 // Helper function to get document by ID
 export async function getDocumentById(documentId: string) {
   try {
-    const doc = await db.collection('documents').doc(documentId).get();
+    const doc = await adminDb.collection('documents').doc(documentId).get();
     if (!doc.exists) {
       return null;
     }
@@ -141,10 +141,10 @@ export async function getDocumentById(documentId: string) {
 // Helper function to save suggestions
 export async function saveSuggestions(suggestions: Omit<Suggestion, 'createdAt'>[]) {
   try {
-    const batch = db.batch();
+    const batch = adminDb.batch();
     
     suggestions.forEach(suggestion => {
-      const suggestionRef = db.collection('suggestions').doc(suggestion.id);
+      const suggestionRef = adminDb.collection('suggestions').doc(suggestion.id);
       batch.set(suggestionRef, {
         ...suggestion,
         createdAt: FieldValue.serverTimestamp(),

@@ -1,4 +1,4 @@
-import { FieldValue, Timestamp } from 'firebase/firestore';
+import type { FieldValue, Timestamp } from 'firebase/firestore';
 
 // Base interface for chat messages, compatible with AI SDK
 export interface ChatMessage {

@@ -3,8 +3,8 @@ const requests = new Map<string, number[]>();
 
 export function rateLimit(
   identifier: string,
-  maxRequests: number = 10,
-  windowMs: number = 60000 // 1 minute
+  maxRequests = 10,
+  windowMs = 60000 // 1 minute
 ): boolean {
   const now = Date.now();
   const userRequests = requests.get(identifier) || [];
@@ -37,8 +37,8 @@ export function rateLimit(
 }
 
 export function getRateLimitMiddleware(
-  maxRequests: number = 10,
-  windowMs: number = 60000
+  maxRequests = 10,
+  windowMs = 60000
 ) {
   return (req: Request): Response | null => {
     const ip = req.headers.get('x-forwarded-for') || 

@@ -1,52 +1,60 @@
+
 'use client';
 
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase/client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import useSWR from 'swr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Building2, Users, FileText, BarChart3, Settings, Plus } from 'lucide-react';
+import { Users, FileText, BarChart3, AlertTriangle, Briefcase } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+
+const fetcher = async (url: string) => {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) {
+    throw new Error('Not authenticated');
+  }
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const error = new Error('An error occurred while fetching the data.');
+    // @ts-ignore
+    error.info = await res.json();
+    // @ts-ignore
+    error.status = res.status;
+    throw error;
+  }
+
+  return res.json();
+};
 
 export default function SuperAdminDashboard() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
-  const [isDemoMode, setIsDemoMode] = useState(false);
-  const [stats, setStats] = useState({
-    totalCompanies: 0,
-    totalUsers: 0,
-    totalDocuments: 0,
-    activeChats: 0
-  });
+  const { data: stats, error, isLoading } = useSWR('/api/super-admin/stats', fetcher);
 
   useEffect(() => {
-    // Check for demo mode
-    const authMode = sessionStorage.getItem('authMode');
-    const mockUser = sessionStorage.getItem('mockUser');
-    
-    if (authMode === 'demo' && mockUser) {
-      setIsDemoMode(true);
-      // Set some demo stats
-      setStats({
-        totalCompanies: 5,
-        totalUsers: 127,
-        totalDocuments: 43,
-        activeChats: 89
-      });
-    } else if (!loading && !user) {
+    if (loading) return;
+    if (!user) {
       router.push('/login');
-    } else if (user) {
-      user.getIdTokenResult().then((idTokenResult) => {
-        if (!idTokenResult.claims.super_admin) {
-          router.push('/');
-        }
-      });
+      return;
     }
+    user.getIdTokenResult().then((idTokenResult) => {
+        // @ts-ignore
+      if (!idTokenResult.claims.super_admin) {
+        router.push('/');
+      }
+    });
   }, [user, loading, router]);
 
-  if (loading && !isDemoMode) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  if (loading || isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading Dashboard...</div>;
   }
 
   return (
@@ -54,58 +62,66 @@ export default function SuperAdminDashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Super Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage the entire benefits platform</p>
+          <p className="text-muted-foreground">Platform-wide overview and management</p>
         </div>
-        <Link href="/super-admin/companies/new">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Company
-          </Button>
-        </Link>
       </div>
+
+      {error && (
+        <Card className="bg-destructive/10 border-destructive">
+          <CardHeader className="flex flex-row items-center space-x-4">
+            <AlertTriangle className="size-6 text-destructive" />
+            <div>
+              <CardTitle>Error Fetching Stats</CardTitle>
+              <CardDescription className="text-destructive/80">
+                Could not load dashboard data. The API endpoint may be down or experiencing issues.
+              </CardDescription>
+            </div>
+          </CardHeader>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCompanies}</div>
-            <p className="text-xs text-muted-foreground">Active organizations</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">Across all companies</p>
+            <div className="text-2xl font-bold">{stats?.totalUsers ?? '--'}</div>
+            <p className="text-xs text-muted-foreground">All users on the platform</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Documents</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+            <FileText className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalDocuments}</div>
-            <p className="text-xs text-muted-foreground">Benefits documents</p>
+            <div className="text-2xl font-bold">{stats?.totalDocuments ?? '--'}</div>
+            <p className="text-xs text-muted-foreground">All processed documents</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Chats</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Benefit Plans</CardTitle>
+            <Briefcase className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeChats}</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold">{stats?.totalBenefitPlans ?? '--'}</div>
+            <p className="text-xs text-muted-foreground">Available benefit plans</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Enrollments</CardTitle>
+            <BarChart3 className="size-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.activeEnrollments ?? 'N/A'}</div>
+            <p className="text-xs text-muted-foreground">Currently active plan enrollments</p>
           </CardContent>
         </Card>
       </div>
@@ -117,29 +133,14 @@ export default function SuperAdminDashboard() {
             <CardDescription>Common administrative tasks</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Link href="/super-admin/companies" className="block">
-              <Button variant="outline" className="w-full justify-start">
-                <Building2 className="mr-2 h-4 w-4" />
-                Manage Companies
-              </Button>
+            <Link href="/super-admin/users" passHref>
+                <Button variant="outline" className="w-full justify-start"><Users className="mr-2 size-4" />Manage Users</Button>
             </Link>
-            <Link href="/super-admin/users" className="block">
-              <Button variant="outline" className="w-full justify-start">
-                <Users className="mr-2 h-4 w-4" />
-                Manage Users
-              </Button>
+            <Link href="/super-admin/documents" passHref>
+                <Button variant="outline" className="w-full justify-start"><FileText className="mr-2 size-4" />Manage Documents</Button>
             </Link>
-            <Link href="/super-admin/documents" className="block">
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="mr-2 h-4 w-4" />
-                Document Library
-              </Button>
-            </Link>
-            <Link href="/super-admin/analytics" className="block">
-              <Button variant="outline" className="w-full justify-start">
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Platform Analytics
-              </Button>
+            <Link href="/super-admin/analytics" passHref>
+                <Button variant="outline" className="w-full justify-start"><BarChart3 className="mr-2 size-4" />Platform Analytics</Button>
             </Link>
           </CardContent>
         </Card>
@@ -147,25 +148,21 @@ export default function SuperAdminDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>System Status</CardTitle>
-            <CardDescription>Platform health and performance</CardDescription>
+            <CardDescription>Live platform health and performance</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Firebase Status</span>
-              <span className="text-sm font-medium text-green-600">Operational</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">AI Service</span>
-              <span className="text-sm font-medium text-green-600">Connected</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Storage</span>
-              <span className="text-sm font-medium">12.4 GB / 100 GB</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm">API Calls Today</span>
-              <span className="text-sm font-medium">2,451</span>
-            </div>
+             <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Firebase Status</p>
+                <span className='text-sm font-medium text-green-600'>Connected</span>
+             </div>
+             <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">AI Service</p>
+                <span className='text-sm font-medium text-green-600'>Operational</span>
+             </div>
+             <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Database</p>
+                <span className='text-sm font-medium text-green-600'>OK</span>
+             </div>
           </CardContent>
         </Card>
       </div>

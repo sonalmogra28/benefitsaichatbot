@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Shield, Bell, Database, Zap, Globe, Save } from 'lucide-react';
+import { Shield, Bell, Database, Zap, Globe, Save } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 
@@ -84,23 +84,23 @@ export default function AdminSettingsPage() {
       <Tabs defaultValue="platform" className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="platform">
-            <Globe className="mr-2 h-4 w-4" />
+            <Globe className="mr-2 size-4" />
             Platform
           </TabsTrigger>
           <TabsTrigger value="security">
-            <Shield className="mr-2 h-4 w-4" />
+            <Shield className="mr-2 size-4" />
             Security
           </TabsTrigger>
           <TabsTrigger value="notifications">
-            <Bell className="mr-2 h-4 w-4" />
+            <Bell className="mr-2 size-4" />
             Notifications
           </TabsTrigger>
           <TabsTrigger value="ai">
-            <Zap className="mr-2 h-4 w-4" />
+            <Zap className="mr-2 size-4" />
             AI Settings
           </TabsTrigger>
           <TabsTrigger value="storage">
-            <Database className="mr-2 h-4 w-4" />
+            <Database className="mr-2 size-4" />
             Storage
           </TabsTrigger>
         </TabsList>
@@ -154,12 +154,12 @@ export default function AdminSettingsPage() {
                   value={settings.platform.maxFileSize}
                   onChange={(e) => setSettings({
                     ...settings,
-                    platform: { ...settings.platform, maxFileSize: parseInt(e.target.value) }
+                    platform: { ...settings.platform, maxFileSize: Number.parseInt(e.target.value) }
                   })}
                 />
               </div>
               <Button onClick={() => handleSave('platform')}>
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
                 Save Platform Settings
               </Button>
             </CardContent>
@@ -197,7 +197,7 @@ export default function AdminSettingsPage() {
                   value={settings.security.sessionTimeout}
                   onChange={(e) => setSettings({
                     ...settings,
-                    security: { ...settings.security, sessionTimeout: parseInt(e.target.value) }
+                    security: { ...settings.security, sessionTimeout: Number.parseInt(e.target.value) }
                   })}
                 />
               </div>
@@ -209,7 +209,7 @@ export default function AdminSettingsPage() {
                   value={settings.security.passwordMinLength}
                   onChange={(e) => setSettings({
                     ...settings,
-                    security: { ...settings.security, passwordMinLength: parseInt(e.target.value) }
+                    security: { ...settings.security, passwordMinLength: Number.parseInt(e.target.value) }
                   })}
                 />
               </div>
@@ -236,12 +236,12 @@ export default function AdminSettingsPage() {
                   value={settings.security.maxLoginAttempts}
                   onChange={(e) => setSettings({
                     ...settings,
-                    security: { ...settings.security, maxLoginAttempts: parseInt(e.target.value) }
+                    security: { ...settings.security, maxLoginAttempts: Number.parseInt(e.target.value) }
                   })}
                 />
               </div>
               <Button onClick={() => handleSave('security')}>
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
                 Save Security Settings
               </Button>
             </CardContent>
@@ -332,7 +332,7 @@ export default function AdminSettingsPage() {
                 />
               </div>
               <Button onClick={() => handleSave('notifications')}>
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
                 Save Notification Settings
               </Button>
             </CardContent>
@@ -384,7 +384,7 @@ export default function AdminSettingsPage() {
                   value={settings.ai.temperature}
                   onChange={(e) => setSettings({
                     ...settings,
-                    ai: { ...settings.ai, temperature: parseFloat(e.target.value) }
+                    ai: { ...settings.ai, temperature: Number.parseFloat(e.target.value) }
                   })}
                 />
               </div>
@@ -396,7 +396,7 @@ export default function AdminSettingsPage() {
                   value={settings.ai.maxTokens}
                   onChange={(e) => setSettings({
                     ...settings,
-                    ai: { ...settings.ai, maxTokens: parseInt(e.target.value) }
+                    ai: { ...settings.ai, maxTokens: Number.parseInt(e.target.value) }
                   })}
                 />
               </div>
@@ -416,7 +416,7 @@ export default function AdminSettingsPage() {
                 />
               </div>
               <Button onClick={() => handleSave('ai')}>
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
                 Save AI Settings
               </Button>
             </CardContent>
@@ -454,7 +454,7 @@ export default function AdminSettingsPage() {
                   value={settings.storage.maxStoragePerCompany}
                   onChange={(e) => setSettings({
                     ...settings,
-                    storage: { ...settings.storage, maxStoragePerCompany: parseInt(e.target.value) }
+                    storage: { ...settings.storage, maxStoragePerCompany: Number.parseInt(e.target.value) }
                   })}
                 />
               </div>
@@ -466,7 +466,7 @@ export default function AdminSettingsPage() {
                   value={settings.storage.autoDeleteAfter}
                   onChange={(e) => setSettings({
                     ...settings,
-                    storage: { ...settings.storage, autoDeleteAfter: parseInt(e.target.value) }
+                    storage: { ...settings.storage, autoDeleteAfter: Number.parseInt(e.target.value) }
                   })}
                 />
                 <p className="text-sm text-muted-foreground">
@@ -489,7 +489,7 @@ export default function AdminSettingsPage() {
                 />
               </div>
               <Button onClick={() => handleSave('storage')}>
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="mr-2 size-4" />
                 Save Storage Settings
               </Button>
             </CardContent>

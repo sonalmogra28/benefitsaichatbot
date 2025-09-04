@@ -4,7 +4,6 @@ import { onObjectFinalized } from "firebase-functions/v2/storage";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
-import * as logger from "firebase-functions/logger";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Initialize Firebase Admin
@@ -148,7 +147,7 @@ function chunkDocument(text: string, chunkSize: number): string[] {
       if (currentChunk) chunks.push(currentChunk.trim());
       currentChunk = sentence;
     } else {
-      currentChunk += " " + sentence;
+      currentChunk += ` ${sentence}`;
     }
   }
   

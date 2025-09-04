@@ -1,7 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { env } from '@/lib/config/env';
+import { type NextRequest, NextResponse } from 'next/server';
 import { RATE_LIMITS } from '@/lib/config';
-import { MemoryRateLimiter } from './memory';
 import { FirestoreRateLimiter, InMemoryRateLimiter } from './firestore-limiter';
 import { adminAuth } from '../firebase/admin';
 

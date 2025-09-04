@@ -3,7 +3,7 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import dotenv from 'dotenv';
-import path from 'path';
+import path from 'node:path';
 
 // Load environment variables
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
@@ -113,7 +113,7 @@ async function createTestUser(testUser: TestUser) {
     }
 
     // Try to get existing user
-    let userRecord;
+    let userRecord: any;
     try {
       userRecord = await auth.getUserByEmail(testUser.email);
       console.log(`ℹ️  User exists: ${testUser.email}`);

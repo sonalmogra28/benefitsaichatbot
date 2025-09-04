@@ -36,3 +36,7 @@ firebase-debug.log*
 next-env.d.ts
 /coverage/
 service-account.json
+service-account-key.json
+
+# Downloaded data files
+data/

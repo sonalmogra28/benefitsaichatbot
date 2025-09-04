@@ -14,23 +14,19 @@ import {
   where, 
   orderBy, 
   limit,
-  startAfter,
   getDocs,
   onSnapshot,
   Timestamp,
-  DocumentData,
-  QueryConstraint,
-  DocumentSnapshot,
-  WriteBatch,
+  type DocumentData,
+  type QueryConstraint,
   writeBatch,
   serverTimestamp,
   increment,
-  arrayUnion,
-  arrayRemove,
-  Unsubscribe
+  type Unsubscribe,
+  type QueryDocumentSnapshot
 } from 'firebase/firestore';
-import { db } from '@/lib/firestore';
-import { 
+import { db as firestore } from '@/lib/firebase/client';
+import type { 
   Company, 
   User, 
   BenefitPlan, 
@@ -50,7 +46,7 @@ class BaseService<T extends DocumentData> {
   constructor(protected collectionName: string) {}
 
   async create(data: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
-    const docRef = doc(collection(db, this.collectionName));
+    const docRef = doc(collection(firestore, this.collectionName));
     const document = {
       ...data,
       id: docRef.id,
@@ -63,7 +59,7 @@ class BaseService<T extends DocumentData> {
   }
 
   async get(id: string): Promise<T | null> {
-    const docRef = doc(db, this.collectionName, id);
+    const docRef = doc(firestore, this.collectionName, id);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -73,7 +69,7 @@ class BaseService<T extends DocumentData> {
   }
 
   async update(id: string, data: Partial<T>): Promise<void> {
-    const docRef = doc(db, this.collectionName, id);
+    const docRef = doc(firestore, this.collectionName, id);
     await updateDoc(docRef, {
       ...data,
       updatedAt: serverTimestamp()
@@ -81,23 +77,23 @@ class BaseService<T extends DocumentData> {
   }
 
   async delete(id: string): Promise<void> {
-    const docRef = doc(db, this.collectionName, id);
+    const docRef = doc(firestore, this.collectionName, id);
     await deleteDoc(docRef);
   }
 
   async list(constraints: QueryConstraint[] = []): Promise<T[]> {
-    const q = query(collection(db, this.collectionName), ...constraints);
+    const q = query(collection(firestore, this.collectionName), ...constraints);
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as T));
+    return snapshot.docs.map((doc: QueryDocumentSnapshot) => ({ id: doc.id, ...doc.data() } as unknown as T));
   }
 
   subscribe(
     constraints: QueryConstraint[],
     callback: (items: T[]) => void
   ): Unsubscribe {
-    const q = query(collection(db, this.collectionName), ...constraints);
+    const q = query(collection(firestore, this.collectionName), ...constraints);
     return onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as T));
+      const items = snapshot.docs.map((doc: QueryDocumentSnapshot) => ({ id: doc.id, ...doc.data() } as unknown as T));
       callback(items);
     });
   }
@@ -113,7 +109,7 @@ export class CompanyService extends BaseService<Company> {
 
   async getByDomain(domain: string): Promise<Company | null> {
     const q = query(
-      collection(db, this.collectionName),
+      collection(firestore, this.collectionName),
       where('domain', '==', domain),
       limit(1)
     );
@@ -150,7 +146,7 @@ export class UserService extends BaseService<User> {
 
   async getByEmail(email: string): Promise<User | null> {
     const q = query(
-      collection(db, this.collectionName),
+      collection(firestore, this.collectionName),
       where('email', '==', email),
       limit(1)
     );
@@ -201,7 +197,7 @@ export class BenefitPlanService {
   }
 
   async create(companyId: string, data: Omit<BenefitPlan, 'id' | 'createdAt' | 'updatedAt'>): Promise<BenefitPlan> {
-    const colRef = collection(db, this.collectionPath(companyId));
+    const colRef = collection(firestore, this.collectionPath(companyId));
     const docRef = doc(colRef);
     const plan = {
       ...data,
@@ -216,7 +212,7 @@ export class BenefitPlanService {
   }
 
   async get(companyId: string, planId: string): Promise<BenefitPlan | null> {
-    const docRef = doc(db, this.collectionPath(companyId), planId);
+    const docRef = doc(firestore, this.collectionPath(companyId), planId);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -227,7 +223,7 @@ export class BenefitPlanService {
 
   async getActivePlans(companyId: string): Promise<BenefitPlan[]> {
     const q = query(
-      collection(db, this.collectionPath(companyId)),
+      collection(firestore, this.collectionPath(companyId)),
       where('status', '==', 'active'),
       orderBy('type', 'asc')
     );
@@ -237,7 +233,7 @@ export class BenefitPlanService {
 
   async getPlansByType(companyId: string, type: BenefitPlan['type']): Promise<BenefitPlan[]> {
     const q = query(
-      collection(db, this.collectionPath(companyId)),
+      collection(firestore, this.collectionPath(companyId)),
       where('type', '==', type),
       where('status', '==', 'active'),
       orderBy('name', 'asc')
@@ -261,7 +257,7 @@ export class ConversationService {
     title: string,
     metadata?: Partial<Conversation['metadata']>
   ): Promise<Conversation> {
-    const colRef = collection(db, this.collectionPath(companyId));
+    const colRef = collection(firestore, this.collectionPath(companyId));
     const docRef = doc(colRef);
     const conversation = {
       id: docRef.id,
@@ -287,7 +283,7 @@ export class ConversationService {
 
   async getUserConversations(companyId: string, userId: string, limitCount = 20): Promise<Conversation[]> {
     const q = query(
-      collection(db, this.collectionPath(companyId)),
+      collection(firestore, this.collectionPath(companyId)),
       where('userId', '==', userId),
       where('status', '!=', 'deleted'),
       orderBy('status'),
@@ -303,7 +299,7 @@ export class ConversationService {
     conversationId: string, 
     metadata: Partial<Conversation['metadata']>
   ): Promise<void> {
-    const docRef = doc(db, this.collectionPath(companyId), conversationId);
+    const docRef = doc(firestore, this.collectionPath(companyId), conversationId);
     await updateDoc(docRef, {
       metadata,
       updatedAt: serverTimestamp()
@@ -311,7 +307,7 @@ export class ConversationService {
   }
 
   async archive(companyId: string, conversationId: string): Promise<void> {
-    const docRef = doc(db, this.collectionPath(companyId), conversationId);
+    const docRef = doc(firestore, this.collectionPath(companyId), conversationId);
     await updateDoc(docRef, {
       status: 'archived',
       updatedAt: serverTimestamp()
@@ -332,7 +328,7 @@ export class MessageService {
     conversationId: string,
     message: Omit<Message, 'id' | 'createdAt'>
   ): Promise<Message> {
-    const colRef = collection(db, this.collectionPath(companyId, conversationId));
+    const colRef = collection(firestore, this.collectionPath(companyId, conversationId));
     const docRef = doc(colRef);
     const msg = {
       ...message,
@@ -343,7 +339,7 @@ export class MessageService {
     await setDoc(docRef, msg);
     
     // Update conversation metadata
-    const convRef = doc(db, `companies/${companyId}/conversations`, conversationId);
+    const convRef = doc(firestore, `companies/${companyId}/conversations`, conversationId);
     await updateDoc(convRef, {
       'metadata.lastMessageAt': serverTimestamp(),
       'metadata.messageCount': increment(1),
@@ -360,7 +356,7 @@ export class MessageService {
     limitCount = 50
   ): Promise<Message[]> {
     const q = query(
-      collection(db, this.collectionPath(companyId, conversationId)),
+      collection(firestore, this.collectionPath(companyId, conversationId)),
       orderBy('createdAt', 'asc'),
       limit(limitCount)
     );
@@ -374,7 +370,7 @@ export class MessageService {
     callback: (messages: Message[]) => void
   ): Unsubscribe {
     const q = query(
-      collection(db, this.collectionPath(companyId, conversationId)),
+      collection(firestore, this.collectionPath(companyId, conversationId)),
       orderBy('createdAt', 'asc')
     );
     
@@ -438,7 +434,7 @@ export class EnrollmentService extends BaseService<Enrollment> {
 
   async getUserEnrollment(userId: string, year: number): Promise<Enrollment | null> {
     const q = query(
-      collection(db, this.collectionName),
+      collection(firestore, this.collectionName),
       where('userId', '==', userId),
       where('enrollmentPeriod.year', '==', year),
       limit(1)
@@ -484,7 +480,7 @@ export class AnalyticsService extends BaseService<AnalyticsEvent> {
   }
 
   async trackEvent(event: Omit<AnalyticsEvent, 'id' | 'timestamp'>): Promise<void> {
-    const docRef = doc(collection(db, this.collectionName));
+    const docRef = doc(collection(firestore, this.collectionName));
     await setDoc(docRef, {
       ...event,
       id: docRef.id,
@@ -535,13 +531,13 @@ export class NotificationService extends BaseService<Notification> {
 
   async markAllAsRead(userId: string): Promise<void> {
     const q = query(
-      collection(db, this.collectionName),
+      collection(firestore, this.collectionName),
       where('userId', '==', userId),
       where('read', '==', false)
     );
     const snapshot = await getDocs(q);
     
-    const batch = writeBatch(db);
+    const batch = writeBatch(firestore);
     snapshot.docs.forEach(doc => {
       batch.update(doc.ref, {
         read: true,
@@ -562,7 +558,7 @@ export class AuditLogService extends BaseService<AuditLog> {
   }
 
   async log(action: string, data: Omit<AuditLog, 'id' | 'timestamp' | 'action'>): Promise<void> {
-    const docRef = doc(collection(db, this.collectionName));
+    const docRef = doc(collection(firestore, this.collectionName));
     await setDoc(docRef, {
       ...data,
       id: docRef.id,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type KeyboardEvent } from 'react';
 import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,7 +52,7 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
     return undefined;
   };
 
-  const handleFileSelect = (selectedFiles: FileList | null) => {
+  const handleFileSelect = useCallback((selectedFiles: FileList | null) => {
     if (!selectedFiles) return;
 
     const newFiles: UploadingFile[] = [];
@@ -70,7 +70,7 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
     }
 
     setFiles(prev => [...prev, ...newFiles]);
-  };
+  }, []);
 
   const uploadFile = async (uploadingFile: UploadingFile, index: number) => {
     try {
@@ -192,7 +192,14 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
     e.preventDefault();
     setIsDragging(false);
     handleFileSelect(e.dataTransfer.files);
-  }, []);
+  }, [handleFileSelect]);
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      document.getElementById('file-upload')?.click();
+    }
+  };
 
   const pendingCount = files.filter(f => f.status === 'pending').length;
   const uploadingCount = files.filter(f => f.status === 'uploading' || f.status === 'processing').length;
@@ -247,14 +254,18 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
 
         {/* Drop zone */}
         <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          role="button"
+          tabIndex={0}
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
             isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
+          onKeyDown={handleKeyDown}
+          onClick={() => document.getElementById('file-upload')?.click()}
         >
-          <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <Upload className="mx-auto size-12 text-muted-foreground mb-4" />
           <p className="text-sm text-muted-foreground mb-2">
             Drag and drop files here, or click to browse
           </p>
@@ -266,11 +277,6 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
             className="hidden"
             id="file-upload"
           />
-          <Label htmlFor="file-upload" className="cursor-pointer">
-            <Button variant="outline" asChild>
-              <span>Choose Files</span>
-            </Button>
-          </Label>
           <p className="text-xs text-muted-foreground mt-2">
             PDF, DOC, DOCX, or TXT up to 10MB each
           </p>
@@ -282,10 +288,10 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
             <h4 className="text-sm font-medium">Selected Files</h4>
             {files.map((file, index) => (
               <div
-                key={index}
+                key={`${file.file.name}-${index}`}
                 className="flex items-center gap-3 p-3 border rounded-lg"
               >
-                <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                <FileText className="size-5 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{file.file.name}</p>
                   <p className="text-xs text-muted-foreground">
@@ -304,25 +310,25 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
                   )}
                   {file.status === 'uploading' && (
                     <Badge variant="default">
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      <Loader2 className="size-3 mr-1 animate-spin" />
                       Uploading
                     </Badge>
                   )}
                   {file.status === 'processing' && (
                     <Badge variant="default">
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      <Loader2 className="size-3 mr-1 animate-spin" />
                       Processing
                     </Badge>
                   )}
                   {file.status === 'complete' && (
                     <Badge variant="default" className="bg-green-500">
-                      <CheckCircle className="h-3 w-3 mr-1" />
+                      <CheckCircle className="size-3 mr-1" />
                       Complete
                     </Badge>
                   )}
                   {file.status === 'error' && (
                     <Badge variant="destructive">
-                      <AlertCircle className="h-3 w-3 mr-1" />
+                      <AlertCircle className="size-3 mr-1" />
                       Error
                     </Badge>
                   )}
@@ -332,7 +338,7 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
                       size="sm"
                       onClick={() => removeFile(index)}
                     >
-                      <X className="h-4 w-4" />
+                      <X className="size-4" />
                     </Button>
                   )}
                 </div>
@@ -350,12 +356,12 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
           >
             {uploadingCount > 0 ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="size-4 mr-2 animate-spin" />
                 Uploading {uploadingCount} file{uploadingCount > 1 ? 's' : ''}...
               </>
             ) : (
               <>
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="size-4 mr-2" />
                 Upload {pendingCount} file{pendingCount > 1 ? 's' : ''}
               </>
             )}
@@ -364,7 +370,7 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
 
         {/* Info alert */}
         <Alert>
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="size-4" />
           <AlertTitle>Processing Information</AlertTitle>
           <AlertDescription>
             After upload, documents are automatically processed to extract text and generate embeddings. 

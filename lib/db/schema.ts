@@ -1,22 +1,11 @@
-import { FieldValue, Timestamp } from 'firebase/firestore';
-import { UserRole } from '../constants/roles';
+import type { FieldValue, Timestamp } from 'firebase/firestore';
+import type { UserRole } from '../constants/roles';
 
 // Base interfaces for Firestore documents
 export interface DocumentBase {
   id: string;
   createdAt: Timestamp | FieldValue;
   updatedAt: Timestamp | FieldValue;
-}
-
-// Company Schema
-export interface Company extends DocumentBase {
-  name: string;
-  tenantId: string; // Firebase project ID or similar for multi-tenancy
-  status: 'active' | 'inactive' | 'pending';
-  logoUrl?: string;
-  website?: string;
-  contactEmail?: string;
-  // Add other company-specific fields as needed
 }
 
 // User Profile Schema
@@ -26,8 +15,7 @@ export interface User extends DocumentBase {
   emailVerified: boolean;
   displayName?: string;
   photoURL?: string;
-  companyId?: string;
-  role: UserRole; // e.g., 'employee', 'company-admin', 'super-admin', 'platform-admin', 'hr-admin'
+  role: UserRole; // e.g., 'employee', 'company-admin', 'super-admin'
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
@@ -44,7 +32,6 @@ export interface User extends DocumentBase {
 
 // Benefit Plan Schema
 export interface BenefitPlan extends DocumentBase {
-  companyId: string;
   name: string;
   type: 'health' | 'dental' | 'vision' | 'life' | 'disability' | '401k' | 'hsa' | 'fsa';
   provider: string;
@@ -65,7 +52,6 @@ export interface BenefitPlan extends DocumentBase {
 
 // Document Schema (e.g., for uploaded benefits documents)
 export interface Document extends DocumentBase {
-  companyId: string;
   userId: string; // Uploader's ID
   title: string;
   fileName: string;

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { type NextRequest, NextResponse } from 'next/server';
+import crypto from 'node:crypto';
 
 /**
  * GET /api/auth/csrf

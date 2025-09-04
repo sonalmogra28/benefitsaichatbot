@@ -86,7 +86,7 @@ export const calculateBenefitsCost = tool({
           : plan.outOfPocketMaxIndividual || 0;
 
         // Calculate expected costs based on usage
-        let estimatedMedicalCosts = deductible * multiplier;
+        const estimatedMedicalCosts = deductible * multiplier;
 
         // Cap at out-of-pocket maximum
         const totalOutOfPocket = Math.min(

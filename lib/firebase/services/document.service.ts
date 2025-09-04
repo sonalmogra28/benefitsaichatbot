@@ -2,7 +2,7 @@ import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import { z } from 'zod';
 import type { FieldValue } from 'firebase-admin/firestore';
 
-// Document schema
+// Simplified Document schema without companyId
 export const documentSchema = z.object({
   title: z.string().min(1).max(255),
   documentType: z.enum(['policy', 'guide', 'faq', 'form', 'other']),
@@ -15,7 +15,6 @@ export const documentSchema = z.object({
 
 export type Document = z.infer<typeof documentSchema> & {
   id: string;
-  companyId: string;
   createdAt: FieldValue | Date;
   updatedAt: FieldValue | Date;
   createdBy: string;
@@ -24,26 +23,26 @@ export type Document = z.infer<typeof documentSchema> & {
 };
 
 /**
- * Service for managing document data in Firebase
+ * Service for managing document data in a single-tenant Firestore structure
  */
 export class DocumentService {
+  private documentCollection = adminDb.collection('documents');
+
   /**
-   * Create a new document
+   * Create a new document in the top-level 'documents' collection
    */
   async createDocument(
-    companyId: string,
     documentData: z.infer<typeof documentSchema>,
     createdBy: string
   ): Promise<string> {
     try {
       const validated = documentSchema.parse(documentData);
       
-      const documentRef = adminDb.collection('companies').doc(companyId).collection('documents').doc();
+      const documentRef = this.documentCollection.doc();
       const documentId = documentRef.id;
 
       await documentRef.set({
         id: documentId,
-        companyId,
         ...validated,
         createdBy,
         status: 'pending_processing',
@@ -63,11 +62,11 @@ export class DocumentService {
   }
 
   /**
-   * Get document by ID
+   * Get document by ID from the top-level 'documents' collection
    */
-  async getDocument(companyId: string, documentId: string): Promise<Document | null> {
+  async getDocument(documentId: string): Promise<Document | null> {
     try {
-      const documentDoc = await adminDb.collection('companies').doc(companyId).collection('documents').doc(documentId).get();
+      const documentDoc = await this.documentCollection.doc(documentId).get();
       
       if (!documentDoc.exists) {
         return null;
@@ -81,14 +80,14 @@ export class DocumentService {
   }
 
   /**
-   * List documents for a company
+   * List all documents from the top-level 'documents' collection
    */
-  async listDocuments(companyId: string): Promise<Document[]> {
+  async listDocuments(): Promise<Document[]> {
     try {
-      const snapshot = await adminDb.collection('companies').doc(companyId).collection('documents').get();
+      const snapshot = await this.documentCollection.get();
       return snapshot.docs.map(doc => doc.data() as Document);
     } catch (error) {
-      console.error(`Failed to list documents for company ${companyId}:`, error);
+      console.error(`Failed to list documents:`, error);
       throw error;
     }
   }

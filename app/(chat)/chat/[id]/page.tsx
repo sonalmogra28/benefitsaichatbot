@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { Chat } from '@/components/chat';
-import { auth } from '@/lib/firebase/admin';
+import { adminAuth } from '@/lib/firebase/admin';
 import { getConversation } from '@/lib/firebase/services/conversation.service';
 
 interface ChatPageProps {
@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: ChatPageProps) {
 
 export default async function ChatPage({ params }: ChatPageProps) {
   // Get the current user session
-  const session = await auth.verifyIdToken(
+  const session = await adminAuth.verifyIdToken(
     // TODO: Get token from cookies/headers
     ''
   ).catch(() => null);

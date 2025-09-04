@@ -1,71 +1,64 @@
-// RAG (Retrieval-Augmented Generation) System for Benefits Documents
-import { db, storage } from '@/lib/firebase/admin';
+import { getModel } from './vertex-config';
+import { adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getModel, SYSTEM_PROMPTS } from './vertex-config';
+import { GenerativeModel } from '@google-cloud/vertexai';
 
-export interface DocumentChunk {
+interface DocumentMetadata {
+  title: string;
+  documentType: 'pdf' | 'docx' | 'txt';
+  uploadedAt: Date;
+  [key: string]: any; 
+}
+
+interface Chunk {
   id: string;
   documentId: string;
   companyId: string;
   content: string;
   embedding?: number[];
-  metadata: {
-    title: string;
-    section?: string;
-    pageNumber?: number;
-    documentType?: string;
-    uploadedAt: Date;
-  };
+  metadata: DocumentMetadata & { section: string };
 }
 
-export interface SearchResult {
-  chunk: DocumentChunk;
+interface SearchResult {
+  chunk: Chunk;
   score: number;
 }
 
 class RAGSystem {
-  private embeddingModel: any;
-  
+  private embeddingModel: GenerativeModel | null;
+
   constructor() {
-    // Initialize embedding model
     this.embeddingModel = this.initializeEmbeddingModel();
   }
 
-  private initializeEmbeddingModel() {
+  private initializeEmbeddingModel(): GenerativeModel | null {
     try {
       const model = getModel('EMBEDDING');
       return model;
     } catch (error) {
-      console.warn('Embedding model initialization failed, using fallback');
+      console.warn('Embedding model could not be initialized. RAG will use keyword search.');
       return null;
     }
   }
 
-  /**
-   * Process and store a document for RAG
-   */
   async processDocument(
     documentId: string,
     companyId: string,
     content: string,
-    metadata: any
+    metadata: DocumentMetadata
   ): Promise<void> {
     try {
-      // Split document into chunks
       const chunks = this.splitIntoChunks(content);
       
-      // Process each chunk
       const chunkPromises = chunks.map(async (chunk, index) => {
         const chunkId = `${documentId}_chunk_${index}`;
         
-        // Generate embedding if model is available
         let embedding: number[] | undefined;
         if (this.embeddingModel) {
           embedding = await this.generateEmbedding(chunk);
         }
         
-        // Store chunk in Firestore
-        const chunkData: DocumentChunk = {
+        const chunkData: Chunk = {
           id: chunkId,
           documentId,
           companyId,
@@ -77,7 +70,7 @@ class RAGSystem {
           },
         };
         
-        await db
+        await adminDb
           .collection('document_chunks')
           .doc(chunkId)
           .set({
@@ -88,8 +81,7 @@ class RAGSystem {
       
       await Promise.all(chunkPromises);
       
-      // Update document status
-      await db.collection('documents').doc(documentId).update({
+      await adminDb.collection('documents').doc(documentId).update({
         ragProcessed: true,
         chunkCount: chunks.length,
         processedAt: FieldValue.serverTimestamp(),
@@ -102,25 +94,19 @@ class RAGSystem {
     }
   }
 
-  /**
-   * Search for relevant document chunks
-   */
   async search(
-    query: string,
-    companyId: string,
+    query: string, 
+    companyId: string, 
     limit: number = 5
   ): Promise<SearchResult[]> {
     try {
-      // Generate query embedding
       const queryEmbedding = this.embeddingModel 
         ? await this.generateEmbedding(query)
-        : null;
+        : undefined;
       
       if (queryEmbedding) {
-        // Vector similarity search
         return await this.vectorSearch(queryEmbedding, companyId, limit);
       } else {
-        // Fallback to keyword search
         return await this.keywordSearch(query, companyId, limit);
       }
     } catch (error) {
@@ -129,52 +115,41 @@ class RAGSystem {
     }
   }
 
-  /**
-   * Vector similarity search using embeddings
-   */
   private async vectorSearch(
-    queryEmbedding: number[],
-    companyId: string,
+    queryEmbedding: number[], 
+    companyId: string, 
     limit: number
   ): Promise<SearchResult[]> {
-    // Note: In production, use Vertex AI Vector Search or similar service
-    // This is a simplified implementation
-    
-    const chunksSnapshot = await db
+    const chunksSnapshot = await adminDb
       .collection('document_chunks')
       .where('companyId', '==', companyId)
       .where('embedding', '!=', null)
-      .limit(limit * 2) // Get more to filter by similarity
+      .limit(limit * 2) 
       .get();
     
     const results: SearchResult[] = [];
     
-    chunksSnapshot.docs.forEach(doc => {
-      const chunk = doc.data() as DocumentChunk;
+    chunksSnapshot.docs.forEach((doc) => {
+      const chunk = doc.data() as Chunk;
       if (chunk.embedding) {
         const score = this.cosineSimilarity(queryEmbedding, chunk.embedding);
         results.push({ chunk, score });
       }
     });
     
-    // Sort by score and return top results
     return results
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
   }
 
-  /**
-   * Keyword-based search fallback
-   */
   private async keywordSearch(
-    query: string,
-    companyId: string,
+    query: string, 
+    companyId: string, 
     limit: number
   ): Promise<SearchResult[]> {
-    // Simple keyword matching
     const keywords = query.toLowerCase().split(' ').filter(k => k.length > 2);
     
-    const chunksSnapshot = await db
+    const chunksSnapshot = await adminDb
       .collection('document_chunks')
       .where('companyId', '==', companyId)
       .limit(limit * 3)
@@ -182,11 +157,10 @@ class RAGSystem {
     
     const results: SearchResult[] = [];
     
-    chunksSnapshot.docs.forEach(doc => {
-      const chunk = doc.data() as DocumentChunk;
+    chunksSnapshot.docs.forEach((doc) => {
+      const chunk = doc.data() as Chunk;
       const content = chunk.content.toLowerCase();
       
-      // Calculate relevance score based on keyword matches
       let score = 0;
       keywords.forEach(keyword => {
         const matches = (content.match(new RegExp(keyword, 'g')) || []).length;
@@ -203,12 +177,8 @@ class RAGSystem {
       .slice(0, limit);
   }
 
-  /**
-   * Generate embedding for text
-   */
   private async generateEmbedding(text: string): Promise<number[]> {
     if (!this.embeddingModel) {
-      // Return mock embedding for development
       return Array(768).fill(0).map(() => Math.random());
     }
     
@@ -220,15 +190,11 @@ class RAGSystem {
       return result.embedding.values;
     } catch (error) {
       console.error('Embedding generation error:', error);
-      // Return mock embedding as fallback
       return Array(768).fill(0).map(() => Math.random());
     }
   }
 
-  /**
-   * Split document into chunks for processing
-   */
-  private splitIntoChunks(content: string, chunkSize: number = 1000): string[] {
+  splitIntoChunks(content: string, chunkSize: number = 1000): string[] {
     const chunks: string[] = [];
     const sentences = content.match(/[^.!?]+[.!?]+/g) || [content];
     
@@ -239,7 +205,7 @@ class RAGSystem {
         chunks.push(currentChunk.trim());
         currentChunk = sentence;
       } else {
-        currentChunk += ' ' + sentence;
+        currentChunk += ` ${sentence}`;
       }
     }
     
@@ -250,9 +216,6 @@ class RAGSystem {
     return chunks;
   }
 
-  /**
-   * Calculate cosine similarity between two vectors
-   */
   private cosineSimilarity(a: number[], b: number[]): number {
     if (a.length !== b.length) return 0;
     
@@ -274,9 +237,6 @@ class RAGSystem {
     return dotProduct / (normA * normB);
   }
 
-  /**
-   * Generate context from search results for AI response
-   */
   generateContext(results: SearchResult[]): string {
     if (results.length === 0) {
       return 'No relevant documents found.';
@@ -298,5 +258,4 @@ Content: ${chunk.content}
   }
 }
 
-// Export singleton instance
 export const ragSystem = new RAGSystem();

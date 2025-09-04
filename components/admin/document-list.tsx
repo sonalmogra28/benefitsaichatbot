@@ -131,21 +131,21 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
       case 'processed':
         return (
           <Badge variant="default" className="bg-green-500">
-            <CheckCircle className="h-3 w-3 mr-1" />
+            <CheckCircle className="size-3 mr-1" />
             Processed
           </Badge>
         );
       case 'pending_processing':
         return (
           <Badge variant="secondary">
-            <Clock className="h-3 w-3 mr-1" />
+            <Clock className="size-3 mr-1" />
             Processing
           </Badge>
         );
       case 'error':
         return (
           <Badge variant="destructive">
-            <AlertCircle className="h-3 w-3 mr-1" />
+            <AlertCircle className="size-3 mr-1" />
             Error
           </Badge>
         );
@@ -156,7 +156,7 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
 
   const getFileTypeIcon = (fileType?: string) => {
     // You could add different icons for different file types
-    return <FileText className="h-4 w-4" />;
+    return <FileText className="size-4" />;
   };
 
   if (isLoading) {
@@ -173,7 +173,7 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground size-4" />
             <Input
               placeholder="Search documents..."
               value={searchTerm}
@@ -184,7 +184,7 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
         </div>
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-[180px]">
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="size-4 mr-2" />
             <SelectValue placeholder="Filter by type" />
           </SelectTrigger>
           <SelectContent>
@@ -243,8 +243,8 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
                         <p className="font-medium">{document.title}</p>
                         {document.tags && document.tags.length > 0 && (
                           <div className="flex gap-1 mt-1 flex-wrap">
-                            {document.tags.map((tag, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
+                            {document.tags.map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
                                 {tag}
                               </Badge>
                             ))}
@@ -282,14 +282,14 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
                         <DropdownMenuItem
                           onClick={() => onDocumentView?.(document)}
                         >
-                          <Eye className="h-4 w-4 mr-2" />
+                          <Eye className="size-4 mr-2" />
                           View Details
                         </DropdownMenuItem>
                         {document.fileUrl && (
                           <DropdownMenuItem
                             onClick={() => handleDownload(document)}
                           >
-                            <Download className="h-4 w-4 mr-2" />
+                            <Download className="size-4 mr-2" />
                             Download
                           </DropdownMenuItem>
                         )}
@@ -298,7 +298,7 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
                           className="text-destructive"
                           onClick={() => setDeleteConfirmId(document.id)}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
+                          <Trash2 className="size-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>

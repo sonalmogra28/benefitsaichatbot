@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 
 function SuperAdminUsersPage() {
   const { user } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     if (user) {
       const idToken = await user.getIdToken();
       const response = await fetch('/api/admin/users', {
@@ -18,11 +18,11 @@ function SuperAdminUsersPage() {
       const data = await response.json();
       setUsers(data.users);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchUsers();
-  }, [user]);
+  }, [fetchUsers]);
 
   const handleRoleChange = async (uid: string, role: string, companyId: string) => {
     if (user) {

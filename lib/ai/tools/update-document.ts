@@ -1,8 +1,7 @@
 import { tool } from 'ai';
 import type { UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
-import { db } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { adminDb } from '@/lib/firebase/admin';
 import { documentHandlersByArtifactKind } from '@/lib/artifacts/server';
 
 interface UpdateDocumentProps {
@@ -13,7 +12,7 @@ interface UpdateDocumentProps {
 // Helper function to get document by ID
 async function getDocumentById(id: string) {
   try {
-    const doc = await db.collection('documents').doc(id).get();
+    const doc = await adminDb.collection('documents').doc(id).get();
     if (!doc.exists) {
       return null;
     }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Building2, Search, Plus, Users, FileText, MoreVertical, Edit, Trash2 } from 'lucide-react';
@@ -79,7 +79,7 @@ export default function AdminCompaniesPage() {
         </div>
         <Link href="/admin/companies/new">
           <Button>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 size-4" />
             Add Company
           </Button>
         </Link>
@@ -89,7 +89,7 @@ export default function AdminCompaniesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <Building2 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{companies.length}</div>
@@ -100,7 +100,7 @@ export default function AdminCompaniesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <Building2 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -113,7 +113,7 @@ export default function AdminCompaniesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -126,7 +126,7 @@ export default function AdminCompaniesPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Setup</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <Building2 className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -141,7 +141,7 @@ export default function AdminCompaniesPage() {
         <CardHeader>
           <CardTitle>Companies</CardTitle>
           <div className="flex items-center space-x-2 mt-4">
-            <Search className="h-4 w-4 text-muted-foreground" />
+            <Search className="size-4 text-muted-foreground" />
             <Input
               placeholder="Search companies..."
               value={searchTerm}
@@ -153,7 +153,7 @@ export default function AdminCompaniesPage() {
         <CardContent>
           {filteredCompanies.length === 0 ? (
             <div className="text-center py-12">
-              <Building2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <Building2 className="mx-auto size-12 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">No companies found</p>
               <p className="text-sm text-muted-foreground mt-2">
                 {searchTerm ? 'Try adjusting your search' : 'Add your first company to get started'}
@@ -180,7 +180,7 @@ export default function AdminCompaniesPage() {
                   </div>
                   <div className="col-span-2">
                     <div className="flex items-center text-sm">
-                      <Users className="h-3 w-3 mr-1 text-muted-foreground" />
+                      <Users className="size-3 mr-1 text-muted-foreground" />
                       {company.employeeCount}
                     </div>
                   </div>
@@ -194,26 +194,26 @@ export default function AdminCompaniesPage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
+                          <MoreVertical className="size-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
+                          <Edit className="mr-2 size-4" />
                           Edit Company
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <Users className="mr-2 h-4 w-4" />
+                          <Users className="mr-2 size-4" />
                           Manage Users
                         </DropdownMenuItem>
                         <DropdownMenuItem>
-                          <FileText className="mr-2 h-4 w-4" />
+                          <FileText className="mr-2 size-4" />
                           View Documents
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash2 className="mr-2 size-4" />
                           Delete Company
                         </DropdownMenuItem>
                       </DropdownMenuContent>

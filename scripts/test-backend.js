@@ -5,7 +5,7 @@
  * Run this to verify all Firebase Functions are working correctly
  */
 
-const https = require('https');
+const https = require('node:https');
 
 // Configuration - Update these after deployment
 const PROJECT_ID = 'your-project-id'; // Replace with your Firebase project ID

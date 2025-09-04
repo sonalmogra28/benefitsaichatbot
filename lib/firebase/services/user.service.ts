@@ -1,24 +1,14 @@
-import { adminAuth, adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc, 
-  serverTimestamp,
-  DocumentData,
-  FieldValue
-} from 'firebase/firestore';
-import { db as clientDb } from '@/lib/firebase';
+import { adminAuth, adminDb } from '@/lib/firebase/admin-sdk';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db as clientDb } from '@/lib/firebase/client';
 import { z } from 'zod';
 import type { UserRole } from '@/lib/constants/roles';
+import { FieldValue } from 'firebase-admin/firestore';
 
-// User metadata schema
+// Simplified User metadata schema
 export const userMetadataSchema = z.object({
-  companyId: z.string().optional(),
   department: z.string().max(100).optional(),
   hireDate: z.string().datetime().optional(),
-  userType: z.enum(['employee', 'hr-admin', 'company-admin', 'platform-admin', 'super-admin']).optional(),
   location: z.string().max(200).optional(),
   benefitsSelections: z.record(z.any()).optional(),
   onboardingProgress: z.number().min(0).max(100).optional(),
@@ -35,21 +25,20 @@ export interface FirebaseUser {
   email: string | null;
   displayName: string | null;
   photoURL?: string | null;
-  companyId?: string;
   department?: string;
   hireDate?: string;
   role: UserRole;
-  createdAt: FieldValue | Date;
-  updatedAt: FieldValue | Date;
+  createdAt: any;
+  updatedAt: any;
   metadata?: UserMetadata;
 }
 
 /**
- * Service for managing user data in Firebase
+ * Service for managing user data in a single-tenant Firestore structure
  */
 export class UserService {
   /**
-   * Create or update a user in Firestore
+   * Create or update a user in the top-level 'users' collection
    */
   async syncUserToFirestore(
     uid: string,
@@ -60,24 +49,21 @@ export class UserService {
       const userDoc = await userRef.get();
 
       if (!userDoc.exists) {
-        // Create new user
         await userRef.set({
           uid,
           email: userData.email || '',
           displayName: userData.displayName || '',
           photoURL: userData.photoURL || null,
-          companyId: userData.companyId || null,
           department: userData.department || null,
           role: userData.role || 'employee',
-          createdAt: AdminFieldValue.serverTimestamp(),
-          updatedAt: AdminFieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
           metadata: userData.metadata || {}
         });
       } else {
-        // Update existing user
         const updateData: Partial<FirebaseUser> = {
           ...userData,
-          updatedAt: AdminFieldValue.serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp()
         };
         await userRef.update(updateData as {[key: string]: any});
       }
@@ -88,7 +74,7 @@ export class UserService {
   }
 
   /**
-   * Get user data from Firestore
+   * Get user data from the top-level 'users' collection
    */
   async getUserFromFirestore(uid: string): Promise<FirebaseUser | null> {
     try {
@@ -110,50 +96,13 @@ export class UserService {
    */
   async updateUserRole(uid: string, role: UserRole): Promise<void> {
     try {
-      // Set custom claims for role-based access control
       await adminAuth.setCustomUserClaims(uid, { role });
-      
-      // Update role in Firestore
       await adminDb.collection('users').doc(uid).update({
         role,
-        updatedAt: AdminFieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp()
       });
     } catch (error) {
       console.error(`Failed to update role for user ${uid}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Assign user to a company
-   */
-  async assignUserToCompany(uid: string, companyId: string): Promise<void> {
-    try {
-      // Verify company exists
-      const companyDoc = await adminDb.collection('companies').doc(companyId).get();
-      
-      if (!companyDoc.exists) {
-        throw new Error(`Company ${companyId} not found`);
-      }
-
-      // Update user with company assignment
-      await adminDb.collection('users').doc(uid).update({
-        companyId,
-        updatedAt: AdminFieldValue.serverTimestamp()
-      });
-
-      // Add user to company's users subcollection
-      await adminDb
-        .collection('companies')
-        .doc(companyId)
-        .collection('users')
-        .doc(uid)
-        .set({
-          uid,
-          addedAt: AdminFieldValue.serverTimestamp()
-        });
-    } catch (error) {
-      console.error(`Failed to assign user ${uid} to company ${companyId}:`, error);
       throw error;
     }
   }
@@ -185,23 +134,7 @@ export class UserService {
    */
   async deleteUser(uid: string): Promise<void> {
     try {
-      // Get user data first
-      const userData = await this.getUserFromFirestore(uid);
-      
-      if (userData?.companyId) {
-        // Remove from company's users subcollection
-        await adminDb
-          .collection('companies')
-          .doc(userData.companyId)
-          .collection('users')
-          .doc(uid)
-          .delete();
-      }
-
-      // Delete user document
       await adminDb.collection('users').doc(uid).delete();
-      
-      // Delete user from Firebase Auth
       await adminAuth.deleteUser(uid);
     } catch (error) {
       console.error(`Failed to delete user ${uid}:`, error);
@@ -213,16 +146,11 @@ export class UserService {
    * List users with optional filtering
    */
   async listUsers(options?: {
-    companyId?: string;
     role?: UserRole;
     limit?: number;
   }): Promise<FirebaseUser[]> {
     try {
       let query = adminDb.collection('users');
-
-      if (options?.companyId) {
-        query = query.where('companyId', '==', options.companyId) as any;
-      }
 
       if (options?.role) {
         query = query.where('role', '==', options.role) as any;
@@ -245,26 +173,15 @@ export class UserService {
    */
   async updateUserMetadata(
     uid: string,
-    metadata: UserMetadata,
-    isClient: boolean = false
+    metadata: UserMetadata
   ): Promise<void> {
     try {
       const validatedMetadata = userMetadataSchema.parse(metadata);
       
-      if (isClient) {
-        // Client-side update using client SDK
-        const userRef = doc(clientDb, 'users', uid);
-        await updateDoc(userRef, {
-          metadata: validatedMetadata,
-          updatedAt: serverTimestamp()
-        });
-      } else {
-        // Server-side update using admin SDK
-        await adminDb.collection('users').doc(uid).update({
-          metadata: validatedMetadata,
-          updatedAt: AdminFieldValue.serverTimestamp()
-        });
-      }
+      await updateDoc(doc(clientDb, 'users', uid), {
+        metadata: validatedMetadata,
+        updatedAt: FieldValue.serverTimestamp()
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         console.error('Invalid metadata format:', error.errors);
