@@ -50,7 +50,7 @@
 
 ### 2.4 Other Fixes ✅
 ```
-✅ Redis dependency removed from health check
+✅ Legacy cache dependency removed from health check
 ✅ Document processing helpers added
 ✅ Audit logging converted to Firestore
 ✅ Constants updated with Firebase collections

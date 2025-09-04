@@ -58,7 +58,7 @@ We are implementing a Retrieval-Augmented Generation (RAG) system to allow the c
   - Vertex AI (Google Gemini models)
 - **Search**: Vertex AI Vector Search
 - **Email**: Firebase Extensions (Trigger Email)
-- **Caching**: Memorystore (Redis)
+- **Caching**: Firebase Memorystore or Firestore-based caching
 
 ### Development Tools
 - **Linting**: Biome.js (replacing ESLint)

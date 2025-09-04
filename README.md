@@ -76,8 +76,8 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
          ┌───────────────────────┴───────────────────────┐
          │                       │                       │
     ┌────▼─────┐         ┌──────▼───────┐      ┌───────▼──────┐
-    │PostgreSQL│         │   Pinecone    │      │    Redis     │
-    │  (Neon)  │         │ (Vector DB)   │      │   (Cache)    │
+    │Firestore │         │ Vertex AI VS  │      │ Memorystore │
+    │ Database │         │ (Vector DB)   │      │   (Cache)   │
     └──────────┘         └──────────────┘      └──────────────┘
 ```
 
@@ -86,8 +86,7 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
 ### Prerequisites
 - Node.js >= 20.0.0
 - pnpm >= 8.0.0
-- PostgreSQL (via Neon)
-- Vercel CLI (for deployment)
+- Firebase CLI
 
 ### Environment Setup
 ```bash

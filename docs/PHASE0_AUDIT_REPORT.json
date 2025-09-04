@@ -100,21 +100,21 @@
       {
         "event": "chat_message",
         "endpoint": "/api/chat",
-        "data_flow": "Client → API → AI Service → Database → Pinecone",
+        "data_flow": "Client → API → AI Service → Database → Vertex AI Vector Search",
         "validation": "User ownership, rate limiting",
         "security": "Company isolation, message limits"
       },
       {
         "event": "document_upload",
         "endpoint": "/api/admin/companies/[id]/documents/upload",
-        "data_flow": "Client → API → Blob Storage → Database → Pinecone",
+        "data_flow": "Client → API → Blob Storage → Database → Vertex AI Vector Search",
         "validation": "Role-based access, file validation",
         "security": "Admin-only, company scoping"
       },
       {
         "event": "document_processing",
         "endpoint": "/api/cron/process-documents",
-        "data_flow": "Cron/Manual → API → Documents → Vectors → Pinecone",
+        "data_flow": "Cron/Manual → API → Documents → Vectors → Vertex AI Vector Search",
         "validation": "Cron secret (GET only)",
         "security": "POST endpoint unprotected"
       }
