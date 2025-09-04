@@ -35,8 +35,10 @@ export default defineConfig({
     },
   },
   define: {
-    'process.env.NEXT_PUBLIC_STACK_PROJECT_ID': JSON.stringify('test-project-id'),
+    'process.env.NEXT_PUBLIC_STACK_PROJECT_ID':
+      JSON.stringify('test-project-id'),
     'process.env.STACK_SECRET_SERVER_KEY': JSON.stringify('test-secret-key'),
-    'process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY': JSON.stringify('test-client-key'),
+    'process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY':
+      JSON.stringify('test-client-key'),
   },
 });

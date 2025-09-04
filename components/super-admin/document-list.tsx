@@ -17,7 +17,7 @@ import type { Document } from '@/lib/db/schema';
 export function DocumentList() {
   const { data: documents, error } = useSWR<Document[]>(
     '/api/super-admin/documents',
-    fetcher
+    fetcher,
   );
 
   if (error) return <div>Failed to load documents</div>;

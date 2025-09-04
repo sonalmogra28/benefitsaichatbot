@@ -12,13 +12,16 @@ export async function GET(req: NextRequest) {
 
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
-    
+
     // Get company ID from user's custom claims
     const userRecord = await adminAuth.getUser(decodedToken.uid);
     const companyId = userRecord.customClaims?.companyId;
-    
+
     if (!companyId) {
-      return NextResponse.json({ error: 'No company assigned' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'No company assigned' },
+        { status: 403 },
+      );
     }
 
     // Fetch documents
@@ -27,10 +30,10 @@ export async function GET(req: NextRequest) {
       .doc(companyId)
       .collection('documents')
       .get();
-    
-    const documents = snapshot.docs.map(doc => ({
+
+    const documents = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
 
     return NextResponse.json({ documents });
@@ -38,7 +41,7 @@ export async function GET(req: NextRequest) {
     console.error('Error fetching documents:', error);
     return NextResponse.json(
       { error: 'Failed to fetch documents' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -53,24 +56,27 @@ export async function POST(req: NextRequest) {
 
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
-    
+
     // Get company ID from user's custom claims
     const userRecord = await adminAuth.getUser(decodedToken.uid);
     const companyId = userRecord.customClaims?.companyId;
-    
+
     if (!companyId) {
-      return NextResponse.json({ error: 'No company assigned' }, { status: 403 });
+      return NextResponse.json(
+        { error: 'No company assigned' },
+        { status: 403 },
+      );
     }
 
     const body = await req.json();
-    
+
     // Create document
     const documentRef = adminDb
       .collection('companies')
       .doc(companyId)
       .collection('documents')
       .doc();
-    
+
     const documentData = {
       id: documentRef.id,
       companyId,
@@ -78,20 +84,20 @@ export async function POST(req: NextRequest) {
       createdBy: decodedToken.uid,
       status: 'pending_processing',
       createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp()
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     await documentRef.set(documentData);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       id: documentRef.id,
-      message: 'Document created successfully' 
+      message: 'Document created successfully',
     });
   } catch (error) {
     console.error('Error creating document:', error);
     return NextResponse.json(
       { error: 'Failed to create document' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

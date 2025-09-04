@@ -1,20 +1,14 @@
 // context/auth-context.tsx
-"use client";
+'use client';
 
-import { 
-  createContext, 
-  useContext, 
-  useEffect, 
-  useState, 
-  type ReactNode 
-} from 'react';
+import { createContext, useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  type User, 
-  onIdTokenChanged, 
+import {
+  type User,
+  onIdTokenChanged,
   signOut as firebaseSignOut,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -27,7 +21,9 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -42,10 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (user) {
         setUser(user);
         const idToken = await user.getIdToken();
+        const refreshToken = (user as any).refreshToken as string;
         await fetch('/api/auth/session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken }),
+          body: JSON.stringify({ idToken, refreshToken }),
         });
       } else {
         setUser(null);
@@ -56,7 +53,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => unsubscribe();
   }, []);
-  
+
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(
+      async () => {
+        await fetch('/api/auth/refresh', { method: 'POST' });
+      },
+      10 * 60 * 1000,
+    ); // Refresh every 10 minutes
+    return () => clearInterval(interval);
+  }, [user]);
+
   const signInWithGoogle = async () => {
     setIsSigningIn(true);
     const provider = new GoogleAuthProvider();
@@ -64,11 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithPopup(auth, provider);
       router.push('/');
     } catch (error) {
-      console.error("Error signing in with Google: ", error);
+      console.error('Error signing in with Google: ', error);
       toast({
-        title: "Sign-in Failed",
-        description: "Could not sign in with Google. Please try again.",
-        variant: "destructive",
+        title: 'Sign-in Failed',
+        description: 'Could not sign in with Google. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsSigningIn(false);
@@ -81,7 +89,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isSigningIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider
+      value={{ user, loading, isSigningIn, signInWithGoogle, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

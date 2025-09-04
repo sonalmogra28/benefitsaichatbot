@@ -5,7 +5,7 @@ const serviceAccount = require('../firebase-admin-key.json');
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: `https://benefitschatbotac-383.firebaseio.com`
+  databaseURL: `https://benefitschatbotac-383.firebaseio.com`,
 });
 
 async function createUsers() {
@@ -14,15 +14,15 @@ async function createUsers() {
       email: 'admin@benefitschat.com',
       password: 'Admin123!@#',
       displayName: 'Admin User',
-      role: 'super_admin'
+      role: 'super_admin',
     },
     {
-      email: 'employee@benefitschat.com', 
+      email: 'employee@benefitschat.com',
       password: 'Employee123!',
       displayName: 'Employee User',
       role: 'employee',
-      companyId: 'default-company'
-    }
+      companyId: 'default-company',
+    },
   ];
 
   for (const userData of users) {
@@ -32,26 +32,32 @@ async function createUsers() {
         email: userData.email,
         password: userData.password,
         displayName: userData.displayName,
-        emailVerified: true
+        emailVerified: true,
       });
 
       // Set custom claims
       await admin.auth().setCustomUserClaims(userRecord.uid, {
         role: userData.role,
-        companyId: userData.companyId || null
+        companyId: userData.companyId || null,
       });
 
       // Create user document in Firestore
-      await admin.firestore().collection('users').doc(userRecord.uid).set({
-        email: userData.email,
-        displayName: userData.displayName,
-        role: userData.role,
-        companyId: userData.companyId || null,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        status: 'active'
-      });
+      await admin
+        .firestore()
+        .collection('users')
+        .doc(userRecord.uid)
+        .set({
+          email: userData.email,
+          displayName: userData.displayName,
+          role: userData.role,
+          companyId: userData.companyId || null,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          status: 'active',
+        });
 
-      console.log(`✅ Created user: ${userData.email} with role: ${userData.role}`);
+      console.log(
+        `✅ Created user: ${userData.email} with role: ${userData.role}`,
+      );
     } catch (error) {
       if (error.code === 'auth/email-already-exists') {
         console.log(`User ${userData.email} already exists`);

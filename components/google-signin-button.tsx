@@ -8,9 +8,9 @@ export function GoogleSignInButton() {
   const { signInWithGoogle, isSigningIn } = useAuth();
 
   return (
-    <Button 
-      variant="outline" 
-      onClick={signInWithGoogle} 
+    <Button
+      variant="outline"
+      onClick={signInWithGoogle}
       disabled={isSigningIn}
       className="w-full"
     >

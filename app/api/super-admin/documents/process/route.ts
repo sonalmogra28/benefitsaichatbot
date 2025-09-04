@@ -1,7 +1,7 @@
 // app/api/super-admin/documents/process/route.ts
 import { NextResponse } from 'next/server';
 import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
-import { PredictionServiceClient , helpers } from '@google-cloud/aiplatform';
+import { PredictionServiceClient, helpers } from '@google-cloud/aiplatform';
 import { db } from '@/lib/firestore';
 import { collection, addDoc } from 'firebase/firestore';
 
@@ -42,8 +42,13 @@ export async function POST(request: Request) {
       parameters,
     } as any;
 
-    const [response] = await predictionServiceClient.predict(embeddingRequest) as any;
-    const embeddings = response?.predictions?.[0]?.structValue?.fields?.embedding?.listValue?.values?.map((v: any) => v.numberValue) || [];
+    const [response] = (await predictionServiceClient.predict(
+      embeddingRequest,
+    )) as any;
+    const embeddings =
+      response?.predictions?.[0]?.structValue?.fields?.embedding?.listValue?.values?.map(
+        (v: any) => v.numberValue,
+      ) || [];
 
     // 3. Store the text and embeddings in Firestore
     await addDoc(collection(db, 'documents'), {
@@ -52,9 +57,11 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true }, { status: 200 });
-
   } catch (error) {
     console.error('Error processing document:', error);
-    return NextResponse.json({ error: 'Failed to process document' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to process document' },
+      { status: 500 },
+    );
   }
 }
