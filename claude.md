@@ -65,13 +65,13 @@ We are implementing a Retrieval-Augmented Generation (RAG) system to allow the c
 - **Database**: Firestore (NoSQL document database)
 - **Storage**: Firebase Cloud Storage
 - **Functions**: Firebase Cloud Functions
-- **AI/ML**: 
+- **AI/ML**:
   - Vertex AI (Google Gemini models)
   - OpenAI GPT-4 (fallback)
   - Anthropic Claude (fallback)
-- **Search**: Vector embeddings in Pinecone (to be replaced with Vertex AI Vector Search)
+- **Search**: Vertex AI Vector Search
 - **Email**: Resend
-- **Caching**: Redis (rate limiting)
+- **Caching**: Firestore-based rate limiting or Firebase Memorystore
 
 ### Development Tools
 - **Linting**: Biome.js (replacing ESLint)

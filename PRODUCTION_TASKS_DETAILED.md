@@ -5,8 +5,8 @@
 2. ✅ Deleted /lib/storage/blob.ts
 3. ✅ Created /lib/storage/firebase-storage.ts
 4. ✅ Updated import statements in upload routes
-5. ✅ Removed redis from package.json
-6. ✅ Deleted /lib/rate-limit/redis.ts
+5. ✅ Removed legacy cache dependency from package.json
+6. ✅ Deleted legacy rate limiter implementation
 7. ✅ Created /lib/rate-limit/firestore-limiter.ts
 8. ✅ Updated rate limiter initialization
 
@@ -23,11 +23,9 @@
 
 **Actions:**
 ```bash
-# Remove from .env files:
-REDIS_URL=...
-PINECONE_API_KEY=...
-PINECONE_ENVIRONMENT=...
-PINECONE_INDEX=...
+# Update .env files:
+CACHE_URL=...
+VERTEX_AI_INDEX_ENDPOINT=...
 ```
 
 **Deliverables:**
@@ -58,9 +56,9 @@ npm dedupe
 **Files to modify:**
 - `/app/api/health/route.ts`
 
-**Remove Redis health check (lines 57-61, 148-182)**
+**Remove legacy cache health check (lines 57-61, 148-182)**
 ```typescript
-// Remove Redis check section
+// Remove cache check section
 // Keep only Firebase Auth, Firestore, and AI services checks
 ```
 
