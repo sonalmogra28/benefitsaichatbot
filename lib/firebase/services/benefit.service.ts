@@ -5,7 +5,14 @@ import type { FieldValue } from 'firebase-admin/firestore';
 // Simplified Benefit Plan schema
 export const benefitPlanSchema = z.object({
   name: z.string().min(1).max(255),
-  type: z.enum(['health', 'dental', 'vision', 'life', 'disability', 'retirement']),
+  type: z.enum([
+    'health',
+    'dental',
+    'vision',
+    'life',
+    'disability',
+    'retirement',
+  ]),
   category: z.string().optional(),
   provider: z.string().optional(),
   deductibleIndividual: z.number().optional(),
@@ -47,10 +54,12 @@ export class BenefitService {
   /**
    * Create a new benefit plan in the top-level 'benefitPlans' collection
    */
-  async createBenefitPlan(planData: z.infer<typeof benefitPlanSchema>): Promise<string> {
+  async createBenefitPlan(
+    planData: z.infer<typeof benefitPlanSchema>,
+  ): Promise<string> {
     try {
       const validated = benefitPlanSchema.parse(planData);
-      
+
       const planRef = this.benefitPlansCollection.doc();
       const planId = planRef.id;
 
@@ -58,7 +67,7 @@ export class BenefitService {
         id: planId,
         ...validated,
         createdAt: AdminFieldValue.serverTimestamp(),
-        updatedAt: AdminFieldValue.serverTimestamp()
+        updatedAt: AdminFieldValue.serverTimestamp(),
       });
 
       return planId;
@@ -78,7 +87,7 @@ export class BenefitService {
   async getBenefitPlans(): Promise<BenefitPlan[]> {
     try {
       const snapshot = await this.benefitPlansCollection.get();
-      return snapshot.docs.map(doc => doc.data() as BenefitPlan);
+      return snapshot.docs.map((doc) => doc.data() as BenefitPlan);
     } catch (error) {
       console.error('Failed to get benefit plans:', error);
       throw error;
@@ -90,12 +99,16 @@ export class BenefitService {
    */
   async enrollInBenefitPlan(
     userId: string,
-    enrollmentData: z.infer<typeof benefitEnrollmentSchema>
+    enrollmentData: z.infer<typeof benefitEnrollmentSchema>,
   ): Promise<string> {
     try {
       const validated = benefitEnrollmentSchema.parse(enrollmentData);
-      
-      const enrollmentRef = adminDb.collection('users').doc(userId).collection('benefitEnrollments').doc();
+
+      const enrollmentRef = adminDb
+        .collection('users')
+        .doc(userId)
+        .collection('benefitEnrollments')
+        .doc();
       const enrollmentId = enrollmentRef.id;
 
       await enrollmentRef.set({
@@ -103,7 +116,7 @@ export class BenefitService {
         userId,
         ...validated,
         createdAt: AdminFieldValue.serverTimestamp(),
-        updatedAt: AdminFieldValue.serverTimestamp()
+        updatedAt: AdminFieldValue.serverTimestamp(),
       });
 
       return enrollmentId;
@@ -122,10 +135,17 @@ export class BenefitService {
    */
   async getBenefitEnrollments(userId: string): Promise<BenefitEnrollment[]> {
     try {
-      const snapshot = await adminDb.collection('users').doc(userId).collection('benefitEnrollments').get();
-      return snapshot.docs.map(doc => doc.data() as BenefitEnrollment);
+      const snapshot = await adminDb
+        .collection('users')
+        .doc(userId)
+        .collection('benefitEnrollments')
+        .get();
+      return snapshot.docs.map((doc) => doc.data() as BenefitEnrollment);
     } catch (error) {
-      console.error(`Failed to get benefit enrollments for user ${userId}:`, error);
+      console.error(
+        `Failed to get benefit enrollments for user ${userId}:`,
+        error,
+      );
       throw error;
     }
   }
@@ -133,14 +153,25 @@ export class BenefitService {
   /**
    * Cancel a benefit enrollment
    */
-  async cancelBenefitEnrollment(userId: string, enrollmentId: string): Promise<void> {
+  async cancelBenefitEnrollment(
+    userId: string,
+    enrollmentId: string,
+  ): Promise<void> {
     try {
-      await adminDb.collection('users').doc(userId).collection('benefitEnrollments').doc(enrollmentId).update({
-        status: 'cancelled',
-        updatedAt: AdminFieldValue.serverTimestamp()
-      });
+      await adminDb
+        .collection('users')
+        .doc(userId)
+        .collection('benefitEnrollments')
+        .doc(enrollmentId)
+        .update({
+          status: 'cancelled',
+          updatedAt: AdminFieldValue.serverTimestamp(),
+        });
     } catch (error) {
-      console.error(`Failed to cancel benefit enrollment ${enrollmentId}:`, error);
+      console.error(
+        `Failed to cancel benefit enrollment ${enrollmentId}:`,
+        error,
+      );
       throw error;
     }
   }

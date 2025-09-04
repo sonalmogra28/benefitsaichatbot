@@ -5,7 +5,7 @@ export const imageDocumentHandler = createDocumentHandler<'image'>({
   onCreateDocument: async ({ title, dataStream }) => {
     // Image generation temporarily disabled for MVP
     const draftContent = '';
-    
+
     dataStream.write({
       type: 'data-imageDelta',
       data: '',
@@ -17,7 +17,7 @@ export const imageDocumentHandler = createDocumentHandler<'image'>({
   onUpdateDocument: async ({ description, dataStream }) => {
     // Image generation temporarily disabled for MVP
     const draftContent = '';
-    
+
     dataStream.write({
       type: 'data-imageDelta',
       data: '',

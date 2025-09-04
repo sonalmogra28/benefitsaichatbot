@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -27,6 +26,7 @@ export default function SuperAdminDashboard() {
   const error = usersError || documentsError || chatsError;
   const isLoading = usersLoading || documentsLoading || chatsLoading;
 
+
   useEffect(() => {
     if (loading) return;
     if (!user) {
@@ -34,7 +34,7 @@ export default function SuperAdminDashboard() {
       return;
     }
     user.getIdTokenResult().then((idTokenResult) => {
-        // @ts-ignore
+      // @ts-ignore
       if (!idTokenResult.claims.super_admin) {
         router.push('/');
       }
@@ -42,7 +42,11 @@ export default function SuperAdminDashboard() {
   }, [user, loading, router]);
 
   if (loading || isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading Dashboard...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        Loading Dashboard...
+      </div>
+    );
   }
 
   return (
@@ -50,7 +54,9 @@ export default function SuperAdminDashboard() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Super Admin Dashboard</h1>
-          <p className="text-muted-foreground">Platform-wide overview and management</p>
+          <p className="text-muted-foreground">
+            Platform-wide overview and management
+          </p>
         </div>
       </div>
 
@@ -61,7 +67,8 @@ export default function SuperAdminDashboard() {
             <div>
               <CardTitle>Error Fetching Stats</CardTitle>
               <CardDescription className="text-destructive/80">
-                Could not load dashboard data. The API endpoint may be down or experiencing issues.
+                Could not load dashboard data. The API endpoint may be down or
+                experiencing issues.
               </CardDescription>
             </div>
           </CardHeader>
@@ -82,7 +89,9 @@ export default function SuperAdminDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Documents</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Documents
+            </CardTitle>
             <FileText className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -111,13 +120,22 @@ export default function SuperAdminDashboard() {
           </CardHeader>
           <CardContent className="space-y-2">
             <Link href="/super-admin/users" passHref>
-                <Button variant="outline" className="w-full justify-start"><Users className="mr-2 size-4" />Manage Users</Button>
+              <Button variant="outline" className="w-full justify-start">
+                <Users className="mr-2 size-4" />
+                Manage Users
+              </Button>
             </Link>
             <Link href="/super-admin/documents" passHref>
-                <Button variant="outline" className="w-full justify-start"><FileText className="mr-2 size-4" />Manage Documents</Button>
+              <Button variant="outline" className="w-full justify-start">
+                <FileText className="mr-2 size-4" />
+                Manage Documents
+              </Button>
             </Link>
             <Link href="/super-admin/analytics" passHref>
-                <Button variant="outline" className="w-full justify-start"><BarChart3 className="mr-2 size-4" />Platform Analytics</Button>
+              <Button variant="outline" className="w-full justify-start">
+                <BarChart3 className="mr-2 size-4" />
+                Platform Analytics
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -125,21 +143,27 @@ export default function SuperAdminDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>System Status</CardTitle>
-            <CardDescription>Live platform health and performance</CardDescription>
+            <CardDescription>
+              Live platform health and performance
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-             <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Firebase Status</p>
-                <span className='text-sm font-medium text-green-600'>Connected</span>
-             </div>
-             <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">AI Service</p>
-                <span className='text-sm font-medium text-green-600'>Operational</span>
-             </div>
-             <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Database</p>
-                <span className='text-sm font-medium text-green-600'>OK</span>
-             </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Firebase Status</p>
+              <span className="text-sm font-medium text-green-600">
+                Connected
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">AI Service</p>
+              <span className="text-sm font-medium text-green-600">
+                Operational
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Database</p>
+              <span className="text-sm font-medium text-green-600">OK</span>
+            </div>
           </CardContent>
         </Card>
       </div>

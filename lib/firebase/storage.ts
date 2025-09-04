@@ -1,4 +1,3 @@
-
 import { adminStorage } from '@/lib/firebase/admin';
 
 /**
@@ -8,7 +7,9 @@ import { adminStorage } from '@/lib/firebase/admin';
  * @returns The total size of all files in bytes.
  */
 export async function getBucketSize(bucketName?: string): Promise<number> {
-  const bucket = bucketName ? adminStorage.bucket(bucketName) : adminStorage.bucket();
+  const bucket = bucketName
+    ? adminStorage.bucket(bucketName)
+    : adminStorage.bucket();
   const [files] = await bucket.getFiles();
 
   let totalSize = 0;

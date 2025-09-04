@@ -1,8 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { superAdminService } from '@/lib/firebase/services/super-admin.service';
 import { adminAuth } from '@/lib/firebase/admin';
+import type { SuperAdminStats } from '@/types/api';
 
-async function verifySuperAdmin(request: NextRequest): Promise<NextResponse | null> {
+async function verifySuperAdmin(
+  request: NextRequest,
+): Promise<NextResponse | null> {
   const authHeader = request.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,14 +32,14 @@ export async function GET(request: NextRequest) {
       return unauthorizedResponse;
     }
 
-    const stats = await superAdminService.getPlatformStats();
-    
+    const stats: SuperAdminStats = await superAdminService.getPlatformStats();
+
     return NextResponse.json(stats);
   } catch (error) {
     console.error('Error in super-admin stats API:', error);
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -42,10 +42,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-    >
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -70,4 +67,4 @@ export default async function RootLayout({
       </body>
     </html>
   );
-};
+}

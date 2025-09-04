@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, } from 'react';
+import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import {
   Card,
@@ -93,14 +93,15 @@ export function EmployeeList({
 
   const { data, error, isLoading } = useSWR(
     `/api/company-admin/employees?companyId=${companyId}&search=${searchQuery}&role=${filterRole}&status=${filterStatus}`,
-    fetcher
+    fetcher,
   );
 
-  const employees: Employee[] = data?.employees.map((emp: any) => ({
-    ...emp,
-    lastActive: emp.lastActive ? new Date(emp.lastActive) : undefined,
-    createdAt: new Date(emp.createdAt),
-  })) || [];
+  const employees: Employee[] =
+    data?.employees.map((emp: any) => ({
+      ...emp,
+      lastActive: emp.lastActive ? new Date(emp.lastActive) : undefined,
+      createdAt: new Date(emp.createdAt),
+    })) || [];
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -145,7 +146,9 @@ export function EmployeeList({
         lastName: '',
       });
 
-      mutate(`/api/company-admin/employees?companyId=${companyId}&search=${searchQuery}&role=${filterRole}&status=${filterStatus}`);
+      mutate(
+        `/api/company-admin/employees?companyId=${companyId}&search=${searchQuery}&role=${filterRole}&status=${filterStatus}`,
+      );
     } catch (error) {
       toast({
         title: 'Error',
@@ -173,7 +176,9 @@ export function EmployeeList({
           description: 'The employee has been deactivated successfully',
         });
 
-        mutate(`/api/company-admin/employees?companyId=${companyId}&search=${searchQuery}&role=${filterRole}&status=${filterStatus}`);
+        mutate(
+          `/api/company-admin/employees?companyId=${companyId}&search=${searchQuery}&role=${filterRole}&status=${filterStatus}`,
+        );
       } else if (action === 'send-email') {
         // TODO: Implement email sending
         toast({
