@@ -67,3 +67,7 @@ class VectorSearchService {
 }
 
 export const vectorSearchService = new VectorSearchService();
+export const deleteDocumentVectors = async (documentId: string) => {
+    console.log(`- Deleting vector for document ${documentId}`);
+    return Promise.resolve();
+};

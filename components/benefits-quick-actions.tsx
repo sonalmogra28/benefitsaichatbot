@@ -93,7 +93,7 @@ export function BenefitsQuickActions({ onActionClick, isVisible = true }: Benefi
           >
             <Button
               variant="outline"
-              className={`w-full h-full ${action.color} hover:bg-gray-800 hover:text-white transition-all duration-200 shadow-sm hover:shadow-lg border-2`}
+              className={`size-full ${action.color} hover:bg-gray-800 hover:text-white transition-all duration-200 shadow-sm hover:shadow-lg border-2`}
               onClick={() => onActionClick(action.prompt)}
             >
               <div className="flex flex-col items-center gap-2 py-4 px-3 whitespace-normal text-center">

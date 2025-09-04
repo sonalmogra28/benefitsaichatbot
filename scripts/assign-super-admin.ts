@@ -1,9 +1,9 @@
-import { auth } from '@/lib/firebase/admin';
+import { adminAuth } from '@/lib/firebase/admin';
 
 async function assignSuperAdmin(email: string) {
   try {
-    const user = await auth.getUserByEmail(email);
-    await auth.setCustomUserClaims(user.uid, { super_admin: true });
+    const user = await adminAuth.getUserByEmail(email);
+    await adminAuth.setCustomUserClaims(user.uid, { super_admin: true });
     console.log(`Successfully assigned super_admin role to ${email}`);
   } catch (error) {
     console.error(`Error assigning super_admin role to ${email}:`, error);

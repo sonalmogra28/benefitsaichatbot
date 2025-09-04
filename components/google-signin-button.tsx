@@ -15,9 +15,9 @@ export function GoogleSignInButton() {
       className="w-full"
     >
       {isSigningIn ? (
-        <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+        <Icons.spinner className="mr-2 size-4 animate-spin" />
       ) : (
-        <Icons.google className="mr-2 h-4 w-4" />
+        <Icons.google className="mr-2 size-4" />
       )}
       Sign in with Google
     </Button>
