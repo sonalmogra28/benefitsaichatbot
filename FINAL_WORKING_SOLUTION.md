@@ -107,7 +107,7 @@ This gives you:
 
 ## 🔑 Your API Keys Are Active:
 - Firebase: Working
-- Gemini AI: Ready (`AIzaSyAmDLmI51z4hHBS9FKgxY9Vzm3TTYjbDkk`)
+- Gemini AI: Ready (`[REDACTED]`)
 - All backend services: Implemented
 
 The application is **fully functional** - just use the demo-access.html page to get in!

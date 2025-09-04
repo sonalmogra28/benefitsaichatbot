@@ -44,10 +44,13 @@ class VectorSearchService {
     return `projects/${PROJECT_ID}/locations/${LOCATION}/indexEndpoints/${INDEX_ENDPOINT_ID}`;
   }
 
-  async upsertChunks(chunks: { id: string; embedding: number[] }[]) {
+  async upsertChunks(
+    chunks: { id: string; embedding: number[]; companyId: string }[],
+  ) {
     const datapoints = chunks.map((chunk) => ({
       datapointId: chunk.id,
       featureVector: chunk.embedding,
+      restricts: [{ namespace: 'company_id', allowTokens: [chunk.companyId] }],
     }));
 
     const request = {
@@ -55,13 +58,34 @@ class VectorSearchService {
       datapoints,
     };
 
-    try {
-      console.log('Upserting datapoints to Vertex AI Vector Search...');
-      await this.indexClient.upsertDatapoints(request);
-      console.log('Successfully upserted datapoints.');
-    } catch (error) {
-      console.error('Error upserting datapoints to Vertex AI:', error);
-      throw new Error('Could not update the vector search index.');
+    const maxRetries = 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log('Upserting datapoints to Vertex AI Vector Search...');
+        await this.indexClient.upsertDatapoints(request);
+        console.log('Successfully upserted datapoints.');
+        return;
+      } catch (error: any) {
+        const networkErrors = [
+          'ECONNRESET',
+          'ETIMEDOUT',
+          'EAI_AGAIN',
+          'ENOTFOUND',
+        ];
+        const isNetworkError = networkErrors.includes(error?.code);
+
+        if (!isNetworkError || attempt === maxRetries) {
+          console.error('Error upserting datapoints to Vertex AI:', error);
+          throw new Error('Could not update the vector search index.');
+        }
+
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        console.warn(
+          `Network error during upsert, retrying in ${delay}ms (attempt ${attempt})`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
     }
   }
 
@@ -185,6 +209,7 @@ export async function upsertDocumentChunks(
       const slice = chunks.slice(i, i + 100).map((chunk, idx) => ({
         id: chunk.id,
         embedding: embeddings[i + idx],
+        companyId,
       }));
       if (slice.length > 0) {
         await vectorSearchService.upsertChunks(slice);

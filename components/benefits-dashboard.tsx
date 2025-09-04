@@ -1,40 +1,21 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Shield, Heart, Eye, Users, PiggyBank, TrendingUp, Calendar } from 'lucide-react';
+import {
+  Shield,
+  Heart,
+  Eye,
+  Users,
+  PiggyBank,
+  TrendingUp,
+  Calendar,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-interface BenefitsSummary {
-  healthPlan?: {
-    name: string;
-    type: string;
-    deductibleUsed: number;
-    deductibleTotal: number;
-    outOfPocketUsed: number;
-    outOfPocketMax: number;
-    premiumPaid?: number;
-    premiumTotal?: number;
-  };
-  coverageTypes?: Array<{
-    type: string;
-    status: 'active' | 'not-enrolled';
-    monthlyPremium: number;
-    coverageLevel?: string;
-  }>;
-  upcomingDeadlines?: Array<{
-    event: string;
-    date: string;
-    daysRemaining: number;
-  }>;
-  savingsOpportunity?: {
-    amount: number;
-    recommendation: string;
-  };
-}
+import type { BenefitsSummary } from '@/types/api';
 
 export function BenefitsDashboard() {
   const [summary, setSummary] = useState<BenefitsSummary | null>(null);
@@ -62,32 +43,34 @@ export function BenefitsDashboard() {
   if (!summary) {
     return <div>Could not load benefits summary.</div>;
   }
-  
+
   const getCoverageIcon = (type: string) => {
     const icons: Record<string, JSX.Element> = {
-      'Medical': <Heart className="size-5" />,
-      'Dental': <Shield className="size-5" />,
-      'Vision': <Eye className="size-5" />,
-      'Life': <Users className="size-5" />,
+      Medical: <Heart className="size-5" />,
+      Dental: <Shield className="size-5" />,
+      Vision: <Eye className="size-5" />,
+      Life: <Users className="size-5" />,
       '401k': <PiggyBank className="size-5" />,
-      'HSA': <TrendingUp className="size-5" />
+      HSA: <TrendingUp className="size-5" />,
     };
     return icons[type] || <Shield className="size-5" />;
   };
 
   const healthPlan = summary.healthPlan || {
-    name: "Select a Plan",
-    type: "N/A",
+    name: 'Select a Plan',
+    type: 'N/A',
     deductibleUsed: 0,
     deductibleTotal: 1,
     outOfPocketUsed: 0,
     outOfPocketMax: 1,
     premiumPaid: 0,
-    premiumTotal: 1
+    premiumTotal: 1,
   };
 
-  const deductibleProgress = (healthPlan.deductibleUsed / healthPlan.deductibleTotal) * 100;
-  const oopProgress = (healthPlan.outOfPocketUsed / healthPlan.outOfPocketMax) * 100;
+  const deductibleProgress =
+    (healthPlan.deductibleUsed / healthPlan.deductibleTotal) * 100;
+  const oopProgress =
+    (healthPlan.outOfPocketUsed / healthPlan.outOfPocketMax) * 100;
 
   return (
     <motion.div
@@ -110,15 +93,21 @@ export function BenefitsDashboard() {
           <div>
             <div className="flex justify-between text-sm mb-2">
               <span>Deductible Progress</span>
-              <span className="font-medium">${healthPlan.deductibleUsed.toLocaleString()} / ${healthPlan.deductibleTotal.toLocaleString()}</span>
+              <span className="font-medium">
+                ${healthPlan.deductibleUsed.toLocaleString()} / $
+                {healthPlan.deductibleTotal.toLocaleString()}
+              </span>
             </div>
             <Progress value={deductibleProgress} className="h-2" />
           </div>
-          
+
           <div>
             <div className="flex justify-between text-sm mb-2">
               <span>Out-of-Pocket Maximum</span>
-              <span className="font-medium">${healthPlan.outOfPocketUsed.toLocaleString()} / ${healthPlan.outOfPocketMax.toLocaleString()}</span>
+              <span className="font-medium">
+                ${healthPlan.outOfPocketUsed.toLocaleString()} / $
+                {healthPlan.outOfPocketMax.toLocaleString()}
+              </span>
             </div>
             <Progress value={oopProgress} className="h-2" />
           </div>
@@ -135,7 +124,9 @@ export function BenefitsDashboard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.05 }}
             >
-              <Card className={`${coverage.status === 'active' ? 'border-green-500 bg-green-50/50' : 'border-gray-300'}`}>
+              <Card
+                className={`${coverage.status === 'active' ? 'border-green-500 bg-green-50/50' : 'border-gray-300'}`}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -143,14 +134,18 @@ export function BenefitsDashboard() {
                       <span className="font-medium">{coverage.type}</span>
                     </div>
                     {coverage.status === 'active' && (
-                      <Badge variant="default" className="bg-green-500 text-xs">Active</Badge>
+                      <Badge variant="default" className="bg-green-500 text-xs">
+                        Active
+                      </Badge>
                     )}
                   </div>
                   {coverage.status === 'active' && (
                     <div className="text-sm text-muted-foreground">
                       ${coverage.monthlyPremium}/mo
                       {coverage.coverageLevel && (
-                        <div className="text-xs mt-1">{coverage.coverageLevel}</div>
+                        <div className="text-xs mt-1">
+                          {coverage.coverageLevel}
+                        </div>
                       )}
                     </div>
                   )}
@@ -173,13 +168,20 @@ export function BenefitsDashboard() {
           <CardContent>
             <div className="space-y-3">
               {summary.upcomingDeadlines.map((deadline) => (
-                <div key={deadline.event} className="flex justify-between items-center py-2 border-b last:border-0">
+                <div
+                  key={deadline.event}
+                  className="flex justify-between items-center py-2 border-b last:border-0"
+                >
                   <div>
                     <div className="font-medium">{deadline.event}</div>
-                    <div className="text-sm text-muted-foreground">{deadline.date}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {deadline.date}
+                    </div>
                   </div>
-                  <Badge 
-                    variant={deadline.daysRemaining <= 7 ? "destructive" : "secondary"}
+                  <Badge
+                    variant={
+                      deadline.daysRemaining <= 7 ? 'destructive' : 'secondary'
+                    }
                     className="ml-2"
                   >
                     {deadline.daysRemaining} days
@@ -206,7 +208,8 @@ export function BenefitsDashboard() {
                 </div>
                 <div className="flex-1">
                   <div className="font-semibold text-blue-900">
-                    Potential Savings: ${summary.savingsOpportunity.amount.toLocaleString()}/year
+                    Potential Savings: $
+                    {summary.savingsOpportunity.amount.toLocaleString()}/year
                   </div>
                   <div className="text-sm text-blue-700 mt-1">
                     {summary.savingsOpportunity.recommendation}
