@@ -1,6 +1,5 @@
 // middleware.ts
 import { NextResponse, type NextRequest } from 'next/server';
-import { USER_ROLES, hasRoleAccess } from '@/lib/constants/roles';
 
 async function verifySession(
   sessionCookie: string | undefined,
@@ -32,12 +31,15 @@ async function attemptRefresh(request: NextRequest): Promise<string[] | null> {
   const refreshToken = request.cookies.get('refresh_token')?.value;
   if (!refreshToken) return null;
   try {
-    const refreshResponse = await fetch(new URL('/api/auth/refresh', request.url).toString(), {
-      method: 'POST',
-      headers: {
-        Cookie: `refresh_token=${refreshToken}`,
+    const refreshResponse = await fetch(
+      new URL('/api/auth/refresh', request.url).toString(),
+      {
+        method: 'POST',
+        headers: {
+          Cookie: `refresh_token=${refreshToken}`,
+        },
       },
-    });
+    );
     if (!refreshResponse.ok) return null;
     const setCookie = refreshResponse.headers.get('set-cookie');
     return setCookie ? [setCookie] : [];
@@ -68,7 +70,6 @@ export async function middleware(request: NextRequest) {
       sessionIsValid = true;
     }
   }
-
 
   if (sessionIsValid && isAuthPage) {
     const res = NextResponse.redirect(new URL('/', request.url));

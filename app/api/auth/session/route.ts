@@ -2,7 +2,10 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { adminAuth } from '@/lib/firebase/admin';
-import { storeRefreshToken, revokeRefreshToken } from '@/lib/auth/refresh-tokens';
+import {
+  storeRefreshToken,
+  revokeRefreshToken,
+} from '@/lib/auth/refresh-tokens';
 
 // The name of the session cookie.
 const SESSION_COOKIE_NAME = '__session';
@@ -17,14 +20,19 @@ export async function POST(request: Request) {
     const { idToken, refreshToken } = body;
 
     if (!idToken || !refreshToken) {
-      return NextResponse.json({ error: 'ID and refresh tokens are required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'ID and refresh tokens are required' },
+        { status: 400 },
+      );
     }
 
     const decoded = await adminAuth.verifyIdToken(idToken);
 
     // Short-lived session cookie (1 hour)
     const expiresIn = 60 * 60 * 1000;
-    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, {
+      expiresIn,
+    });
 
     // Persist refresh token and set cookies
     await storeRefreshToken(refreshToken, decoded.uid);
@@ -49,7 +57,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'success' });
   } catch (error: any) {
     console.error('Session creation error:', error);
-    return NextResponse.json({ error: 'Failed to create session', details: error.message }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Failed to create session', details: error.message },
+      { status: 401 },
+    );
+  }
+}
+
+/**
+ * GET handler to retrieve the current session details.
+ */
+export async function GET() {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+    if (!sessionCookie) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const { uid, email, role, companyId } = decoded as any;
+
+    return NextResponse.json({ uid, email, role, companyId });
+  } catch (error) {
+    console.error('Session retrieval error:', error);
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 }
 
@@ -83,6 +116,9 @@ export async function DELETE() {
     return NextResponse.json({ status: 'success' });
   } catch (error: any) {
     console.error('Session deletion error:', error);
-    return NextResponse.json({ error: 'Failed to delete session', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete session', details: error.message },
+      { status: 500 },
+    );
   }
 }

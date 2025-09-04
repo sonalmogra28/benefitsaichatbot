@@ -35,4 +35,6 @@ if (!fs.existsSync(typeDir)) {
 fs.writeFileSync(patchFile, typePatchContent.trim());
 
 console.log('✅ Created AI SDK type patch at:', patchFile);
-console.log('ℹ️  This is a temporary fix. Consider downgrading to a stable AI SDK version for production.');
+console.log(
+  'ℹ️  This is a temporary fix. Consider downgrading to a stable AI SDK version for production.',
+);
