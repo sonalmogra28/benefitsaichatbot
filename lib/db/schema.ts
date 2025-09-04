@@ -33,7 +33,15 @@ export interface User extends DocumentBase {
 // Benefit Plan Schema
 export interface BenefitPlan extends DocumentBase {
   name: string;
-  type: 'health' | 'dental' | 'vision' | 'life' | 'disability' | '401k' | 'hsa' | 'fsa';
+  type:
+    | 'health'
+    | 'dental'
+    | 'vision'
+    | 'life'
+    | 'disability'
+    | '401k'
+    | 'hsa'
+    | 'fsa';
   provider: string;
   description: string;
   annualCost: number; // Base annual cost for employee

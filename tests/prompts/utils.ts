@@ -152,6 +152,17 @@ export const getResponseChunksByPrompt = (
         usage: { inputTokens: 3, outputTokens: 10, totalTokens: 13 },
       },
     ];
+  } else if (
+    compareMessages(recentMessage, TEST_PROMPTS.USER_DOCUMENT_ATTACHMENT)
+  ) {
+    return [
+      ...textToDeltas('This is a test document for the benefits platform.'),
+      {
+        type: 'finish',
+        finishReason: 'stop',
+        usage: { inputTokens: 3, outputTokens: 10, totalTokens: 13 },
+      },
+    ];
   } else if (compareMessages(recentMessage, TEST_PROMPTS.USER_TEXT_ARTIFACT)) {
     const toolCallId = generateId();
 

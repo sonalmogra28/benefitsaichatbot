@@ -23,7 +23,6 @@ export interface SearchResult {
   chunk: Chunk;
   score: number;
 }
-
 class RAGSystem {
   async processDocument(
     documentId: string,
@@ -34,6 +33,7 @@ class RAGSystem {
     try {
       const chunks = this.splitIntoChunks(content);
       const chunksToUpsert: { id: string; embedding: number[] }[] = [];
+
 
       for (let i = 0; i < chunks.length; i++) {
         const chunkContent = chunks[i];
@@ -52,7 +52,7 @@ class RAGSystem {
         await adminDb.collection('document_chunks').doc(chunkId).set(chunkData);
 
         if (embedding.length > 0) {
-          chunksToUpsert.push({ id: chunkId, embedding });
+          chunksToUpsert.push({ id: chunkId, embedding, companyId });
         }
       }
 
@@ -120,11 +120,11 @@ class RAGSystem {
     }
 
     const chunkIds = neighbors.map((n) => n.datapoint.datapointId);
+
     const chunkDocs = await adminDb
       .collection('document_chunks')
       .where('id', 'in', chunkIds)
       .get();
-
     const chunksById = new Map<string, Chunk>();
     chunkDocs.forEach((doc) => chunksById.set(doc.id, doc.data() as Chunk));
 

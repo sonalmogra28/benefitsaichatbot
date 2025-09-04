@@ -23,7 +23,10 @@ interface CreateCompanyDialogProps {
   onSuccess?: () => void;
 }
 
-export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialogProps) {
+export function CreateCompanyDialog({
+  children,
+  onSuccess,
+}: CreateCompanyDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,7 +38,7 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
     employeeCount: '',
     industry: '',
     description: '',
-    planType: 'standard'
+    planType: 'standard',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,7 +53,7 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
         },
         body: JSON.stringify({
           ...formData,
-          employeeCount: Number.parseInt(formData.employeeCount) || 0
+          employeeCount: Number.parseInt(formData.employeeCount) || 0,
         }),
       });
 
@@ -59,10 +62,10 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
       }
 
       const data = await response.json();
-      
+
       toast.success('Company created successfully!');
       setOpen(false);
-      
+
       // Reset form
       setFormData({
         name: '',
@@ -72,7 +75,7 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
         employeeCount: '',
         industry: '',
         description: '',
-        planType: 'standard'
+        planType: 'standard',
       });
 
       if (onSuccess) {
@@ -89,9 +92,9 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -110,10 +113,11 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
           <DialogHeader>
             <DialogTitle>Create New Company</DialogTitle>
             <DialogDescription>
-              Add a new company to the benefits platform. The admin will receive an invitation email.
+              Add a new company to the benefits platform. The admin will receive
+              an invitation email.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
@@ -128,7 +132,7 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
                 required
               />
             </div>
-            
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="domain" className="text-right">
                 Domain
@@ -233,9 +237,9 @@ export function CreateCompanyDialog({ children, onSuccess }: CreateCompanyDialog
           </div>
 
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setOpen(false)}
               disabled={loading}
             >

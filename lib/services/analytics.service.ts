@@ -1,10 +1,10 @@
 import { db } from '@/lib/firebase';
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
-  orderBy, 
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy,
   limit,
   Timestamp,
 } from 'firebase/firestore';
@@ -75,17 +75,17 @@ class AnalyticsService {
       // Get active users (last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       const activeUsersQuery = query(
         collection(db, 'users'),
-        where('lastActive', '>=', Timestamp.fromDate(thirtyDaysAgo))
+        where('lastActive', '>=', Timestamp.fromDate(thirtyDaysAgo)),
       );
       const activeUsersSnapshot = await getDocs(activeUsersQuery);
       const activeUsers = activeUsersSnapshot.size;
 
       // Calculate chat messages and other metrics
       let chatMessages = 0;
-      conversationsSnapshot.forEach(doc => {
+      conversationsSnapshot.forEach((doc) => {
         const data = doc.data();
         chatMessages += data.messages?.length || 0;
       });
@@ -98,7 +98,7 @@ class AnalyticsService {
         activeUsers,
         chatMessages,
         apiCalls: 0, // TODO: Implement API call tracking
-        storageUsed: 0 // TODO: Implement storage tracking
+        storageUsed: 0, // TODO: Implement storage tracking
       };
     } catch (error) {
       console.error('Error fetching platform analytics:', error);
@@ -111,7 +111,7 @@ class AnalyticsService {
       // Get company users
       const usersQuery = query(
         collection(db, 'users'),
-        where('companyId', '==', companyId)
+        where('companyId', '==', companyId),
       );
       const usersSnapshot = await getDocs(usersQuery);
       const employeeCount = usersSnapshot.size;
@@ -119,9 +119,9 @@ class AnalyticsService {
       // Get active employees (last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       let activeEmployees = 0;
-      usersSnapshot.forEach(doc => {
+      usersSnapshot.forEach((doc) => {
         const data = doc.data();
         if (data.lastActive && data.lastActive.toDate() >= thirtyDaysAgo) {
           activeEmployees++;
@@ -131,7 +131,7 @@ class AnalyticsService {
       // Get company documents
       const documentsQuery = query(
         collection(db, 'documents'),
-        where('companyId', '==', companyId)
+        where('companyId', '==', companyId),
       );
       const documentsSnapshot = await getDocs(documentsQuery);
       const documentsCount = documentsSnapshot.size;
@@ -139,7 +139,7 @@ class AnalyticsService {
       // Get company conversations
       const conversationsQuery = query(
         collection(db, 'conversations'),
-        where('companyId', '==', companyId)
+        where('companyId', '==', companyId),
       );
       const conversationsSnapshot = await getDocs(conversationsQuery);
       const conversationsCount = conversationsSnapshot.size;
@@ -148,9 +148,9 @@ class AnalyticsService {
       const thisMonth = new Date();
       thisMonth.setDate(1);
       thisMonth.setHours(0, 0, 0, 0);
-      
+
       let monthlyChats = 0;
-      conversationsSnapshot.forEach(doc => {
+      conversationsSnapshot.forEach((doc) => {
         const data = doc.data();
         if (data.createdAt && data.createdAt.toDate() >= thisMonth) {
           monthlyChats++;
@@ -158,9 +158,10 @@ class AnalyticsService {
       });
 
       // Calculate enrollment rate
-      const enrollmentRate = employeeCount > 0 
-        ? Math.round((activeEmployees / employeeCount) * 100)
-        : 0;
+      const enrollmentRate =
+        employeeCount > 0
+          ? Math.round((activeEmployees / employeeCount) * 100)
+          : 0;
 
       return {
         companyId,
@@ -170,7 +171,7 @@ class AnalyticsService {
         conversationsCount,
         monthlyChats,
         enrollmentRate,
-        averageCostPerEmployee: 0 // TODO: Implement cost tracking
+        averageCostPerEmployee: 0, // TODO: Implement cost tracking
       };
     } catch (error) {
       console.error('Error fetching company analytics:', error);
@@ -178,27 +179,27 @@ class AnalyticsService {
     }
   }
 
-  async getUserActivity(userId?: string, companyId?: string): Promise<UserActivity[]> {
+  async getUserActivity(
+    userId?: string,
+    companyId?: string,
+  ): Promise<UserActivity[]> {
     try {
       let usersQuery: any;
-      
+
       if (userId) {
-        usersQuery = query(
-          collection(db, 'users'),
-          where('uid', '==', userId)
-        );
+        usersQuery = query(collection(db, 'users'), where('uid', '==', userId));
       } else if (companyId) {
         usersQuery = query(
           collection(db, 'users'),
           where('companyId', '==', companyId),
           orderBy('lastActive', 'desc'),
-          limit(50)
+          limit(50),
         );
       } else {
         usersQuery = query(
           collection(db, 'users'),
           orderBy('lastActive', 'desc'),
-          limit(100)
+          limit(100),
         );
       }
 
@@ -207,16 +208,16 @@ class AnalyticsService {
 
       for (const userDoc of usersSnapshot.docs) {
         const userData = userDoc.data();
-        
+
         // Get user's conversations
         const conversationsQuery = query(
           collection(db, 'conversations'),
-          where('userId', '==', userDoc.id)
+          where('userId', '==', userDoc.id),
         );
         const conversationsSnapshot = await getDocs(conversationsQuery);
-        
+
         let messageCount = 0;
-        conversationsSnapshot.forEach(doc => {
+        conversationsSnapshot.forEach((doc) => {
           const data = doc.data();
           messageCount += data.messages?.length || 0;
         });
@@ -227,7 +228,7 @@ class AnalyticsService {
           lastActive: userData.lastActive?.toDate() || new Date(),
           conversationCount: conversationsSnapshot.size,
           messageCount,
-          documentsViewed: userData.documentsViewed || 0
+          documentsViewed: userData.documentsViewed || 0,
         });
       }
 
@@ -241,34 +242,34 @@ class AnalyticsService {
   async getChatAnalytics(companyId?: string): Promise<ChatAnalytics> {
     try {
       let conversationsQuery: any;
-      
+
       if (companyId) {
         conversationsQuery = query(
           collection(db, 'conversations'),
-          where('companyId', '==', companyId)
+          where('companyId', '==', companyId),
         );
       } else {
         conversationsQuery = query(collection(db, 'conversations'));
       }
 
       const conversationsSnapshot = await getDocs(conversationsQuery);
-      
+
       let totalMessages = 0;
       const topQuestions: { [key: string]: number } = {};
       const hourlyActivity: { [key: number]: number } = {};
-      
-      conversationsSnapshot.forEach(doc => {
+
+      conversationsSnapshot.forEach((doc) => {
         const data = doc.data();
         const messages = data.messages || [];
         totalMessages += messages.length;
-        
+
         // Analyze messages for top questions
         messages.forEach((msg: any) => {
           if (msg.role === 'user' && msg.content) {
             const question = msg.content.substring(0, 100);
             topQuestions[question] = (topQuestions[question] || 0) + 1;
           }
-          
+
           // Track hourly activity
           if (msg.createdAt) {
             const hour = new Date(msg.createdAt).getHours();
@@ -287,13 +288,14 @@ class AnalyticsService {
       const peakHours = Object.entries(hourlyActivity)
         .map(([hour, count]) => ({
           hour: Number.parseInt(hour),
-          count
+          count,
         }))
         .sort((a, b) => a.hour - b.hour);
 
-      const averageMessagesPerChat = conversationsSnapshot.size > 0
-        ? Math.round(totalMessages / conversationsSnapshot.size)
-        : 0;
+      const averageMessagesPerChat =
+        conversationsSnapshot.size > 0
+          ? Math.round(totalMessages / conversationsSnapshot.size)
+          : 0;
 
       return {
         totalChats: conversationsSnapshot.size,
@@ -301,7 +303,7 @@ class AnalyticsService {
         topQuestions: sortedQuestions,
         peakHours,
         averageResponseTime: 0, // TODO: Implement response time tracking
-        satisfactionRate: 0 // TODO: Implement satisfaction tracking
+        satisfactionRate: 0, // TODO: Implement satisfaction tracking
       };
     } catch (error) {
       console.error('Error fetching chat analytics:', error);
@@ -319,7 +321,7 @@ class AnalyticsService {
         storageBytes: 0,
         functionInvocations: 0,
         authUsers: 0,
-        bandwidthBytes: 0
+        bandwidthBytes: 0,
       };
     } catch (error) {
       console.error('Error fetching system metrics:', error);
