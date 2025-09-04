@@ -136,33 +136,39 @@ To use Firestore and Vertex AI features:
    - `VERTEX_AI_INDEX_ENDPOINT_ID`
    - `DOCUMENT_AI_PROCESSOR_ID`
 
+
+## Quick Start Commands
+
 ### Development
 ```bash
+# Install dependencies
+pnpm install
+
 # Start development server
-pnpm dev
+pnpm run dev
+
+# Start Firebase emulators
+firebase emulators:start
+```
+
+### Build & Testing
+```bash
+# Build application
+pnpm run build
+
+# Type checking
+pnpm run typecheck
 
 # Run tests
 pnpm test
 
-# Check types
-pnpm tsc --noEmit
+# Linting
+pnpm run lint
+pnpm run lint:fix
 
-# Lint and format
-pnpm lint:fix
-pnpm format
-```
+# Format code
+pnpm run format
 
-
-### Database Management
-```bash
-# Generate migration
-pnpm db:generate
-
-# Run migrations
-pnpm db:migrate
-
-# Push schema changes (dev only)
-pnpm db:push
 ```
 
 ## 🧪 Testing Strategy
