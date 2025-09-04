@@ -1,7 +1,13 @@
 # Triggering a new build with the correct IAM permissions
 env:
-  - variable: FIREBASE_SERVICE_ACCOUNT_KEY
-    secret: FIREBASE_SERVICE_ACCOUNT_KEY_SECRET
+  - variable: FIREBASE_PROJECT_ID
+    secret: FIREBASE_PROJECT_ID_SECRET
+    availability: [BUILD, RUNTIME]
+  - variable: FIREBASE_CLIENT_EMAIL
+    secret: FIREBASE_CLIENT_EMAIL_SECRET
+    availability: [BUILD, RUNTIME]
+  - variable: FIREBASE_PRIVATE_KEY
+    secret: FIREBASE_PRIVATE_KEY_SECRET
     availability: [BUILD, RUNTIME]
   - variable: GOOGLE_GENERATIVE_AI_API_KEY
     secret: GOOGLE_GENERATIVE_AI_API_KEY_SECRET

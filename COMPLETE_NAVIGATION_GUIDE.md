@@ -14,9 +14,9 @@ All backend services are now implemented in `/functions/src/index.ts`:
 - **Scheduled Jobs**: Auto-cleanup of old chats
 
 ### 2. Your API Keys Are Active
-- ✅ Firebase: `AIzaSyDMquDKgsDoXjBcqEnO5vhgizeMKXofVhs`
-- ✅ Gemini AI: `AIzaSyAmDLmI51z4hHBS9FKgxY9Vzm3TTYjbDkk`
-- ✅ Resend Email: `re_eNcTTXnx_6UaqXK8eP2TfSCS6YZhFGNa5`
+- ✅ Firebase: `[REDACTED]`
+- ✅ Gemini AI: `[REDACTED]`
+- ✅ Resend Email: `[REDACTED]`
 
 ## 📱 How to Navigate the Application
 
@@ -210,7 +210,7 @@ firebase functions:shell
 **Issue**: No response from chat
 **Solution**: Check that Gemini API key is set in functions environment:
 ```bash
-firebase functions:config:set gemini.key="AIzaSyAmDLmI51z4hHBS9FKgxY9Vzm3TTYjbDkk"
+firebase functions:config:set gemini.key="[REDACTED]"
 ```
 
 ## 📊 What's Now Working
