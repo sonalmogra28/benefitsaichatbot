@@ -72,14 +72,13 @@ export async function processDocument(documentId: string) {
       },
     }));
 
-    // Generate embeddings and store in Vertex AI
-    const embeddings = await generateEmbeddings(documentChunks.map(c => c.text));
-    const vectorsToUpsert = documentChunks.map((chunk, i) => ({
-      id: chunk.id,
-      embedding: embeddings[i] || [],
-    }));
-    await vectorSearchService.upsertChunks(vectorsToUpsert);
-    const vectorsUpserted = vectorsToUpsert.length;
+
+    // Store in Vertex AI
+    const { status: upsertStatus, vectorsUpserted } = await upsertDocumentChunks(
+      document.companyId,
+      documentChunks,
+    );
+
 
     // Update document status to processed
     await adminDb.collection('documents').doc(documentId).update({
@@ -99,7 +98,7 @@ export async function processDocument(documentId: string) {
     // }
 
     return {
-      success: true,
+      success: upsertStatus === 'success',
       chunksProcessed: chunks.length,
       vectorsStored: vectorsUpserted,
     };

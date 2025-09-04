@@ -86,15 +86,14 @@ async function testDocumentProcessing() {
         },
       }));
 
-    const embeddings = await generateEmbeddings(documentChunks.map(c => c.text));
-    const toUpsert = documentChunks.map((chunk, i) => ({
-      id: chunk.id,
-      embedding: embeddings[i] || [],
-    }));
-    await vectorSearchService.upsertChunks(toUpsert);
-    const vectorsUpserted = toUpsert.length;
-    
+    const { status, vectorsUpserted } = await upsertDocumentChunks(
+      testDocument.companyId,
+      documentChunks
+    );
+
+
     console.log(`✅ Document processed and upserted successfully`);
+    console.log(`   Status: ${status}`);
     console.log(`   Vectors stored: ${vectorsUpserted}\n`);
 
     // Cleanup

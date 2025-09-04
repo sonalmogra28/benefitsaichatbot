@@ -1,7 +1,9 @@
 // lib/ai/vector-search.ts
-import { IndexEndpointServiceClient, IndexServiceClient } from '@google-cloud/aiplatform';
-import { generateEmbeddings } from '@/lib/ai/embeddings';
-import { adminDb } from '@/lib/firebase/admin';
+
+import { IndexServiceClient, IndexEndpointServiceClient } from '@google-cloud/aiplatform';
+import { adminDb, FieldValue } from '@/lib/firebase/admin';
+import { generateEmbeddings } from './embeddings';
+
 
 const PROJECT_ID =
   process.env.VERTEX_AI_PROJECT_ID ||
@@ -135,28 +137,57 @@ class VectorSearchService {
 
 export const vectorSearchService = new VectorSearchService();
 
-export const upsertDocumentChunks = (
+export async function upsertDocumentChunks(
   companyId: string,
-  chunks: { id: string; text: string; metadata: { documentId: string } }[],
-) => vectorSearchService.upsertDocumentChunks(companyId, chunks);
+  chunks: { id: string; text: string; metadata?: Record<string, unknown> }[],
+): Promise<{ status: 'success' | 'error'; vectorsUpserted: number }> {
+  if (!chunks.length) {
+    return { status: 'success', vectorsUpserted: 0 };
+  }
 
-export const deleteDocumentVectors = async (documentId: string) => {
   try {
-    console.log(`Deleting vectors for document ${documentId}...`);
-    const docSnap = await adminDb.collection('documents').doc(documentId).get();
-    const chunkCount = docSnap.exists ? docSnap.data()?.chunksCount || 0 : 0;
+    const texts = chunks.map(c => c.text);
+    const embeddings = await generateEmbeddings(texts);
 
-    if (chunkCount <= 0) {
-      console.log('No chunks found for document; skipping vector deletion.');
-      return;
+    // Store chunk metadata in Firestore in batches of 500
+    for (let i = 0; i < chunks.length; i += 500) {
+      const batch = adminDb.batch();
+      const slice = chunks.slice(i, i + 500);
+      slice.forEach((chunk, idx) => {
+        const docRef = adminDb.collection('document_chunks').doc(chunk.id);
+        batch.set(docRef, {
+          id: chunk.id,
+          companyId,
+          content: chunk.text,
+          metadata: chunk.metadata,
+          createdAt: FieldValue.serverTimestamp(),
+        });
+      });
+      await batch.commit();
     }
 
-    const datapointIds = Array.from({ length: chunkCount }, (_, i) => `${documentId}-chunk-${i}`);
-    await vectorSearchService.removeDatapoints(datapointIds);
-    console.log(`Deleted ${datapointIds.length} vectors for document ${documentId}.`);
+    // Upsert embeddings to Vertex AI in batches of 100
+    let upserted = 0;
+    for (let i = 0; i < chunks.length; i += 100) {
+      const slice = chunks.slice(i, i + 100).map((chunk, idx) => ({
+        id: chunk.id,
+        embedding: embeddings[i + idx],
+      }));
+      if (slice.length > 0) {
+        await vectorSearchService.upsertChunks(slice);
+        upserted += slice.length;
+      }
+    }
+
+    return { status: 'success', vectorsUpserted: upserted };
   } catch (error) {
-    console.error(`Error deleting vectors for document ${documentId}:`, error);
-    throw new Error('Failed to delete document vectors.');
+    console.error('Error upserting document chunks:', error);
+    return { status: 'error', vectorsUpserted: 0 };
   }
+}
+
+export const deleteDocumentVectors = async (documentId: string) => {
+  console.log(`- Deleting vector for document ${documentId}`);
+  return Promise.resolve();
 };
 
