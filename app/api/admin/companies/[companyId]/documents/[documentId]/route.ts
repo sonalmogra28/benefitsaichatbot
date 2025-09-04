@@ -21,7 +21,7 @@ export const DELETE = withAuth(
       }
 
       // 2. Delete vectors from the vector database
-      await deleteDocumentVectors(documentId);
+      await deleteDocumentVectors(companyId, documentId);
 
       // 3. Delete the document record from Firestore
       await documentService.deleteDocument(companyId, documentId);
