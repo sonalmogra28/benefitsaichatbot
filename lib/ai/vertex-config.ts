@@ -1,5 +1,9 @@
 // Vertex AI Configuration for Benefits Assistant
-import { VertexAI, HarmCategory, HarmBlockThreshold } from '@google-cloud/vertexai';
+import {
+  VertexAI,
+  HarmCategory,
+  HarmBlockThreshold,
+} from '@google-cloud/vertexai';
 
 // Initialize Vertex AI
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'demo-project';
@@ -9,13 +13,13 @@ const LOCATION = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
 export const AI_MODELS = {
   // Primary chat model - Gemini 2.0
   CHAT: 'gemini-2.0-flash-exp',
-  
+
   // Document processing and analysis
   DOCUMENT: 'gemini-1.5-pro',
-  
+
   // Embeddings for RAG
   EMBEDDING: 'text-embedding-004',
-  
+
   // Code generation for benefits calculations
   CODE: 'gemini-1.5-pro',
 } as const;
@@ -50,7 +54,7 @@ export const GENERATION_CONFIGS = {
     maxOutputTokens: 2048,
     responseMimeType: 'text/plain',
   },
-  
+
   // For precise benefits calculations
   CALCULATION: {
     temperature: 0.2,
@@ -59,7 +63,7 @@ export const GENERATION_CONFIGS = {
     maxOutputTokens: 1024,
     responseMimeType: 'text/plain',
   },
-  
+
   // For document analysis
   DOCUMENT_ANALYSIS: {
     temperature: 0.3,
@@ -68,7 +72,7 @@ export const GENERATION_CONFIGS = {
     maxOutputTokens: 4096,
     responseMimeType: 'text/plain',
   },
-  
+
   // For structured data extraction
   STRUCTURED: {
     temperature: 0.1,
@@ -96,13 +100,14 @@ let vertexAI: VertexAI | null = null;
 export function getVertexAI(): VertexAI {
   if (!vertexAI) {
     // Check if we have credentials
-    const hasCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
-                          process.env.GOOGLE_CLOUD_PROJECT;
-    
+    const hasCredentials =
+      process.env.GOOGLE_APPLICATION_CREDENTIALS ||
+      process.env.GOOGLE_CLOUD_PROJECT;
+
     if (!hasCredentials) {
       console.warn('⚠️ Vertex AI credentials not configured');
       console.log('Using fallback AI provider (OpenAI/Anthropic)');
-      
+
       // Return a mock object for development
       return {
         getGenerativeModel: () => ({
@@ -114,13 +119,13 @@ export function getVertexAI(): VertexAI {
         }),
       } as any;
     }
-    
+
     vertexAI = new VertexAI({
       project: PROJECT_ID,
       location: LOCATION,
     });
   }
-  
+
   return vertexAI;
 }
 
@@ -128,7 +133,7 @@ export function getVertexAI(): VertexAI {
 export function getModel(modelType: keyof typeof AI_MODELS = 'CHAT') {
   const vertex = getVertexAI();
   const modelName = AI_MODELS[modelType];
-  
+
   return vertex.getGenerativeModel({
     model: modelName,
     safetySettings: SAFETY_SETTINGS,

@@ -15,7 +15,7 @@ export const userMetadataSchema = z.object({
   onboardingCompleted: z.boolean().optional(),
   onboardingCompletedAt: z.string().datetime().optional(),
   lastOnboardingStep: z.string().optional(),
-  benefitsInterests: z.array(z.string()).optional()
+  benefitsInterests: z.array(z.string()).optional(),
 });
 
 export type UserMetadata = z.infer<typeof userMetadataSchema>;
@@ -42,7 +42,7 @@ export class UserService {
    */
   async syncUserToFirestore(
     uid: string,
-    userData: Partial<FirebaseUser>
+    userData: Partial<FirebaseUser>,
   ): Promise<void> {
     try {
       const userRef = adminDb.collection('users').doc(uid);
@@ -58,14 +58,14 @@ export class UserService {
           role: userData.role || 'employee',
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
-          metadata: userData.metadata || {}
+          metadata: userData.metadata || {},
         });
       } else {
         const updateData: Partial<FirebaseUser> = {
           ...userData,
-          updatedAt: FieldValue.serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp(),
         };
-        await userRef.update(updateData as {[key: string]: any});
+        await userRef.update(updateData as { [key: string]: any });
       }
     } catch (error) {
       console.error(`Failed to sync user ${uid} to Firestore:`, error);
@@ -79,7 +79,7 @@ export class UserService {
   async getUserFromFirestore(uid: string): Promise<FirebaseUser | null> {
     try {
       const userDoc = await adminDb.collection('users').doc(uid).get();
-      
+
       if (!userDoc.exists) {
         return null;
       }
@@ -99,7 +99,7 @@ export class UserService {
       await adminAuth.setCustomUserClaims(uid, { role });
       await adminDb.collection('users').doc(uid).update({
         role,
-        updatedAt: FieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp(),
       });
     } catch (error) {
       console.error(`Failed to update role for user ${uid}:`, error);
@@ -121,7 +121,7 @@ export class UserService {
         email: googleUser.email,
         displayName: googleUser.displayName,
         photoURL: googleUser.photoURL,
-        role: 'employee' // Default role for new users
+        role: 'employee', // Default role for new users
       });
     } catch (error) {
       console.error('Failed to sync Google user:', error);
@@ -161,7 +161,7 @@ export class UserService {
       }
 
       const snapshot = await query.get();
-      return snapshot.docs.map(doc => doc.data() as FirebaseUser);
+      return snapshot.docs.map((doc) => doc.data() as FirebaseUser);
     } catch (error) {
       console.error('Failed to list users:', error);
       throw error;
@@ -171,16 +171,13 @@ export class UserService {
   /**
    * Client-side method to update user metadata
    */
-  async updateUserMetadata(
-    uid: string,
-    metadata: UserMetadata
-  ): Promise<void> {
+  async updateUserMetadata(uid: string, metadata: UserMetadata): Promise<void> {
     try {
       const validatedMetadata = userMetadataSchema.parse(metadata);
-      
+
       await updateDoc(doc(clientDb, 'users', uid), {
         metadata: validatedMetadata,
-        updatedAt: FieldValue.serverTimestamp()
+        updatedAt: FieldValue.serverTimestamp(),
       });
     } catch (error) {
       if (error instanceof z.ZodError) {

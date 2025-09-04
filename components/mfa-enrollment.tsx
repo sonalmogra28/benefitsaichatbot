@@ -23,15 +23,19 @@ export function MfaEnrollment() {
 
   const handleEnroll = async () => {
     try {
-      const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible',
-      });
+      const recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        'recaptcha-container',
+        {
+          size: 'invisible',
+        },
+      );
 
       if (!auth.currentUser) {
         setError('User not authenticated');
         return;
       }
-      
+
       const phoneInfoOptions = {
         phoneNumber,
         session: await auth.currentUser.getIdTokenResult(true),
@@ -40,15 +44,15 @@ export function MfaEnrollment() {
       const phoneAuthProvider = new PhoneAuthProvider(auth);
       const verificationId = await phoneAuthProvider.verifyPhoneNumber(
         phoneInfoOptions,
-        recaptchaVerifier
+        recaptchaVerifier,
       );
 
       setVerificationId(verificationId);
       setSuccess('Verification code sent to your phone.');
-      setError(null)
+      setError(null);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
-      setSuccess(null)
+      setSuccess(null);
     }
   };
 
@@ -58,8 +62,11 @@ export function MfaEnrollment() {
         setError('User not authenticated');
         return;
       }
-      
-      const cred = PhoneAuthProvider.credential(verificationId, verificationCode);
+
+      const cred = PhoneAuthProvider.credential(
+        verificationId,
+        verificationCode,
+      );
       const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(cred);
       const multiFactor = (auth.currentUser as any).multiFactor;
       if (multiFactor) {
@@ -71,7 +78,7 @@ export function MfaEnrollment() {
       setError(null);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred');
-      setSuccess(null)
+      setSuccess(null);
     }
   };
 

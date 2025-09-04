@@ -16,11 +16,11 @@
   },
   "dependency_audit": {
     "outdated_major_versions": [
-      {"package": "react", "current": "19.0.0-rc", "latest": "19.1.1"},
-      {"package": "react-dom", "current": "19.0.0-rc", "latest": "19.1.1"},
-      {"package": "tailwindcss", "current": "3.4.17", "latest": "4.1.11"},
-      {"package": "zod", "current": "3.25.68", "latest": "4.0.14"},
-      {"package": "@biomejs/biome", "current": "1.9.4", "latest": "2.1.3"}
+      { "package": "react", "current": "19.0.0-rc", "latest": "19.1.1" },
+      { "package": "react-dom", "current": "19.0.0-rc", "latest": "19.1.1" },
+      { "package": "tailwindcss", "current": "3.4.17", "latest": "4.1.11" },
+      { "package": "zod", "current": "3.25.68", "latest": "4.0.14" },
+      { "package": "@biomejs/biome", "current": "1.9.4", "latest": "2.1.3" }
     ],
     "security_vulnerabilities": [
       {
@@ -33,7 +33,10 @@
       {
         "severity": "moderate",
         "package": "esbuild",
-        "paths": ["drizzle-kit>esbuild@0.19.12", "drizzle-kit>@esbuild-kit/esm-loader>@esbuild-kit/core-utils>esbuild@0.18.20"],
+        "paths": [
+          "drizzle-kit>esbuild@0.19.12",
+          "drizzle-kit>@esbuild-kit/esm-loader>@esbuild-kit/core-utils>esbuild@0.18.20"
+        ],
         "vulnerability": "CORS misconfiguration allows cross-origin access to dev server",
         "impact": "Attackers can read compiled JS and source maps from dev server",
         "recommendation": "Review required"
@@ -58,32 +61,78 @@
     "authentication": {
       "provider": "Stack Auth",
       "handler": "/api/auth/[...stack]",
-      "roles": ["guest", "employee", "hr_admin", "company_admin", "platform_admin"],
+      "roles": [
+        "guest",
+        "employee",
+        "hr_admin",
+        "company_admin",
+        "platform_admin"
+      ],
       "session_management": "Cookie-based with Stack Auth SDK"
     },
     "user_journeys": {
       "employee": {
         "endpoints": [
-          {"path": "/api/onboarding", "method": "POST", "auth": "public", "purpose": "Initial user setup"},
-          {"path": "/api/chat", "method": "POST", "auth": "required", "purpose": "AI chat interactions"},
-          {"path": "/api/history", "method": "GET", "auth": "required", "purpose": "Chat history retrieval"},
-          {"path": "/api/document", "method": "GET/POST/DELETE", "auth": "required", "purpose": "Personal documents"}
+          {
+            "path": "/api/onboarding",
+            "method": "POST",
+            "auth": "public",
+            "purpose": "Initial user setup"
+          },
+          {
+            "path": "/api/chat",
+            "method": "POST",
+            "auth": "required",
+            "purpose": "AI chat interactions"
+          },
+          {
+            "path": "/api/history",
+            "method": "GET",
+            "auth": "required",
+            "purpose": "Chat history retrieval"
+          },
+          {
+            "path": "/api/document",
+            "method": "GET/POST/DELETE",
+            "auth": "required",
+            "purpose": "Personal documents"
+          }
         ],
         "data_access": "Company-scoped, own data only",
         "rate_limits": "20 messages/day"
       },
       "admin": {
         "endpoints": [
-          {"path": "/api/admin/companies/[id]/documents/upload", "method": "POST", "auth": "admin_required", "purpose": "Company document management"},
-          {"path": "/api/admin/documents/[id]", "method": "DELETE", "auth": "admin_required", "purpose": "Document deletion"}
+          {
+            "path": "/api/admin/companies/[id]/documents/upload",
+            "method": "POST",
+            "auth": "admin_required",
+            "purpose": "Company document management"
+          },
+          {
+            "path": "/api/admin/documents/[id]",
+            "method": "DELETE",
+            "auth": "admin_required",
+            "purpose": "Document deletion"
+          }
         ],
         "data_access": "Company-scoped, all users in company",
         "rate_limits": "200 messages/day"
       },
       "super_admin": {
         "endpoints": [
-          {"path": "/api/admin/cleanup-database", "method": "GET", "auth": "MISSING", "purpose": "Database maintenance"},
-          {"path": "/api/admin/*", "method": "ALL", "auth": "platform_admin", "purpose": "Cross-tenant management"}
+          {
+            "path": "/api/admin/cleanup-database",
+            "method": "GET",
+            "auth": "MISSING",
+            "purpose": "Database maintenance"
+          },
+          {
+            "path": "/api/admin/*",
+            "method": "ALL",
+            "auth": "platform_admin",
+            "purpose": "Cross-tenant management"
+          }
         ],
         "data_access": "All companies, all users",
         "rate_limits": "1000 messages/day"
@@ -100,21 +149,21 @@
       {
         "event": "chat_message",
         "endpoint": "/api/chat",
-        "data_flow": "Client → API → AI Service → Database → Pinecone",
+        "data_flow": "Client → API → AI Service → Database → Vertex AI Vector Search",
         "validation": "User ownership, rate limiting",
         "security": "Company isolation, message limits"
       },
       {
         "event": "document_upload",
         "endpoint": "/api/admin/companies/[id]/documents/upload",
-        "data_flow": "Client → API → Blob Storage → Database → Pinecone",
+        "data_flow": "Client → API → Blob Storage → Database → Vertex AI Vector Search",
         "validation": "Role-based access, file validation",
         "security": "Admin-only, company scoping"
       },
       {
         "event": "document_processing",
         "endpoint": "/api/cron/process-documents",
-        "data_flow": "Cron/Manual → API → Documents → Vectors → Pinecone",
+        "data_flow": "Cron/Manual → API → Documents → Vectors → Vertex AI Vector Search",
         "validation": "Cron secret (GET only)",
         "security": "POST endpoint unprotected"
       }

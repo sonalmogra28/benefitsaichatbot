@@ -11,7 +11,10 @@ const ALLOWED_FILE_TYPES = {
   // Documents
   'application/pdf': { ext: '.pdf', maxSize: 10 * 1024 * 1024 }, // 10MB
   'application/msword': { ext: '.doc', maxSize: 10 * 1024 * 1024 },
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { ext: '.docx', maxSize: 10 * 1024 * 1024 },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+    ext: '.docx',
+    maxSize: 10 * 1024 * 1024,
+  },
   // Images
   'image/jpeg': { ext: '.jpg', maxSize: 5 * 1024 * 1024 }, // 5MB
   'image/png': { ext: '.png', maxSize: 5 * 1024 * 1024 },
@@ -32,7 +35,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session || !session.uid) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 },
+      );
     }
 
     const formData = await req.formData();
@@ -43,14 +49,23 @@ export async function POST(req: NextRequest) {
     }
 
     const fileType = file.type.toLowerCase();
-    const fileConfig = ALLOWED_FILE_TYPES[fileType as keyof typeof ALLOWED_FILE_TYPES];
+    const fileConfig =
+      ALLOWED_FILE_TYPES[fileType as keyof typeof ALLOWED_FILE_TYPES];
 
     if (!fileConfig) {
-      return NextResponse.json({ error: 'File type not allowed' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'File type not allowed' },
+        { status: 400 },
+      );
     }
 
     if (file.size > fileConfig.maxSize) {
-      return NextResponse.json({ error: `File size exceeds maximum of ${fileConfig.maxSize / 1024 / 1024}MB` }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: `File size exceeds maximum of ${fileConfig.maxSize / 1024 / 1024}MB`,
+        },
+        { status: 400 },
+      );
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -82,9 +97,11 @@ export async function POST(req: NextRequest) {
       path: destination,
       publicUrl,
     });
-
   } catch (error) {
     console.error('Upload Error:', error);
-    return NextResponse.json({ error: 'Failed to upload file.' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to upload file.' },
+      { status: 500 },
+    );
   }
 }

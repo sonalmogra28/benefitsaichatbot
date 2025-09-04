@@ -15,7 +15,11 @@ vi.mock('@/lib/firebase/admin', () => {
   mockCollection.mockImplementation(() => ({
     doc: (id?: string) =>
       id
-        ? { id, set: vi.fn().mockResolvedValue(undefined), collection: mockCollection }
+        ? {
+            id,
+            set: vi.fn().mockResolvedValue(undefined),
+            collection: mockCollection,
+          }
         : { id: 'newChat', collection: mockCollection },
   }));
   mockDoc.mockImplementation(() => ({
@@ -36,14 +40,24 @@ vi.mock('firebase-admin/firestore', () => ({
 
 vi.mock('@/lib/ai/rag-system', () => ({
   ragSystem: {
-    search: vi.fn().mockResolvedValue([{ chunk: { id: 'c1', documentId: 'd1', content: 'ctx' }, score: 0.5 }]),
+    search: vi
+      .fn()
+      .mockResolvedValue([
+        { chunk: { id: 'c1', documentId: 'd1', content: 'ctx' }, score: 0.5 },
+      ]),
   },
 }));
 
 vi.mock('ai', () => ({
   streamText: vi.fn(async ({ onFinish }) => {
     if (onFinish) {
-      await onFinish({ text: 'response', toolCalls: null, toolResults: null, usage: {}, finishReason: 'stop' });
+      await onFinish({
+        text: 'response',
+        toolCalls: null,
+        toolResults: null,
+        usage: {},
+        finishReason: 'stop',
+      });
     }
     return { toDataStreamResponse: () => new NextResponse('ok') };
   }),
@@ -51,7 +65,10 @@ vi.mock('ai', () => ({
 
 describe('chat route POST', () => {
   it('returns 401 when headers missing', async () => {
-    const req = new Request('http://localhost', { method: 'POST', body: JSON.stringify({ messages: [] }) });
+    const req = new Request('http://localhost', {
+      method: 'POST',
+      body: JSON.stringify({ messages: [] }),
+    });
     const res = await POST(req as any);
     expect(res.status).toBe(401);
   });
@@ -64,7 +81,9 @@ describe('chat route POST', () => {
         'x-company-id': 'c1',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ messages: [{ id: 'm1', role: 'user', content: 'hi' }] }),
+      body: JSON.stringify({
+        messages: [{ id: 'm1', role: 'user', content: 'hi' }],
+      }),
     });
     const res = await POST(req as any);
     expect(res.status).toBe(200);
@@ -79,7 +98,9 @@ describe('chat route POST', () => {
         'x-company-id': 'c1',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ messages: [{ id: 'm1', role: 'user', content: 'hi' }] }),
+      body: JSON.stringify({
+        messages: [{ id: 'm1', role: 'user', content: 'hi' }],
+      }),
     });
     const res = await POST(req as any);
     expect(res.status).toBe(200);
@@ -94,7 +115,9 @@ describe('chat route POST', () => {
         'x-company-id': 'c1',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ messages: [{ id: 'm1', role: 'user', content: 'hi' }] }),
+      body: JSON.stringify({
+        messages: [{ id: 'm1', role: 'user', content: 'hi' }],
+      }),
     });
     const res = await POST(req as any);
     expect(res.status).toBe(500);

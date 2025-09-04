@@ -5,7 +5,7 @@ import { USER_ROLES } from '@/lib/constants/roles';
 
 async function handler(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const { role, companyId } = await req.json();
   const { id } = params;
@@ -13,7 +13,7 @@ async function handler(
   try {
     await adminAuth.setCustomUserClaims(id, { role, companyId });
     return NextResponse.json({ success: true });
-  } catch (error)  {
+  } catch (error) {
     return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }
