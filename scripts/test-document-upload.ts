@@ -85,12 +85,13 @@ async function testDocumentProcessing() {
         },
       }));
 
-    const vectorsUpserted = await upsertDocumentChunks(
+    const { status, vectorsUpserted } = await upsertDocumentChunks(
       testDocument.companyId,
       documentChunks
     );
-    
+
     console.log(`✅ Document processed and upserted successfully`);
+    console.log(`   Status: ${status}`);
     console.log(`   Vectors stored: ${vectorsUpserted}\n`);
 
     // Cleanup

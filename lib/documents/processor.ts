@@ -74,7 +74,7 @@ export async function processDocument(documentId: string) {
     }));
 
     // Store in Vertex AI
-    const vectorsUpserted = await upsertDocumentChunks(
+    const { status: upsertStatus, vectorsUpserted } = await upsertDocumentChunks(
       document.companyId,
       documentChunks,
     );
@@ -97,7 +97,7 @@ export async function processDocument(documentId: string) {
     // }
 
     return {
-      success: true,
+      success: upsertStatus === 'success',
       chunksProcessed: chunks.length,
       vectorsStored: vectorsUpserted,
     };
