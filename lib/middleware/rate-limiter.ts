@@ -1,6 +1,6 @@
 /**
  * Rate limiting middleware for API routes
- * Implements token bucket algorithm with Redis/Firestore backend
+ * Implements token bucket algorithm with Firestore backend
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
