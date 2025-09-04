@@ -5,7 +5,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AuthForm } from '@/components/auth-form';
-import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import {
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 
 export default function LoginPage() {
@@ -25,7 +29,11 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       // The onIdTokenChanged listener in the AuthProvider will handle the redirect
     } catch (err: any) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      if (
+        err.code === 'auth/user-not-found' ||
+        err.code === 'auth/wrong-password' ||
+        err.code === 'auth/invalid-credential'
+      ) {
         setError('Invalid email or password.');
       } else {
         setError('Login failed. Please try again.');

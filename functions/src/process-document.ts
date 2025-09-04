@@ -5,9 +5,11 @@ import * as pdf from 'pdf-parse';
 import * as mammoth from 'mammoth';
 import { generateEmbeddings } from '../../lib/ai/embeddings';
 import { vectorSearchService } from '../../lib/ai/vector-search';
+// The Cloud Storage bucket to process documents from. This must be set via
+// environment variable so the function doesn't accidentally process files from
+// unintended buckets.
+const BUCKET_NAME = process.env.GCLOUD_STORAGE_BUCKET;
 
-const BUCKET_NAME =
-  process.env.GCLOUD_STORAGE_BUCKET || 'your-default-bucket-name';
 
 async function getTextFromPdf(fileBuffer: Buffer): Promise<string> {
   const data = await pdf(fileBuffer);
@@ -25,7 +27,25 @@ export const processDocumentOnUpload = functions.storage
     const { bucket, name: filePath, contentType } = object;
 
     if (!filePath || !contentType) {
-      console.log('File path or content type is missing.');
+      console.error('File path or content type is missing.');
+      return;
+    }
+
+    if (!bucket) {
+      console.error('Storage event missing bucket information.');
+      return;
+    }
+
+    if (!BUCKET_NAME) {
+      console.error('GCLOUD_STORAGE_BUCKET environment variable is not set.');
+      return;
+    }
+
+    // Only process events from the configured bucket to avoid unintended work.
+    if (bucket !== BUCKET_NAME) {
+      console.log(
+        `File from bucket ${bucket} ignored; expecting ${BUCKET_NAME}.`,
+      );
       return;
     }
 
@@ -48,10 +68,10 @@ export const processDocumentOnUpload = functions.storage
       );
       return;
     }
-    const documentDoc = snapshot.docs[0];
-    const documentRef = documentDoc.ref;
+
+    const documentRef = snapshot.docs[0].ref;
     const documentId = documentRef.id;
-    const companyId = documentDoc.get('companyId');
+
 
     try {
       console.log(`Processing document ${documentId} for file: ${filePath}`);
@@ -59,9 +79,9 @@ export const processDocumentOnUpload = functions.storage
         status: 'processing',
         updatedAt: FieldValue.serverTimestamp(),
       });
-
+      // Read the file from the configured bucket.
       const fileBuffer = await adminStorage
-        .bucket(bucket)
+        .bucket(BUCKET_NAME)
         .file(filePath)
         .download();
       let content = '';
@@ -93,10 +113,9 @@ export const processDocumentOnUpload = functions.storage
       const batch = adminDb.batch();
 
       chunks.forEach((chunk, index) => {
-        const chunkId = `${documentId}_chunk_${index}`;
-        const chunkRef = chunksCollectionRef.doc(chunkId);
+        const chunkRef = chunksCollectionRef.doc(`chunk_${index}`);
         batch.set(chunkRef, {
-          id: chunkId,
+
           content: chunk,
           chunkNumber: index + 1,
           charCount: chunk.length,
@@ -104,19 +123,6 @@ export const processDocumentOnUpload = functions.storage
       });
       await batch.commit();
 
-      if (companyId) {
-        const embeddings = await generateEmbeddings(chunks);
-        const upsertPayload = embeddings.map((embedding, index) => ({
-          id: `${documentId}_chunk_${index}`,
-          embedding,
-          companyId,
-        }));
-        await vectorSearchService.upsertChunks(upsertPayload);
-      } else {
-        console.warn(
-          `No companyId found for document ${documentId}; skipping vector upsert.`,
-        );
-      }
 
       await documentRef.update({
         status: 'processed',

@@ -1,14 +1,14 @@
 #!/usr/bin/env tsx
 // Seed Database with Sample Benefits Data
 
-import { db, } from '../lib/firebase/admin';
+import { db } from '../lib/firebase/admin';
 import { ragSystem } from '../lib/ai/rag-system';
 import { FieldValue } from 'firebase-admin/firestore';
 
 const SAMPLE_BENEFITS_DOCUMENTS = [
   {
-    title: "2024 Employee Health Benefits Guide",
-    type: "health_benefits",
+    title: '2024 Employee Health Benefits Guide',
+    type: 'health_benefits',
     content: `
 # 2024 Employee Health Benefits Guide
 
@@ -67,8 +67,8 @@ All plans cover preventive care at 100% with no deductible:
     `,
   },
   {
-    title: "Dental and Vision Benefits",
-    type: "dental_vision",
+    title: 'Dental and Vision Benefits',
+    type: 'dental_vision',
     content: `
 # Dental and Vision Benefits Guide
 
@@ -124,8 +124,8 @@ All plans cover preventive care at 100% with no deductible:
     `,
   },
   {
-    title: "Life and Disability Insurance",
-    type: "life_disability",
+    title: 'Life and Disability Insurance',
+    type: 'life_disability',
     content: `
 # Life and Disability Insurance Benefits
 
@@ -187,8 +187,8 @@ All plans cover preventive care at 100% with no deductible:
     `,
   },
   {
-    title: "Retirement and Savings Plans",
-    type: "retirement",
+    title: 'Retirement and Savings Plans',
+    type: 'retirement',
     content: `
 # Retirement and Savings Plans
 
@@ -268,8 +268,8 @@ All plans cover preventive care at 100% with no deductible:
     `,
   },
   {
-    title: "Employee Assistance and Wellness Programs",
-    type: "wellness",
+    title: 'Employee Assistance and Wellness Programs',
+    type: 'wellness',
     content: `
 # Employee Assistance and Wellness Programs
 
@@ -496,7 +496,7 @@ async function seedBenefitsData() {
       });
 
       console.log(`  📝 Processing: ${doc.title}`);
-      
+
       // Process document for RAG
       await ragSystem.processDocument(
         docRef.id,
@@ -506,7 +506,7 @@ async function seedBenefitsData() {
           title: doc.title,
           documentType: doc.type,
           uploadedAt: new Date(),
-        }
+        },
       );
 
       // Update document status
@@ -572,22 +572,26 @@ async function seedBenefitsData() {
     const faqs = [
       {
         question: 'When is open enrollment?',
-        answer: 'Open enrollment typically runs from November 1-30 each year. You\'ll receive email reminders starting in October.',
+        answer:
+          "Open enrollment typically runs from November 1-30 each year. You'll receive email reminders starting in October.",
         category: 'enrollment',
       },
       {
         question: 'Can I change my benefits mid-year?',
-        answer: 'You can only change benefits mid-year if you experience a qualifying life event such as marriage, divorce, birth/adoption, or loss of other coverage.',
+        answer:
+          'You can only change benefits mid-year if you experience a qualifying life event such as marriage, divorce, birth/adoption, or loss of other coverage.',
         category: 'enrollment',
       },
       {
         question: 'What is the difference between PPO and HMO?',
-        answer: 'PPO plans offer more flexibility to see any provider but cost more. HMO plans require you to stay in-network and get referrals but have lower costs.',
+        answer:
+          'PPO plans offer more flexibility to see any provider but cost more. HMO plans require you to stay in-network and get referrals but have lower costs.',
         category: 'health',
       },
       {
         question: 'How much can I contribute to my HSA?',
-        answer: 'For 2024, you can contribute up to $4,150 for individual coverage or $8,300 for family coverage. If you\'re 55+, you can contribute an additional $1,000.',
+        answer:
+          "For 2024, you can contribute up to $4,150 for individual coverage or $8,300 for family coverage. If you're 55+, you can contribute an additional $1,000.",
         category: 'hsa',
       },
     ];
@@ -605,39 +609,43 @@ async function seedBenefitsData() {
 
     // 6. Create analytics data
     console.log('📊 Creating analytics data...');
-    await db.collection('analytics').doc('demo-company-001').set({
-      companyId: 'demo-company-001',
-      metrics: {
-        totalEmployees: 523,
-        enrolledEmployees: 498,
-        averageAge: 34,
-        planDistribution: {
-          'ppo-standard': 245,
-          'hdhp-hsa': 178,
-          'hmo-basic': 75,
+    await db
+      .collection('analytics')
+      .doc('demo-company-001')
+      .set({
+        companyId: 'demo-company-001',
+        metrics: {
+          totalEmployees: 523,
+          enrolledEmployees: 498,
+          averageAge: 34,
+          planDistribution: {
+            'ppo-standard': 245,
+            'hdhp-hsa': 178,
+            'hmo-basic': 75,
+          },
+          monthlyPremiumCost: 285000,
+          employerContribution: 199500,
+          employeeContribution: 85500,
         },
-        monthlyPremiumCost: 285000,
-        employerContribution: 199500,
-        employeeContribution: 85500,
-      },
-      trends: {
-        enrollmentRate: 95.2,
-        hsaAdoption: 34.1,
-        preventiveCareUtilization: 67.8,
-      },
-      lastUpdated: FieldValue.serverTimestamp(),
-    });
+        trends: {
+          enrollmentRate: 95.2,
+          hsaAdoption: 34.1,
+          preventiveCareUtilization: 67.8,
+        },
+        lastUpdated: FieldValue.serverTimestamp(),
+      });
     console.log('✅ Analytics data created\n');
 
     console.log('🎉 Benefits data seeding completed successfully!');
     console.log('\n📌 Summary:');
     console.log('  - 1 Demo company');
     console.log('  - 3 Health benefit plans');
-    console.log(`  - ${SAMPLE_BENEFITS_DOCUMENTS.length} Documents processed for RAG`);
+    console.log(
+      `  - ${SAMPLE_BENEFITS_DOCUMENTS.length} Documents processed for RAG`,
+    );
     console.log('  - 2 Sample employees');
     console.log('  - 4 FAQ entries');
     console.log('  - Analytics dashboard data');
-    
   } catch (error) {
     console.error('❌ Error seeding benefits data:', error);
     process.exit(1);

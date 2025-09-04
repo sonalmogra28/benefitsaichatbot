@@ -13,7 +13,7 @@ export const GET = requireSuperAdmin(async (request: NextRequest) => {
     console.error('Error fetching system analytics:', error);
     return NextResponse.json(
       { error: 'Failed to fetch system analytics' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 });

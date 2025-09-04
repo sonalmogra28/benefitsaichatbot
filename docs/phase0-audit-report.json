@@ -2,61 +2,33 @@
   "timestamp": "2025-08-05T07:18:02.076Z",
   "dependencies": 96,
   "apiRoutes": {
-    "user": [
-      "/api/chat",
-      "/api/benefits/check-eligibility"
-    ],
-    "admin": [
-      "/api/admin/profile",
-      "/api/admin/users"
-    ],
-    "superAdmin": [
-      "/api/super-admin/profile",
-      "/api/super-admin/tenants"
-    ]
+    "user": ["/api/chat", "/api/benefits/check-eligibility"],
+    "admin": ["/api/admin/profile", "/api/admin/users"],
+    "superAdmin": ["/api/super-admin/profile", "/api/super-admin/tenants"]
   },
   "dataExchange": {
     "user": {
       "chat": {
         "method": "POST",
-        "data": [
-          "message",
-          "context"
-        ],
-        "response": [
-          "reply",
-          "sources"
-        ]
+        "data": ["message", "context"],
+        "response": ["reply", "sources"]
       },
       "eligibility": {
         "method": "POST",
-        "data": [
-          "userInfo"
-        ],
-        "response": [
-          "eligible",
-          "benefits"
-        ]
+        "data": ["userInfo"],
+        "response": ["eligible", "benefits"]
       }
     },
     "admin": {
       "profile": {
         "method": "GET",
         "data": [],
-        "response": [
-          "users",
-          "metrics"
-        ]
+        "response": ["users", "metrics"]
       },
       "users": {
         "method": "GET",
-        "data": [
-          "filters"
-        ],
-        "response": [
-          "userList",
-          "pagination"
-        ]
+        "data": ["filters"],
+        "response": ["userList", "pagination"]
       }
     }
   },

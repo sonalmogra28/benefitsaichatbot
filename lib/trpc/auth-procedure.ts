@@ -11,7 +11,10 @@ export const authProcedure = t.procedure.use(async ({ ctx, next }) => {
   }
 
   try {
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const decodedClaims = await adminAuth.verifySessionCookie(
+      sessionCookie,
+      true,
+    );
     return next({
       ctx: {
         ...ctx,

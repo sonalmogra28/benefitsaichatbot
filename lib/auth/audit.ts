@@ -1,5 +1,8 @@
 import { adminDb } from '@/lib/firebase/admin';
-import { FieldValue, type QueryDocumentSnapshot } from 'firebase-admin/firestore';
+import {
+  FieldValue,
+  type QueryDocumentSnapshot,
+} from 'firebase-admin/firestore';
 
 export interface AuditEvent {
   userId?: string;
@@ -31,10 +34,10 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
       success: event.success !== false,
       createdAt: FieldValue.serverTimestamp(),
     };
-    
+
     // Log to audit_logs collection
     await adminDb.collection('audit_logs').add(auditEntry);
-    
+
     // Also log to analytics_events for tracking
     await adminDb.collection('analytics_events').add({
       userId: event.userId || null,
@@ -60,9 +63,15 @@ export async function logAuditEvent(event: AuditEvent): Promise<void> {
  * Log a security event
  */
 export async function logSecurityEvent(
-  type: 'login' | 'logout' | 'permission_denied' | 'password_reset' | 'mfa_enabled' | 'mfa_disabled',
+  type:
+    | 'login'
+    | 'logout'
+    | 'permission_denied'
+    | 'password_reset'
+    | 'mfa_enabled'
+    | 'mfa_disabled',
   userId?: string,
-  details?: Record<string, any>
+  details?: Record<string, any>,
 ): Promise<void> {
   await logAuditEvent({
     userId,
@@ -81,7 +90,7 @@ export async function logApiAccess(
   method: string,
   userId?: string,
   statusCode?: number,
-  details?: Record<string, any>
+  details?: Record<string, any>,
 ): Promise<void> {
   await logAuditEvent({
     userId,
@@ -104,7 +113,7 @@ export async function logDataAccess(
   operation: 'read' | 'write' | 'delete',
   documentId?: string,
   userId?: string,
-  details?: Record<string, any>
+  details?: Record<string, any>,
 ): Promise<void> {
   await logAuditEvent({
     userId,
@@ -127,34 +136,34 @@ export async function getAuditLogs(
     startDate?: Date;
     endDate?: Date;
   },
-  limit = 100
+  limit = 100,
 ) {
   let query = adminDb.collection('audit_logs').orderBy('createdAt', 'desc');
-  
+
   if (filters.userId) {
     query = query.where('userId', '==', filters.userId);
   }
-  
+
   if (filters.companyId) {
     query = query.where('companyId', '==', filters.companyId);
   }
-  
+
   if (filters.action) {
     query = query.where('action', '==', filters.action);
   }
-  
+
   if (filters.startDate) {
     query = query.where('createdAt', '>=', filters.startDate);
   }
-  
+
   if (filters.endDate) {
     query = query.where('createdAt', '<=', filters.endDate);
   }
-  
+
   const snapshot = await query.limit(limit).get();
   return snapshot.docs.map((doc: QueryDocumentSnapshot) => ({
     id: doc.id,
-    ...doc.data()
+    ...doc.data(),
   }));
 }
 
@@ -162,47 +171,52 @@ export async function getAuditLogs(
  * Get recent security events for a user
  */
 export async function getUserSecurityEvents(userId: string, limit = 20) {
-  const snapshot = await adminDb.collection('audit_logs')
+  const snapshot = await adminDb
+    .collection('audit_logs')
     .where('userId', '==', userId)
     .where('resource', '==', 'auth')
     .orderBy('createdAt', 'desc')
     .limit(limit)
     .get();
-    
+
   return snapshot.docs.map((doc: QueryDocumentSnapshot) => ({
     id: doc.id,
-    ...doc.data()
+    ...doc.data(),
   }));
 }
 
 /**
  * Check for suspicious activity
  */
-export async function checkSuspiciousActivity(userId: string): Promise<boolean> {
+export async function checkSuspiciousActivity(
+  userId: string,
+): Promise<boolean> {
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-  
+
   // Check for multiple failed login attempts
-  const failedLogins = await adminDb.collection('audit_logs')
+  const failedLogins = await adminDb
+    .collection('audit_logs')
     .where('userId', '==', userId)
     .where('action', '==', 'login')
     .where('success', '==', false)
     .where('createdAt', '>=', oneHourAgo)
     .get();
-    
+
   if (failedLogins.size >= 5) {
     return true;
   }
-  
+
   // Check for permission denied events
-  const permissionDenied = await adminDb.collection('audit_logs')
+  const permissionDenied = await adminDb
+    .collection('audit_logs')
     .where('userId', '==', userId)
     .where('action', '==', 'permission_denied')
     .where('createdAt', '>=', oneHourAgo)
     .get();
-    
+
   if (permissionDenied.size >= 10) {
     return true;
   }
-  
+
   return false;
 }

@@ -3,16 +3,16 @@
  * Provides a clean API for all Firestore interactions
  */
 
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
+import {
+  collection,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
   deleteDoc,
-  query, 
-  where, 
-  orderBy, 
+  query,
+  where,
+  orderBy,
   limit,
   getDocs,
   onSnapshot,
@@ -23,20 +23,20 @@ import {
   serverTimestamp,
   increment,
   type Unsubscribe,
-  type QueryDocumentSnapshot
+  type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { db as firestore } from '@/lib/firebase/client';
-import type { 
-  Company, 
-  User, 
-  BenefitPlan, 
-  Conversation, 
-  Message, 
+import type {
+  Company,
+  User,
+  BenefitPlan,
+  Conversation,
+  Message,
   Document as DocType,
   Enrollment,
   AnalyticsEvent,
   Notification,
-  AuditLog
+  AuditLog,
 } from './models';
 
 /**
@@ -51,9 +51,9 @@ class BaseService<T extends DocumentData> {
       ...data,
       id: docRef.id,
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     } as unknown as T;
-    
+
     await setDoc(docRef, document);
     return { ...document, id: docRef.id } as T;
   }
@@ -61,7 +61,7 @@ class BaseService<T extends DocumentData> {
   async get(id: string): Promise<T | null> {
     const docRef = doc(firestore, this.collectionName, id);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() } as unknown as T;
     }
@@ -72,7 +72,7 @@ class BaseService<T extends DocumentData> {
     const docRef = doc(firestore, this.collectionName, id);
     await updateDoc(docRef, {
       ...data,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
   }
 
@@ -84,16 +84,22 @@ class BaseService<T extends DocumentData> {
   async list(constraints: QueryConstraint[] = []): Promise<T[]> {
     const q = query(collection(firestore, this.collectionName), ...constraints);
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc: QueryDocumentSnapshot) => ({ id: doc.id, ...doc.data() } as unknown as T));
+    return snapshot.docs.map(
+      (doc: QueryDocumentSnapshot) =>
+        ({ id: doc.id, ...doc.data() }) as unknown as T,
+    );
   }
 
   subscribe(
     constraints: QueryConstraint[],
-    callback: (items: T[]) => void
+    callback: (items: T[]) => void,
   ): Unsubscribe {
     const q = query(collection(firestore, this.collectionName), ...constraints);
     return onSnapshot(q, (snapshot) => {
-      const items = snapshot.docs.map((doc: QueryDocumentSnapshot) => ({ id: doc.id, ...doc.data() } as unknown as T));
+      const items = snapshot.docs.map(
+        (doc: QueryDocumentSnapshot) =>
+          ({ id: doc.id, ...doc.data() }) as unknown as T,
+      );
       callback(items);
     });
   }
@@ -111,10 +117,10 @@ export class CompanyService extends BaseService<Company> {
     const q = query(
       collection(firestore, this.collectionName),
       where('domain', '==', domain),
-      limit(1)
+      limit(1),
     );
     const snapshot = await getDocs(q);
-    
+
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
       return { id: doc.id, ...doc.data() } as Company;
@@ -123,15 +129,15 @@ export class CompanyService extends BaseService<Company> {
   }
 
   async getActiveCompanies(): Promise<Company[]> {
-    return this.list([
-      where('status', '==', 'active'),
-      orderBy('name', 'asc')
-    ]);
+    return this.list([where('status', '==', 'active'), orderBy('name', 'asc')]);
   }
 
-  async updateSubscription(companyId: string, subscription: Partial<Company['subscription']>): Promise<void> {
+  async updateSubscription(
+    companyId: string,
+    subscription: Partial<Company['subscription']>,
+  ): Promise<void> {
     await this.update(companyId, {
-      subscription: subscription as Company['subscription']
+      subscription: subscription as Company['subscription'],
     });
   }
 }
@@ -148,10 +154,10 @@ export class UserService extends BaseService<User> {
     const q = query(
       collection(firestore, this.collectionName),
       where('email', '==', email),
-      limit(1)
+      limit(1),
     );
     const snapshot = await getDocs(q);
-    
+
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
       return { id: doc.id, ...doc.data() } as unknown as User;
@@ -162,28 +168,31 @@ export class UserService extends BaseService<User> {
   async getUsersByCompany(companyId: string, role?: string): Promise<User[]> {
     const constraints: QueryConstraint[] = [
       where('companyId', '==', companyId),
-      where('status', '==', 'active')
+      where('status', '==', 'active'),
     ];
-    
+
     if (role) {
       constraints.push(where('role', '==', role));
     }
-    
+
     constraints.push(orderBy('createdAt', 'desc'));
-    
+
     return this.list(constraints);
   }
 
   async updateLastLogin(userId: string): Promise<void> {
     await this.update(userId, {
       'metadata.lastLoginAt': serverTimestamp(),
-      'metadata.loginCount': increment(1)
+      'metadata.loginCount': increment(1),
     } as Partial<User>);
   }
 
-  async updateProfile(userId: string, profile: Partial<User['profile']>): Promise<void> {
+  async updateProfile(
+    userId: string,
+    profile: Partial<User['profile']>,
+  ): Promise<void> {
     await this.update(userId, {
-      profile: profile as User['profile']
+      profile: profile as User['profile'],
     });
   }
 }
@@ -196,7 +205,10 @@ export class BenefitPlanService {
     return `companies/${companyId}/benefitPlans`;
   }
 
-  async create(companyId: string, data: Omit<BenefitPlan, 'id' | 'createdAt' | 'updatedAt'>): Promise<BenefitPlan> {
+  async create(
+    companyId: string,
+    data: Omit<BenefitPlan, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<BenefitPlan> {
     const colRef = collection(firestore, this.collectionPath(companyId));
     const docRef = doc(colRef);
     const plan = {
@@ -204,9 +216,9 @@ export class BenefitPlanService {
       id: docRef.id,
       companyId,
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     } as BenefitPlan;
-    
+
     await setDoc(docRef, plan);
     return { ...plan, id: docRef.id } as BenefitPlan;
   }
@@ -214,7 +226,7 @@ export class BenefitPlanService {
   async get(companyId: string, planId: string): Promise<BenefitPlan | null> {
     const docRef = doc(firestore, this.collectionPath(companyId), planId);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() } as BenefitPlan;
     }
@@ -225,21 +237,28 @@ export class BenefitPlanService {
     const q = query(
       collection(firestore, this.collectionPath(companyId)),
       where('status', '==', 'active'),
-      orderBy('type', 'asc')
+      orderBy('type', 'asc'),
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BenefitPlan));
+    return snapshot.docs.map(
+      (doc) => ({ id: doc.id, ...doc.data() }) as BenefitPlan,
+    );
   }
 
-  async getPlansByType(companyId: string, type: BenefitPlan['type']): Promise<BenefitPlan[]> {
+  async getPlansByType(
+    companyId: string,
+    type: BenefitPlan['type'],
+  ): Promise<BenefitPlan[]> {
     const q = query(
       collection(firestore, this.collectionPath(companyId)),
       where('type', '==', type),
       where('status', '==', 'active'),
-      orderBy('name', 'asc')
+      orderBy('name', 'asc'),
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BenefitPlan));
+    return snapshot.docs.map(
+      (doc) => ({ id: doc.id, ...doc.data() }) as BenefitPlan,
+    );
   }
 }
 
@@ -252,10 +271,10 @@ export class ConversationService {
   }
 
   async create(
-    userId: string, 
-    companyId: string, 
+    userId: string,
+    companyId: string,
     title: string,
-    metadata?: Partial<Conversation['metadata']>
+    metadata?: Partial<Conversation['metadata']>,
   ): Promise<Conversation> {
     const colRef = collection(firestore, this.collectionPath(companyId));
     const docRef = doc(colRef);
@@ -271,46 +290,60 @@ export class ConversationService {
         totalTokensUsed: 0,
         messageCount: 0,
         lastMessageAt: serverTimestamp(),
-        ...metadata
+        ...metadata,
       },
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     } as Conversation;
-    
+
     await setDoc(docRef, conversation);
     return { ...conversation, id: docRef.id } as Conversation;
   }
 
-  async getUserConversations(companyId: string, userId: string, limitCount = 20): Promise<Conversation[]> {
+  async getUserConversations(
+    companyId: string,
+    userId: string,
+    limitCount = 20,
+  ): Promise<Conversation[]> {
     const q = query(
       collection(firestore, this.collectionPath(companyId)),
       where('userId', '==', userId),
       where('status', '!=', 'deleted'),
       orderBy('status'),
       orderBy('updatedAt', 'desc'),
-      limit(limitCount)
+      limit(limitCount),
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Conversation));
+    return snapshot.docs.map(
+      (doc) => ({ id: doc.id, ...doc.data() }) as Conversation,
+    );
   }
 
   async updateMetadata(
-    companyId: string, 
-    conversationId: string, 
-    metadata: Partial<Conversation['metadata']>
+    companyId: string,
+    conversationId: string,
+    metadata: Partial<Conversation['metadata']>,
   ): Promise<void> {
-    const docRef = doc(firestore, this.collectionPath(companyId), conversationId);
+    const docRef = doc(
+      firestore,
+      this.collectionPath(companyId),
+      conversationId,
+    );
     await updateDoc(docRef, {
       metadata,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
   }
 
   async archive(companyId: string, conversationId: string): Promise<void> {
-    const docRef = doc(firestore, this.collectionPath(companyId), conversationId);
+    const docRef = doc(
+      firestore,
+      this.collectionPath(companyId),
+      conversationId,
+    );
     await updateDoc(docRef, {
       status: 'archived',
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
   }
 }
@@ -326,56 +359,67 @@ export class MessageService {
   async addMessage(
     companyId: string,
     conversationId: string,
-    message: Omit<Message, 'id' | 'createdAt'>
+    message: Omit<Message, 'id' | 'createdAt'>,
   ): Promise<Message> {
-    const colRef = collection(firestore, this.collectionPath(companyId, conversationId));
+    const colRef = collection(
+      firestore,
+      this.collectionPath(companyId, conversationId),
+    );
     const docRef = doc(colRef);
     const msg = {
       ...message,
       id: docRef.id,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
     } as Message;
-    
+
     await setDoc(docRef, msg);
-    
+
     // Update conversation metadata
-    const convRef = doc(firestore, `companies/${companyId}/conversations`, conversationId);
+    const convRef = doc(
+      firestore,
+      `companies/${companyId}/conversations`,
+      conversationId,
+    );
     await updateDoc(convRef, {
       'metadata.lastMessageAt': serverTimestamp(),
       'metadata.messageCount': increment(1),
       'metadata.totalTokensUsed': increment(message.metadata?.tokensUsed || 0),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     });
-    
+
     return { ...msg, id: docRef.id } as Message;
   }
 
   async getMessages(
     companyId: string,
     conversationId: string,
-    limitCount = 50
+    limitCount = 50,
   ): Promise<Message[]> {
     const q = query(
       collection(firestore, this.collectionPath(companyId, conversationId)),
       orderBy('createdAt', 'asc'),
-      limit(limitCount)
+      limit(limitCount),
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+    return snapshot.docs.map(
+      (doc) => ({ id: doc.id, ...doc.data() }) as Message,
+    );
   }
 
   subscribeToMessages(
     companyId: string,
     conversationId: string,
-    callback: (messages: Message[]) => void
+    callback: (messages: Message[]) => void,
   ): Unsubscribe {
     const q = query(
       collection(firestore, this.collectionPath(companyId, conversationId)),
-      orderBy('createdAt', 'asc')
+      orderBy('createdAt', 'asc'),
     );
-    
+
     return onSnapshot(q, (snapshot) => {
-      const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+      const messages = snapshot.docs.map(
+        (doc) => ({ id: doc.id, ...doc.data() }) as Message,
+      );
       callback(messages);
     });
   }
@@ -389,37 +433,40 @@ export class DocumentService extends BaseService<DocType> {
     super('documents');
   }
 
-  async getCompanyDocuments(companyId: string, category?: string): Promise<DocType[]> {
+  async getCompanyDocuments(
+    companyId: string,
+    category?: string,
+  ): Promise<DocType[]> {
     const constraints: QueryConstraint[] = [
       where('companyId', '==', companyId),
-      where('processing.status', '==', 'completed')
+      where('processing.status', '==', 'completed'),
     ];
-    
+
     if (category) {
       constraints.push(where('category', '==', category));
     }
-    
+
     constraints.push(orderBy('createdAt', 'desc'));
-    
+
     return this.list(constraints);
   }
 
   async updateProcessingStatus(
-    documentId: string, 
+    documentId: string,
     status: DocType['processing']['status'],
-    error?: string
+    error?: string,
   ): Promise<void> {
     const updates: any = {
       'processing.status': status,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     };
-    
+
     if (status === 'completed') {
       updates['processing.completedAt'] = serverTimestamp();
     } else if (status === 'failed' && error) {
       updates['processing.error'] = error;
     }
-    
+
     await this.update(documentId, updates);
   }
 }
@@ -432,15 +479,18 @@ export class EnrollmentService extends BaseService<Enrollment> {
     super('enrollments');
   }
 
-  async getUserEnrollment(userId: string, year: number): Promise<Enrollment | null> {
+  async getUserEnrollment(
+    userId: string,
+    year: number,
+  ): Promise<Enrollment | null> {
     const q = query(
       collection(firestore, this.collectionName),
       where('userId', '==', userId),
       where('enrollmentPeriod.year', '==', year),
-      limit(1)
+      limit(1),
     );
     const snapshot = await getDocs(q);
-    
+
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
       return { id: doc.id, ...doc.data() } as Enrollment;
@@ -448,25 +498,34 @@ export class EnrollmentService extends BaseService<Enrollment> {
     return null;
   }
 
-  async getCompanyEnrollments(companyId: string, year: number): Promise<Enrollment[]> {
+  async getCompanyEnrollments(
+    companyId: string,
+    year: number,
+  ): Promise<Enrollment[]> {
     return this.list([
       where('companyId', '==', companyId),
       where('enrollmentPeriod.year', '==', year),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
     ]);
   }
 
-  async updateSelections(enrollmentId: string, selections: Enrollment['selections']): Promise<void> {
+  async updateSelections(
+    enrollmentId: string,
+    selections: Enrollment['selections'],
+  ): Promise<void> {
     await this.update(enrollmentId, {
       selections,
-      status: 'in-progress'
+      status: 'in-progress',
     });
   }
 
-  async completeEnrollment(enrollmentId: string, signature: Enrollment['signature']): Promise<void> {
+  async completeEnrollment(
+    enrollmentId: string,
+    signature: Enrollment['signature'],
+  ): Promise<void> {
     await this.update(enrollmentId, {
       status: 'completed',
-      signature
+      signature,
     });
   }
 }
@@ -479,23 +538,28 @@ export class AnalyticsService extends BaseService<AnalyticsEvent> {
     super('analytics');
   }
 
-  async trackEvent(event: Omit<AnalyticsEvent, 'id' | 'timestamp'>): Promise<void> {
+  async trackEvent(
+    event: Omit<AnalyticsEvent, 'id' | 'timestamp'>,
+  ): Promise<void> {
     const docRef = doc(collection(firestore, this.collectionName));
     await setDoc(docRef, {
       ...event,
       id: docRef.id,
-      timestamp: serverTimestamp()
+      timestamp: serverTimestamp(),
     });
   }
 
-  async getCompanyAnalytics(companyId: string, days = 30): Promise<AnalyticsEvent[]> {
+  async getCompanyAnalytics(
+    companyId: string,
+    days = 30,
+  ): Promise<AnalyticsEvent[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-    
+
     return this.list([
       where('companyId', '==', companyId),
       where('timestamp', '>=', Timestamp.fromDate(startDate)),
-      orderBy('timestamp', 'desc')
+      orderBy('timestamp', 'desc'),
     ]);
   }
 }
@@ -508,24 +572,25 @@ export class NotificationService extends BaseService<Notification> {
     super('notifications');
   }
 
-  async getUserNotifications(userId: string, unreadOnly = false): Promise<Notification[]> {
-    const constraints: QueryConstraint[] = [
-      where('userId', '==', userId)
-    ];
-    
+  async getUserNotifications(
+    userId: string,
+    unreadOnly = false,
+  ): Promise<Notification[]> {
+    const constraints: QueryConstraint[] = [where('userId', '==', userId)];
+
     if (unreadOnly) {
       constraints.push(where('read', '==', false));
     }
-    
+
     constraints.push(orderBy('createdAt', 'desc'), limit(50));
-    
+
     return this.list(constraints);
   }
 
   async markAsRead(notificationId: string): Promise<void> {
     await this.update(notificationId, {
       read: true,
-      readAt: serverTimestamp() as any
+      readAt: serverTimestamp() as any,
     });
   }
 
@@ -533,18 +598,18 @@ export class NotificationService extends BaseService<Notification> {
     const q = query(
       collection(firestore, this.collectionName),
       where('userId', '==', userId),
-      where('read', '==', false)
+      where('read', '==', false),
     );
     const snapshot = await getDocs(q);
-    
+
     const batch = writeBatch(firestore);
-    snapshot.docs.forEach(doc => {
+    snapshot.docs.forEach((doc) => {
       batch.update(doc.ref, {
         read: true,
-        readAt: serverTimestamp()
+        readAt: serverTimestamp(),
       });
     });
-    
+
     await batch.commit();
   }
 }
@@ -557,37 +622,40 @@ export class AuditLogService extends BaseService<AuditLog> {
     super('audit_logs');
   }
 
-  async log(action: string, data: Omit<AuditLog, 'id' | 'timestamp' | 'action'>): Promise<void> {
+  async log(
+    action: string,
+    data: Omit<AuditLog, 'id' | 'timestamp' | 'action'>,
+  ): Promise<void> {
     const docRef = doc(collection(firestore, this.collectionName));
     await setDoc(docRef, {
       ...data,
       id: docRef.id,
       action,
-      timestamp: serverTimestamp()
+      timestamp: serverTimestamp(),
     });
   }
 
   async getUserAuditLogs(userId: string, days = 30): Promise<AuditLog[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-    
+
     return this.list([
       where('userId', '==', userId),
       where('timestamp', '>=', Timestamp.fromDate(startDate)),
       orderBy('timestamp', 'desc'),
-      limit(100)
+      limit(100),
     ]);
   }
 
   async getCompanyAuditLogs(companyId: string, days = 30): Promise<AuditLog[]> {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-    
+
     return this.list([
       where('companyId', '==', companyId),
       where('timestamp', '>=', Timestamp.fromDate(startDate)),
       orderBy('timestamp', 'desc'),
-      limit(500)
+      limit(500),
     ]);
   }
 }

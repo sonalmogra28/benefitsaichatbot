@@ -24,19 +24,22 @@ const testResults: TestResult[] = [];
 // Utility functions
 async function runTest(
   name: string,
-  testFn: () => Promise<void>
+  testFn: () => Promise<void>,
 ): Promise<void> {
   console.log(`\n🧪 Running: ${name}`);
   const startTime = Date.now();
-  
+
   try {
     await Promise.race([
       testFn(),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Test timeout')), UAT_CONFIG.testTimeout)
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Test timeout')),
+          UAT_CONFIG.testTimeout,
+        ),
       ),
     ]);
-    
+
     const duration = Date.now() - startTime;
     testResults.push({
       name,
@@ -47,7 +50,7 @@ async function runTest(
   } catch (error) {
     const duration = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     testResults.push({
       name,
       status: 'failed',
@@ -60,7 +63,7 @@ async function runTest(
 
 async function makeRequest(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<Response> {
   const url = `${UAT_CONFIG.baseUrl}${path}`;
   const response = await fetch(url, {
@@ -70,11 +73,11 @@ async function makeRequest(
       ...options.headers,
     },
   });
-  
+
   if (!response.ok && !options.method?.includes('DELETE')) {
     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
   }
-  
+
   return response;
 }
 
@@ -83,7 +86,7 @@ async function runHealthCheckTests() {
   await runTest('Health Check - Basic', async () => {
     const response = await makeRequest('/api/health');
     const data = await response.json();
-    
+
     if (data.status !== 'healthy') {
       throw new Error(`Health status is ${data.status}`);
     }
@@ -92,18 +95,21 @@ async function runHealthCheckTests() {
   await runTest('Health Check - Detailed', async () => {
     const response = await makeRequest('/api/health?detailed=true');
     const data = await response.json();
-    
+
     // Check all services
-    const unhealthyServices = data.checks?.filter((c: any) => c.status === 'unhealthy') || [];
+    const unhealthyServices =
+      data.checks?.filter((c: any) => c.status === 'unhealthy') || [];
     if (unhealthyServices.length > 0) {
-      throw new Error(`Unhealthy services: ${unhealthyServices.map((s: any) => s.service).join(', ')}`);
+      throw new Error(
+        `Unhealthy services: ${unhealthyServices.map((s: any) => s.service).join(', ')}`,
+      );
     }
   });
 
   await runTest('Readiness Check', async () => {
     const response = await makeRequest('/api/ready');
     const data = await response.json();
-    
+
     if (!data.ready) {
       throw new Error(`Not ready: ${JSON.stringify(data.checks)}`);
     }
@@ -122,9 +128,9 @@ async function runAuthenticationTests() {
         password: 'TestPassword123!',
         displayName: 'UAT Test User',
       });
-      
+
       testUserId = userRecord.uid;
-      
+
       // Set custom claims
       await adminAuth.setCustomUserClaims(userRecord.uid, {
         role: 'employee',
@@ -143,7 +149,7 @@ async function runAuthenticationTests() {
   await runTest('Get CSRF Token', async () => {
     const response = await makeRequest('/api/auth/csrf');
     const data = await response.json();
-    
+
     if (!data.csrfToken) {
       throw new Error('CSRF token not returned');
     }
@@ -153,10 +159,10 @@ async function runAuthenticationTests() {
     if (!testUserId) {
       throw new Error('No test user ID');
     }
-    
+
     // Get ID token (this would normally come from client-side Firebase Auth)
     const customToken = await adminAuth.createCustomToken(testUserId);
-    
+
     // Note: In real UAT, you'd use the Firebase Auth SDK to sign in
     // This is a simplified version for testing
     console.log('   Note: Session creation requires client-side auth flow');
@@ -191,7 +197,7 @@ async function runSuperAdminJourneyTests() {
     // Direct Firestore creation for testing
     const companyRef = adminDb.collection('companies').doc();
     testCompanyId = companyRef.id;
-    
+
     await companyRef.set({
       id: testCompanyId,
       ...companyData,
@@ -199,29 +205,29 @@ async function runSuperAdminJourneyTests() {
       updatedAt: adminDb.FieldValue.serverTimestamp(),
       status: 'active',
     });
-    
+
     console.log(`   Created test company: ${testCompanyId}`);
   });
 
   await runTest('Super Admin - List Companies', async () => {
     const snapshot = await adminDb.collection('companies').limit(5).get();
-    
+
     if (snapshot.empty) {
       throw new Error('No companies found');
     }
-    
+
     console.log(`   Found ${snapshot.size} companies`);
   });
 
   await runTest('Super Admin - Get Analytics', async () => {
     const snapshot = await adminDb.collection('companies').get();
     const userSnapshot = await adminDb.collection('users').get();
-    
+
     const analytics = {
       totalCompanies: snapshot.size,
       totalUsers: userSnapshot.size,
     };
-    
+
     console.log(`   Analytics: ${JSON.stringify(analytics)}`);
   });
 
@@ -257,9 +263,9 @@ async function runCompanyAdminJourneyTests() {
       .doc(testCompanyId)
       .collection('benefitPlans')
       .doc();
-    
+
     testPlanId = planRef.id;
-    
+
     await planRef.set({
       id: testPlanId,
       companyId: testCompanyId,
@@ -267,7 +273,7 @@ async function runCompanyAdminJourneyTests() {
       createdAt: adminDb.FieldValue.serverTimestamp(),
       updatedAt: adminDb.FieldValue.serverTimestamp(),
     });
-    
+
     console.log(`   Created test benefit plan: ${testPlanId}`);
   });
 
@@ -277,7 +283,7 @@ async function runCompanyAdminJourneyTests() {
       .doc(testCompanyId)
       .collection('benefitPlans')
       .get();
-    
+
     console.log(`   Found ${snapshot.size} benefit plans`);
   });
 
@@ -305,11 +311,11 @@ async function runEmployeeJourneyTests() {
       process.env.OPENAI_API_KEY ||
       process.env.ANTHROPIC_API_KEY
     );
-    
+
     if (!hasAI) {
       throw new Error('No AI providers configured');
     }
-    
+
     console.log('   AI chat service is configured');
   });
 
@@ -317,11 +323,11 @@ async function runEmployeeJourneyTests() {
     // This would require authenticated user context
     // For UAT, we're just checking the structure exists
     const testUserId = 'uat-test-user';
-    
+
     // Check if enrollments collection structure is correct
     const enrollmentsRef = adminDb.collection('enrollments');
     const snapshot = await enrollmentsRef.limit(1).get();
-    
+
     console.log('   Benefits enrollment structure verified');
   });
 }
@@ -353,9 +359,9 @@ async function runUATTests() {
 
   // Generate report
   const totalDuration = Date.now() - startTime;
-  const passed = testResults.filter(r => r.status === 'passed').length;
-  const failed = testResults.filter(r => r.status === 'failed').length;
-  const skipped = testResults.filter(r => r.status === 'skipped').length;
+  const passed = testResults.filter((r) => r.status === 'passed').length;
+  const failed = testResults.filter((r) => r.status === 'failed').length;
+  const skipped = testResults.filter((r) => r.status === 'skipped').length;
 
   console.log('\n=====================================');
   console.log('📊 UAT Test Results Summary');
@@ -365,12 +371,12 @@ async function runUATTests() {
   console.log(`❌ Failed: ${failed}`);
   console.log(`⏭️  Skipped: ${skipped}`);
   console.log(`⏱️  Total Duration: ${totalDuration}ms`);
-  
+
   if (failed > 0) {
     console.log('\n❌ Failed Tests:');
     testResults
-      .filter(r => r.status === 'failed')
-      .forEach(r => {
+      .filter((r) => r.status === 'failed')
+      .forEach((r) => {
         console.log(`  - ${r.name}: ${r.error}`);
       });
   }
@@ -401,7 +407,7 @@ async function runUATTests() {
 
 // Run tests if executed directly
 if (require.main === module) {
-  runUATTests().catch(error => {
+  runUATTests().catch((error) => {
     console.error('UAT tests failed:', error);
     process.exit(1);
   });

@@ -2,7 +2,17 @@
 
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
-import { FileText, Download, Trash2, Eye, Clock, CheckCircle, AlertCircle, Search, Filter } from 'lucide-react';
+import {
+  FileText,
+  Download,
+  Trash2,
+  Eye,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Search,
+  Filter,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -71,24 +81,28 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
 
   const { data, error, isLoading } = useSWR(
     `/api/company-admin/documents?companyId=${companyId}`,
-    fetcher
+    fetcher,
   );
 
-  const documents: Document[] = data?.documents.map((doc: any) => ({
-    ...doc,
-    processedAt: doc.processedAt ? new Date(doc.processedAt) : undefined,
-    createdAt: new Date(doc.createdAt),
-  })) || [];
+  const documents: Document[] =
+    data?.documents.map((doc: any) => ({
+      ...doc,
+      processedAt: doc.processedAt ? new Date(doc.processedAt) : undefined,
+      createdAt: new Date(doc.createdAt),
+    })) || [];
 
   // Filter documents
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doc.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         doc.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+  const filteredDocuments = documents.filter((doc) => {
+    const matchesSearch =
+      doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.tags?.some((tag) =>
+        tag.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+
     const matchesType = filterType === 'all' || doc.documentType === filterType;
     const matchesStatus = filterStatus === 'all' || doc.status === filterStatus;
-    
+
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -225,9 +239,12 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
           <TableBody>
             {filteredDocuments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  {documents.length === 0 
-                    ? 'No documents uploaded yet' 
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-muted-foreground"
+                >
+                  {documents.length === 0
+                    ? 'No documents uploaded yet'
                     : 'No documents match your search criteria'}
                 </TableCell>
               </TableRow>
@@ -244,7 +261,11 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
                         {document.tags && document.tags.length > 0 && (
                           <div className="flex gap-1 mt-1 flex-wrap">
                             {document.tags.map((tag) => (
-                              <Badge key={tag} variant="outline" className="text-xs">
+                              <Badge
+                                key={tag}
+                                variant="outline"
+                                className="text-xs"
+                              >
                                 {tag}
                               </Badge>
                             ))}
@@ -254,19 +275,15 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">
-                      {document.documentType}
-                    </Badge>
+                    <Badge variant="secondary">{document.documentType}</Badge>
                   </TableCell>
-                  <TableCell>
-                    {document.category || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {getStatusBadge(document.status)}
-                  </TableCell>
+                  <TableCell>{document.category || '-'}</TableCell>
+                  <TableCell>{getStatusBadge(document.status)}</TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(document.createdAt), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(document.createdAt), {
+                        addSuffix: true,
+                      })}
                     </span>
                   </TableCell>
                   <TableCell className="text-right">
@@ -312,13 +329,17 @@ export function DocumentList({ companyId, onDocumentView }: DocumentListProps) {
       </div>
 
       {/* Delete confirmation dialog */}
-      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+      <AlertDialog
+        open={!!deleteConfirmId}
+        onOpenChange={() => setDeleteConfirmId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Document</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this document? This will remove it from the knowledge base 
-              and delete all associated vector embeddings. This action cannot be undone.
+              Are you sure you want to delete this document? This will remove it
+              from the knowledge base and delete all associated vector
+              embeddings. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

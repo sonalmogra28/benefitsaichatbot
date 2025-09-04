@@ -32,7 +32,8 @@ export interface NotificationData {
 }
 
 export class EmailService {
-  private fromEmail = process.env.FROM_EMAIL || 'Benefits Chatbot <noreply@yourdomain.com>'; // Update with a real domain
+  private fromEmail =
+    process.env.FROM_EMAIL || 'Benefits Chatbot <noreply@yourdomain.com>'; // Update with a real domain
   private emailsCollection = collection(db, 'pending_emails');
 
   private async queueEmail(
@@ -186,7 +187,7 @@ export class EmailService {
       html,
     });
   }
-  
+
   // sendNotification now uses queueEmail
   async sendNotification(
     data: NotificationData,

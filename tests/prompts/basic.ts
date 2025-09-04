@@ -33,6 +33,20 @@ export const TEST_PROMPTS: Record<string, ModelMessage> = {
       },
     ],
   },
+  USER_DOCUMENT_ATTACHMENT: {
+    role: 'user',
+    content: [
+      {
+        type: 'file',
+        mediaType: 'text/plain',
+        data: '...',
+      },
+      {
+        type: 'text',
+        text: 'What does this document say?',
+      },
+    ],
+  },
   USER_TEXT_ARTIFACT: {
     role: 'user',
     content: [

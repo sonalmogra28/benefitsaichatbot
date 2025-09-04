@@ -7,18 +7,18 @@ const checks = [
   {
     name: 'TypeScript Check',
     command: 'pnpm typecheck',
-    critical: true
+    critical: true,
   },
   {
-    name: 'ESLint Check', 
+    name: 'ESLint Check',
     command: 'pnpm lint',
-    critical: true
+    critical: true,
   },
   {
     name: 'Build Check',
     command: 'pnpm build',
-    critical: true
-  }
+    critical: true,
+  },
 ];
 
 let failed = false;
