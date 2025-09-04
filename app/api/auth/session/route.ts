@@ -24,7 +24,8 @@ export async function POST(request: Request) {
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
     // Set the cookie on the response.
-    cookies().set(SESSION_COOKIE_NAME, sessionCookie, {
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: expiresIn,
@@ -45,7 +46,8 @@ export async function POST(request: Request) {
 export async function DELETE() {
   try {
     // Clear the session cookie.
-    cookies().set(SESSION_COOKIE_NAME, '', {
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE_NAME, '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 0, // Expire the cookie immediately

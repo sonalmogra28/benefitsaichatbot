@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { PanelLeft } from 'lucide-react';
+import { DialogTitle } from '@radix-ui/react-dialog';
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -18,6 +19,32 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+
+// VisuallyHidden component to hide content from sighted users but not from screen readers
+const VisuallyHidden = React.forwardRef<HTMLSpanElement, React.HTMLAttributes<HTMLSpanElement> & { asChild?: boolean }>(
+  ({ asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'span';
+    return (
+      <Comp
+        ref={ref}
+        style={{
+          position: 'absolute',
+          border: 0,
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          wordWrap: 'normal',
+        }}
+        {...props}
+      />
+    );
+  }
+);
+VisuallyHidden.displayName = 'VisuallyHidden';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar:state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -214,6 +241,9 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
+            <VisuallyHidden asChild>
+              <DialogTitle>Main Navigation</DialogTitle>
+            </VisuallyHidden>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
         </Sheet>

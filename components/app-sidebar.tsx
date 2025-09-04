@@ -1,8 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { PlusIcon, UserIcon } from 'lucide-react';
 
-import { PlusIcon } from '@/components/icons';
 import { SidebarHistory } from '@/components/sidebar-history';
 import { SidebarUserNav } from '@/components/sidebar-user-nav';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,6 @@ import {
   SidebarMenu,
   useSidebar,
 } from '@/components/ui/sidebar';
-import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { WithRole } from './with-role';
 
@@ -60,9 +60,6 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarHistory />
-        <div className="px-4">
-            <Link href="/profile">Profile</Link>
-        </div>
         <WithRole allowedRoles="super-admin">
           <div className="px-4">
              <Link href="/super-admin">Super Admin</Link>
@@ -70,6 +67,14 @@ export function AppSidebar() {
         </WithRole>
       </SidebarContent>
       <SidebarFooter>
+        <div className="flex flex-col gap-2 p-2">
+            <Button asChild variant="ghost" className="w-full justify-start">
+                <Link href="/profile">
+                    <UserIcon className="mr-2 size-4" />
+                    Profile
+                </Link>
+            </Button>
+        </div>
         <SidebarUserNav />
       </SidebarFooter>
     </Sidebar>

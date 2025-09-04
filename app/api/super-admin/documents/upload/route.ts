@@ -1,39 +1,38 @@
-// app/api/super-admin/documents/upload/route.ts
-import { NextResponse } from 'next/server';
-import { getStorage } from 'firebase-admin/storage';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { type NextRequest, NextResponse } from 'next/server';
+import { adminDb, adminAuth } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
-// Initialize Firebase Admin SDK if not already initialized
-if (!getApps().length) {
-  initializeApp();
-}
-
-const storage = getStorage();
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { fileName, contentType } = await request.json();
-
-    if (!fileName || !contentType) {
-      return NextResponse.json({ error: 'fileName and contentType are required' }, { status: 400 });
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const bucket = storage.bucket();
-    const file = bucket.file(`documents/${fileName}`);
+    const token = authHeader.split('Bearer ')[1];
+    const decodedToken = await adminAuth.verifyIdToken(token);
 
-    // The type for options is inferred, no need for explicit GetSignedUrlConfig import
-    const options = {
-      version: 'v4' as const,
-      action: 'write' as const,
-      expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-      contentType,
-    };
+    if (decodedToken.super_admin !== true) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    
+    const { fileName, fileType, downloadURL, storagePath } = await request.json();
 
-    const [url] = await file.getSignedUrl(options);
+    const docRef = await adminDb.collection('documents').add({
+      userId: decodedToken.uid,
+      title: fileName,
+      fileName,
+      fileType,
+      storagePath,
+      downloadURL,
+      status: 'uploaded',
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
 
-    return NextResponse.json({ url }, { status: 200 });
+    return NextResponse.json({ id: docRef.id, message: 'Document created successfully' });
   } catch (error) {
-    console.error('Error creating signed URL:', error);
+    console.error('Error creating document in Firestore:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

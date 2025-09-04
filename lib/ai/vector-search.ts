@@ -1,149 +1,69 @@
-import {
-  IndexEndpointServiceClient,
-  MatchServiceClient,
-} from '@google-cloud/aiplatform';
-import { GoogleAuth } from 'google-auth-library';
-import { getEmbedding } from './embeddings';
+// lib/ai/vector-search.ts
+import { IndexServiceClient, IndexEndpointServiceClient } from '@google-cloud/aiplatform';
+import { adminDb } from '@/lib/firebase/admin';
 
-// Export DocumentChunk type
-export interface DocumentChunk {
-  id: string;
-  text: string;
-  metadata: {
-    documentId: string;
-    companyId: string;
-    chunkIndex: number;
-    [key: string]: any;
-  };
-}
+const PROJECT_ID = process.env.GCLOUD_PROJECT || 'your-gcp-project-id';
+const LOCATION = 'us-central1'; // Or your GCP region
 
-const project = process.env.GOOGLE_CLOUD_PROJECT || '';
-const location = 'us-central1';
-const indexEndpointId = process.env.VERTEX_AI_INDEX_ENDPOINT_ID || '';
-const deployedIndexId = process.env.VERTEX_AI_DEPLOYED_INDEX_ID || '';
+class VectorSearchService {
+  private indexClient: IndexServiceClient;
+  private indexEndpointClient: IndexEndpointServiceClient;
+  private indexId: string = 'your-vector-search-index-id'; // Replace with your Index ID
+  private indexEndpointId: string = 'your-vector-search-index-endpoint-id'; // Replace with your Index Endpoint ID
 
-// --- LAZY INITIALIZATION ---
-// Create a singleton pattern to avoid re-initializing clients on every call within the same request lifecycle.
-
-let indexEndpointClient: IndexEndpointServiceClient | null = null;
-let matchClient: MatchServiceClient | null = null;
-
-function getIndexEndpointClient() {
-  if (!indexEndpointClient) {
-    const auth = new GoogleAuth({
-      scopes: 'https://www.googleapis.com/auth/cloud-platform',
-    });
-    indexEndpointClient = new IndexEndpointServiceClient({
-      auth,
-      apiEndpoint: `${location}-aiplatform.googleapis.com`,
-    });
+  constructor() {
+    const clientOptions = {
+      apiEndpoint: `${LOCATION}-aiplatform.googleapis.com`,
+    };
+    this.indexClient = new IndexServiceClient(clientOptions);
+    this.indexEndpointClient = new IndexEndpointServiceClient(clientOptions);
   }
-  return indexEndpointClient;
-}
 
-function getMatchClient() {
-  if (!matchClient) {
-    const auth = new GoogleAuth({
-      scopes: 'https://www.googleapis.com/auth/cloud-platform',
-    });
-    matchClient = new MatchServiceClient({
-      auth,
-      apiEndpoint: `${location}-aiplatform.googleapis.com`,
-    });
+  async upsertChunks(chunks: { id: string; embedding: number[] }[]) {
+    const datapoints = chunks.map(chunk => ({
+      datapoint_id: chunk.id,
+      feature_vector: chunk.embedding,
+    }));
+
+    const request = {
+      index: `projects/${PROJECT_ID}/locations/${LOCATION}/indexes/${this.indexId}`,
+      datapoints,
+    };
+
+    try {
+      console.log('Upserting datapoints to Vertex AI Vector Search...');
+      await this.indexClient.upsertDatapoints(request);
+      console.log('Successfully upserted datapoints.');
+    } catch (error) {
+      console.error('Error upserting datapoints to Vertex AI:', error);
+      throw new Error('Could not update the vector search index.');
+    }
   }
-  return matchClient;
-}
 
-// --- END LAZY INITIALIZATION ---
+  async findNearestNeighbors(queryEmbedding: number[], numNeighbors: number = 5) {
+    const endpoint = `projects/${PROJECT_ID}/locations/${LOCATION}/indexEndpoints/${this.indexEndpointId}`;
 
-export async function upsertDocumentChunks(
-  companyId: string,
-  chunks: Array<{ id: string; text: string; metadata: any }>,
-) {
-  const client = getIndexEndpointClient(); // Use the lazy-loaded client
-  const indexEndpoint = `projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}`;
-
-  const datapoints = await Promise.all(
-    chunks.map(async (chunk) => {
-      const embedding = await getEmbedding(chunk.text);
-      return {
-        datapoint_id: chunk.id,
-        feature_vector: embedding,
-        restricts: [
-          {
-            namespace: 'companyId',
-            allow_list: [companyId],
-          },
-        ],
-        // TODO: Add metadata once supported by the API
-      };
-    }),
-  );
-
-  const request = {
-    indexEndpoint,
-    datapoints,
-  };
-
-  // @ts-ignore
-  await client.upsertDatapoints({ request }); // Use the client instance
-  return chunks.length;
-}
-
-export async function searchVectors(
-  companyId: string,
-  query: string,
-  topK = 5,
-) {
-  const client = getMatchClient(); // Use the lazy-loaded client
-  const queryEmbedding = await getEmbedding(query);
-
-  const request = {
-    indexEndpoint: `projects/${project}/locations/${location}/indexEndpoints/${indexEndpointId}`,
-    deployedIndexId,
-    queries: [
-      {
+    const request = {
+      indexEndpoint: endpoint,
+      queries: [{
         datapoint: {
-          feature_vector: queryEmbedding,
+          featureVector: queryEmbedding,
         },
-        neighborCount: topK,
-        string_filter: [
-          {
-            namespace: 'companyId',
-            allow_list: [companyId],
-          },
-        ],
-      },
-    ],
-  };
+        neighborCount: numNeighbors,
+      }],
+    };
 
-  // @ts-ignore
-  const [response] = await client.findNeighbors(request); // Use the client instance
-
-  if (!response.nearestNeighbors || !response.nearestNeighbors[0]) {
-    return [];
+    try {
+      const [response] = await this.indexEndpointClient.findNeighbors(request);
+      if (response.nearestNeighbors && response.nearestNeighbors.length > 0) {
+        return response.nearestNeighbors[0].neighbors;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error finding nearest neighbors in Vertex AI:', error);
+      throw new Error('Could not perform the vector search.');
+    }
   }
-
-  return response.nearestNeighbors[0].neighbors.map((neighbor: any) => ({
-    id: neighbor.datapoint.datapointId,
-    score: neighbor.distance,
-    metadata: {
-      // TODO: Retrieve metadata from Firestore or another source
-    },
-  }));
 }
 
-export async function deleteDocumentVectors(
-  companyId: string,
-  documentId: string,
-) {
-  // Vertex AI Vector Search does not yet support deleting by metadata filter.
-  // This is a placeholder for when that functionality is available.
-  // For now, you would need to find all chunk IDs associated with the documentId
-  // and delete them individually.
-  
-  // NOTE: When implemented, this function would also call getIndexEndpointClient()
-  
-  console.warn(`Deletion for documentId ${documentId} in company ${companyId} is not yet implemented for Vertex AI.`);
-  return;
-}
+export const vectorSearchService = new VectorSearchService();

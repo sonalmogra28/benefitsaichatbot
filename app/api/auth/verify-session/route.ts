@@ -1,17 +1,16 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase/admin-sdk';
+// app/api/auth/verify-session/route.ts
+import { NextResponse } from 'next/server';
+import { adminAuth } from '@/lib/firebase/admin';
 
-export async function POST(request: NextRequest) {
-  const { sessionCookie } = await request.json();
-
-  if (!sessionCookie) {
-    return NextResponse.json({ error: 'No session cookie provided' }, { status: 400 });
-  }
-
+export async function POST(request: Request) {
   try {
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
-    return NextResponse.json(decodedClaims);
+    const { sessionCookie } = await request.json();
+    if (!sessionCookie) {
+      return NextResponse.json({ isValid: false }, { status: 400 });
+    }
+    await adminAuth.verifySessionCookie(sessionCookie, true);
+    return NextResponse.json({ isValid: true });
   } catch (error) {
-    return NextResponse.json({ error: 'Invalid session cookie' }, { status: 401 });
+    return NextResponse.json({ isValid: false }, { status: 401 });
   }
 }

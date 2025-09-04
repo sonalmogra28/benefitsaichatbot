@@ -1,15 +1,25 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/context/auth-context';
+import { Icons } from '@/components/ui/icons';
 
 export function GoogleSignInButton() {
-  const { signInWithGoogle, error } = useAuth();
+  const { signInWithGoogle, isSigningIn } = useAuth();
 
   return (
-    <div>
-      <Button onClick={signInWithGoogle}>Sign in with Google</Button>
-      {error && <p className="text-red-500">{error}</p>}
-    </div>
+    <Button 
+      variant="outline" 
+      onClick={signInWithGoogle} 
+      disabled={isSigningIn}
+      className="w-full"
+    >
+      {isSigningIn ? (
+        <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+      ) : (
+        <Icons.google className="mr-2 h-4 w-4" />
+      )}
+      Sign in with Google
+    </Button>
   );
 }

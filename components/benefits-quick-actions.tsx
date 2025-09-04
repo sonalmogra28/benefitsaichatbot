@@ -16,42 +16,42 @@ const quickActions: QuickAction[] = [
     label: "My Dashboard",
     description: "View benefits overview",
     prompt: "Show my benefits dashboard",
-    color: "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+    color: "bg-blue-50 text-blue-700 border-blue-200"
   },
   {
     icon: <Shield className="size-4" />,
     label: "Compare Plans",
     description: "See plan options",
     prompt: "Compare health insurance plans",
-    color: "bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+    color: "bg-green-50 text-green-700 border-green-200"
   },
   {
     icon: <Calculator className="size-4" />,
     label: "Cost Calculator",
     description: "Estimate costs",
     prompt: "Show me the cost calculator",
-    color: "bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200"
+    color: "bg-purple-50 text-purple-700 border-purple-200"
   },
   {
     icon: <FileText className="size-4" />,
     label: "Open Enrollment",
     description: "Important dates",
     prompt: "What are the open enrollment deadlines?",
-    color: "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200"
+    color: "bg-orange-50 text-orange-700 border-orange-200"
   },
   {
     icon: <Zap className="size-4" />,
     label: "HSA Info",
     description: "Health savings account",
     prompt: "Tell me about HSA benefits and contribution limits",
-    color: "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200"
+    color: "bg-yellow-50 text-yellow-700 border-yellow-200"
   },
   {
     icon: <HelpCircle className="size-4" />,
     label: "Help",
     description: "Get assistance",
     prompt: "What can you help me with regarding my benefits?",
-    color: "bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200"
+    color: "bg-gray-50 text-gray-700 border-gray-200"
   }
 ];
 
@@ -93,10 +93,10 @@ export function BenefitsQuickActions({ onActionClick, isVisible = true }: Benefi
           >
             <Button
               variant="outline"
-              className={`w-full h-auto ${action.color} transition-all duration-200 shadow-sm hover:shadow-lg border-2`}
+              className={`w-full h-full ${action.color} hover:bg-gray-800 hover:text-white transition-all duration-200 shadow-sm hover:shadow-lg border-2`}
               onClick={() => onActionClick(action.prompt)}
             >
-              <div className="flex flex-col items-center gap-2 py-4 px-3">
+              <div className="flex flex-col items-center gap-2 py-4 px-3 whitespace-normal text-center">
                 <motion.div
                   whileHover={{ rotate: [0, -10, 10, -10, 0] }}
                   transition={{ duration: 0.5 }}

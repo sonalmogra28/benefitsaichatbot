@@ -12,7 +12,7 @@ async function verifySuperAdmin(request: NextRequest): Promise<NextResponse | nu
   try {
     const decodedToken = await adminAuth.verifyIdToken(token);
     // @ts-ignore
-    if (decodedToken.role !== 'super-admin') {
+    if (decodedToken.super_admin !== true) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     return null;

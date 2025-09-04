@@ -1,17 +1,22 @@
 // middleware.ts
 import { NextResponse, type NextRequest } from 'next/server';
-import { adminAuth } from '@/lib/firebase/admin';
 
-async function verifySession(sessionCookie: string | undefined): Promise<boolean> {
+async function verifySession(sessionCookie: string | undefined, request: NextRequest): Promise<boolean> {
   if (!sessionCookie) {
     return false;
   }
   try {
-    // verifySessionCookie() will throw an error if the cookie is invalid
-    await adminAuth.verifySessionCookie(sessionCookie, true);
-    return true;
+    const response = await fetch(new URL('/api/auth/verify-session', request.url).toString(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sessionCookie }),
+    });
+    const { isValid } = await response.json();
+    return isValid;
   } catch (error) {
-    console.warn('Middleware: Invalid session cookie.', error);
+    console.error('Middleware: Error verifying session.', error);
     return false;
   }
 }
@@ -26,7 +31,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const sessionIsValid = await verifySession(session?.value);
+  const sessionIsValid = await verifySession(session?.value, request);
 
   // If the user is on an auth page but has a valid session, redirect them to the home page.
   if (sessionIsValid && isAuthPage) {

@@ -1,47 +1,26 @@
+// lib/services/super-admin.service.ts
+import {
+  type SystemSettings,
+  type PlatformStats,
+  type ActivityLog,
+} from '@/lib/types/super-admin';
 
-import { db } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
-import { getBucketSize } from '@/lib/firebase/storage';
-import type { SystemSettings } from '@/lib/types/super-admin';
-import { auth } from 'firebase-admin';
-
-// Simplified single-tenant stats
-export interface PlatformStats {
-  totalUsers: number;
-  totalDocuments: number;
-  totalBenefitPlans: number;
-  storageUsed: number; // in GB
-}
-
-export interface ActivityLog {
-  id: string;
-  type: 'user_added' | 'user_deleted' | 'document_uploaded' | 'settings_updated';
-  message: string;
-  timestamp: Date;
-  metadata?: Record<string, any>;
-}
+// Base URL for the new API route
+const API_URL = '/api/super-admin/service';
 
 class SuperAdminService {
   /**
-   * Get platform-wide statistics for the dashboard
+   * Fetches platform-wide statistics from the dedicated API route
    */
   async getPlatformStats(): Promise<PlatformStats> {
     try {
-      const usersSnapshot = await db.collection('users').get();
-      const documentsSnapshot = await db.collection('documents').get();
-      const benefitPlansSnapshot = await db.collection('benefitPlans').get();
-
-      const storageUsed = await this.getStorageUsage();
-
-      return {
-        totalUsers: usersSnapshot.size,
-        totalDocuments: documentsSnapshot.size,
-        totalBenefitPlans: benefitPlansSnapshot.size,
-        storageUsed,
-      };
+      const response = await fetch(`${API_URL}?action=getPlatformStats`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch platform stats');
+      }
+      return await response.json();
     } catch (error) {
       console.error('Error fetching platform stats:', error);
-      // Return a zeroed-out object on failure
       return {
         totalUsers: 0,
         totalDocuments: 0,
@@ -52,21 +31,15 @@ class SuperAdminService {
   }
 
   /**
-   * Get recent activity logs for the platform
+   * Fetches recent activity logs from the dedicated API route
    */
   async getRecentActivity(limit = 10): Promise<ActivityLog[]> {
     try {
-      const logsSnapshot = await db.collection('activity_logs').orderBy('timestamp', 'desc').limit(limit).get();
-      return logsSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          type: data.type,
-          message: data.message,
-          timestamp: data.timestamp?.toDate() || new Date(),
-          metadata: data.metadata,
-        };
-      });
+      const response = await fetch(`${API_URL}?action=getRecentActivity&limit=${limit}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch activity logs');
+      }
+      return await response.json();
     } catch (error) {
       console.error('Error fetching activity logs:', error);
       return [];
@@ -74,26 +47,37 @@ class SuperAdminService {
   }
 
   /**
-   * Get system settings
+   * Fetches system settings from the dedicated API route
    */
   async getSystemSettings(): Promise<SystemSettings> {
     try {
-      const settingsDoc = await db.collection('system').doc('settings').get();
-      return settingsDoc.exists ? (settingsDoc.data() as SystemSettings) : this.getDefaultSettings();
+      const response = await fetch(`${API_URL}?action=getSystemSettings`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch system settings');
+      }
+      return await response.json();
     } catch (error) {
       console.error('Error fetching system settings:', error);
+      // Return default settings on failure
       return this.getDefaultSettings();
     }
   }
 
   /**
-   * Update system settings
+   * Updates system settings via the dedicated API route
    */
   async updateSystemSettings(settings: Partial<SystemSettings>): Promise<void> {
     try {
-      const settingsRef = db.collection('system').doc('settings');
-      await settingsRef.set({ ...settings, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      await this.logActivity({ type: 'settings_updated', message: 'System settings updated', metadata: { settings } });
+      const response = await fetch(`${API_URL}?action=updateSystemSettings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update system settings');
+      }
     } catch (error) {
       console.error('Error updating system settings:', error);
       throw error;
@@ -101,38 +85,7 @@ class SuperAdminService {
   }
 
   /**
-   * Get storage usage
-   */
-  private async getStorageUsage(): Promise<number> {
-    try {
-      const bucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-      if (!bucketName) {
-        console.warn('Firebase Storage bucket name not configured.');
-        return 0;
-      }
-      const totalSizeInBytes = await getBucketSize(bucketName);
-      const totalSizeInGB = totalSizeInBytes / (1024 * 1024 * 1024);
-      return Math.round(totalSizeInGB * 100) / 100;
-    } catch (error) {
-      console.error('Error fetching storage usage:', error);
-      return 0;
-    }
-  }
-
-  /**
-   * Log platform activity
-   */
-  private async logActivity(activity: Omit<ActivityLog, 'id' | 'timestamp'>) {
-    try {
-      const logRef = db.collection('activity_logs').doc();
-      await logRef.set({ id: logRef.id, ...activity, timestamp: FieldValue.serverTimestamp() });
-    } catch (error) {
-      console.error('Error logging activity:', error);
-    }
-  }
-
-  /**
-   * Defines default system settings
+   * Defines default system settings (remains on client for fallback)
    */
   private getDefaultSettings(): SystemSettings {
     return {

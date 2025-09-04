@@ -8,7 +8,15 @@ export function SidebarUserNav() {
   const { session, isLoading } = useSession();
 
   if (isLoading) {
-    return <Skeleton className="h-10 w-full" />;
+    return (
+      <div className="flex items-center gap-2 p-4">
+        <Skeleton className="size-8 rounded-full" />
+        <div className="flex flex-col gap-1 w-full">
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+      </div>
+    );
   }
 
   if (!session) {
@@ -16,12 +24,11 @@ export function SidebarUserNav() {
   }
 
   return (
-    <div className="flex flex-col items-start p-4 border-t">
-      <div className="text-sm font-medium">{session.email}</div>
-      <div className="text-xs text-muted-foreground">{session.role}</div>
-      <div className="mt-2 w-full">
-        <SignOutForm />
+    <div className="flex flex-col items-start gap-2 p-2 border-t">
+      <div className="flex items-center gap-2 w-full p-2">
+        <div className="text-sm font-medium truncate">{session.email}</div>
       </div>
+      <SignOutForm />
     </div>
   );
 }

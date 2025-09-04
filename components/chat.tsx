@@ -22,7 +22,6 @@ import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import type { Attachment, ChatMessage } from '@/lib/types';
 import { useDataStream } from './data-stream-provider';
-import { motion } from 'framer-motion';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth } from '@/lib/firebase';
 
@@ -152,15 +151,6 @@ export function Chat({
         {/* Show quick actions only when there are no messages or just initial greeting */}
         {!isReadonly && messages.length <= 1 && (
           <div className="mx-auto px-4 w-full md:max-w-3xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-center mb-8"
-            >
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4" style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>WELCOME TO BENEFITS AI ASSISTANT</h1>
-              <p className="text-lg md:text-xl" style={{ fontFamily: 'Helvetica Neue, Helvetica, Arial, sans-serif' }}>I&apos;m here to help you understand and choose your employee benefits.</p>
-            </motion.div>
             <BenefitsQuickActions
               onActionClick={(prompt) => {
                 // Set the input to show what&apos;s being sent
