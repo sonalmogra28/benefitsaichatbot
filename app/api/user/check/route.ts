@@ -3,7 +3,7 @@ import { userService } from '@/lib/firebase/services/user.service';
 
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('X-User-Id');
-  
+
   if (!userId) {
     return NextResponse.json({ error: 'No user ID provided' }, { status: 400 });
   }

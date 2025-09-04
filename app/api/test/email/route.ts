@@ -10,7 +10,7 @@ export const POST = requireSuperAdmin(async (request: NextRequest) => {
     if (!to || !subject || !text) {
       return NextResponse.json(
         { error: 'Missing required fields: to, subject, text' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -29,14 +29,14 @@ export const POST = requireSuperAdmin(async (request: NextRequest) => {
     } else {
       return NextResponse.json(
         { error: 'Failed to send test email', details: result.error },
-        { status: 500 }
+        { status: 500 },
       );
     }
   } catch (error) {
     console.error('Error sending test email:', error);
     return NextResponse.json(
       { error: 'Failed to send test email' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 });

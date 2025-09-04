@@ -36,16 +36,19 @@ export const requestSuggestions = ({
     execute: async ({ documentId }: { documentId: string }) => {
       try {
         // Get document from Firestore
-        const documentRef = await adminDb.collection('documents').doc(documentId).get();
-        
+        const documentRef = await adminDb
+          .collection('documents')
+          .doc(documentId)
+          .get();
+
         if (!documentRef.exists) {
           return {
             error: 'Document not found',
           };
         }
-        
+
         const document = documentRef.data();
-        
+
         if (!document || !document.content) {
           return {
             error: 'Document has no content',
@@ -63,7 +66,9 @@ export const requestSuggestions = ({
           schema: z.object({
             originalSentence: z.string().describe('The original sentence'),
             suggestedSentence: z.string().describe('The suggested sentence'),
-            description: z.string().describe('The description of the suggestion'),
+            description: z
+              .string()
+              .describe('The description of the suggestion'),
           }),
         });
 
@@ -92,15 +97,17 @@ export const requestSuggestions = ({
         // Save suggestions to Firestore
         if (suggestions.length > 0) {
           const batch = adminDb.batch();
-          
-          suggestions.forEach(suggestion => {
-            const suggestionRef = adminDb.collection('suggestions').doc(suggestion.id);
+
+          suggestions.forEach((suggestion) => {
+            const suggestionRef = adminDb
+              .collection('suggestions')
+              .doc(suggestion.id);
             batch.set(suggestionRef, {
               ...suggestion,
               createdAt: FieldValue.serverTimestamp(),
             });
           });
-          
+
           await batch.commit();
         }
 
@@ -130,7 +137,7 @@ export async function getDocumentById(documentId: string) {
     }
     return {
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     };
   } catch (error) {
     console.error('Failed to get document:', error);
@@ -139,18 +146,22 @@ export async function getDocumentById(documentId: string) {
 }
 
 // Helper function to save suggestions
-export async function saveSuggestions(suggestions: Omit<Suggestion, 'createdAt'>[]) {
+export async function saveSuggestions(
+  suggestions: Omit<Suggestion, 'createdAt'>[],
+) {
   try {
     const batch = adminDb.batch();
-    
-    suggestions.forEach(suggestion => {
-      const suggestionRef = adminDb.collection('suggestions').doc(suggestion.id);
+
+    suggestions.forEach((suggestion) => {
+      const suggestionRef = adminDb
+        .collection('suggestions')
+        .doc(suggestion.id);
       batch.set(suggestionRef, {
         ...suggestion,
         createdAt: FieldValue.serverTimestamp(),
       });
     });
-    
+
     await batch.commit();
     return true;
   } catch (error) {

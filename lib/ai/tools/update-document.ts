@@ -18,7 +18,7 @@ async function getDocumentById(id: string) {
     }
     return {
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     };
   } catch (error) {
     console.error('Failed to get document:', error);
@@ -35,7 +35,10 @@ export const updateDocument = ({ userId, dataStream }: UpdateDocumentProps) =>
         .string()
         .describe('The description of changes that need to be made'),
     }),
-    execute: async ({ id, description }: { id: string; description: string }) => {
+    execute: async ({
+      id,
+      description,
+    }: { id: string; description: string }) => {
       const document = await getDocumentById(id);
 
       if (!document) {
@@ -56,7 +59,9 @@ export const updateDocument = ({ userId, dataStream }: UpdateDocumentProps) =>
       );
 
       if (!documentHandler) {
-        throw new Error(`No document handler found for kind: ${(document as any).kind}`);
+        throw new Error(
+          `No document handler found for kind: ${(document as any).kind}`,
+        );
       }
 
       await documentHandler.onUpdateDocument({

@@ -2,12 +2,13 @@
 
 A multi-tenant, AI-powered benefits management platform that transforms employee benefits decisions through conversational AI, visual analytics, and intelligent automation.
 
-## 🚀 Current Status
+## 🚀 Project Overview
 
 **Version**: MVP (Single-tenant)  
 **Stack**: Next.js 15, TypeScript, Firestore, Firebase Hosting, Vertex AI SDK
 **Deployment**: Firebase Hosting (Production)
 **AI Model**: Vertex AI Gemini (with xAI Grok-2 and OpenAI GPT-4 fallback ready)
+
 
 ### ✅ Completed Features
 - Basic conversational AI with benefits personality
@@ -61,10 +62,10 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
                                  │
          ┌───────────────────────┴───────────────────────┐
          │                                               │
-    ┌────▼─────┐  ┌──────────────┐  ┌─────────────┐  ┌─▼──────────┐
-    │   Chat   │  │   Benefits   │  │  Analytics  │  │   Admin    │
-    │  Service │  │   Service    │  │   Service   │  │  Service   │
-    └────┬─────┘  └──────┬───────┘  └──────┬──────┘  └─────┬──────┘
+    ┌────▼──────┐  ┌──────────────┐  ┌─────────────┐  ┌─▼──────────┐
+    │   Chat    │  │   Benefits   │  │  Analytics  │  │   Admin    │
+    │ Function  │  │   Function   │  │  Function   │  │  Function  │
+    └────┬──────┘  └──────┬───────┘  └──────┬──────┘  └─────┬──────┘
          │               │                   │                │
          └───────────────┴───────────────────┴────────────────┘
                                  │
@@ -79,12 +80,22 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
                     └─────────────────────────┘
 ```
 
+         ┌───────────────────────┴───────────────────────┐
+
+         │                       │                       │
+    ┌────▼─────┐         ┌──────▼───────┐      ┌───────▼──────┐
+    │Firestore │         │ Vertex AI VS  │      │ Memorystore │
+    │ Database │         │ (Vector DB)   │      │   (Cache)   │
+    └──────────┘         └──────────────┘      └──────────────┘
+
+
 ## 🚦 Quick Start
 
 ### Prerequisites
 - Node.js >= 20.0.0
 - pnpm >= 8.0.0
 - Firebase CLI
+
 - Google Cloud SDK (for Vertex AI)
 
 ### Environment Setup
@@ -104,12 +115,6 @@ cp .env.example .env.local
 FIREBASE_PROJECT_ID=       # Firebase project identifier
 FIREBASE_CLIENT_EMAIL=     # Service account client email
 FIREBASE_PRIVATE_KEY=      # Base64-encoded private key
-GOOGLE_CLOUD_PROJECT=      # Google Cloud project for Vertex AI
-GOOGLE_CLOUD_LOCATION=     # e.g. us-central1
-VERTEX_AI_MODEL=           # Vertex AI model name
-AUTH_SECRET=               # NextAuth secret (generate with: openssl rand -base64 32)
-OPENAI_API_KEY=            # For GPT-4 fallback
-XAI_API_KEY=               # For Grok-2 (optional)
 ```
 
 #### Google Cloud Setup
@@ -125,8 +130,10 @@ To use Firestore and Vertex AI features:
 5. Add the following variables to your `.env.local` file:
    - `GOOGLE_CLOUD_PROJECT`
    - `GOOGLE_CLOUD_LOCATION`
-   - `VERTEX_INDEX_ID`
-   - `VERTEX_ENDPOINT_ID`
+   - `VERTEX_AI_PROJECT_ID`
+   - `VERTEX_AI_LOCATION`
+   - `VERTEX_AI_INDEX_ID`
+   - `VERTEX_AI_INDEX_ENDPOINT_ID`
    - `DOCUMENT_AI_PROCESSOR_ID`
 
 ### Development
@@ -143,6 +150,19 @@ pnpm tsc --noEmit
 # Lint and format
 pnpm lint:fix
 pnpm format
+```
+
+
+### Database Management
+```bash
+# Generate migration
+pnpm db:generate
+
+# Run migrations
+pnpm db:migrate
+
+# Push schema changes (dev only)
+pnpm db:push
 ```
 
 ## 🧪 Testing Strategy
@@ -268,6 +288,7 @@ When using AI coding assistants:
 ## 📊 Monitoring & Analytics
 
 ### Production Monitoring
+
 - **Firebase Analytics**: Page views, performance metrics
 - **Error Tracking**: Sentry (to be configured)
 - **AI Metrics**: Token usage, response times
@@ -313,4 +334,4 @@ Proprietary - All rights reserved
 
 ---
 
-**Note**: This is an active development project. Always check [claude.md](./claude.md) for the latest development status and [roadmap-v2.md](./docs/roadmap-v2.md) for upcoming features.
+**Note**: This is an active development project. 

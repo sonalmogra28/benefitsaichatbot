@@ -12,7 +12,7 @@ async function assignSuperAdmin(email: string) {
 }
 
 // Find the email address from the command-line arguments
-const email = process.argv.find(arg => arg.includes('@'));
+const email = process.argv.find((arg) => arg.includes('@'));
 
 if (!email) {
   console.error('Please provide a valid email address as an argument.');

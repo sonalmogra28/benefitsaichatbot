@@ -1,8 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('@/lib/firebase/admin', () => ({
   adminAuth: {
-    verifyIdToken: vi.fn().mockResolvedValue({ uid: '123', role: 'company-admin', permissions: ['read'] }),
+    verifyIdToken: vi.fn().mockResolvedValue({
+      uid: '123',
+      role: 'company-admin',
+      permissions: ['read'],
+    }),
   },
 }));
 
@@ -15,7 +19,13 @@ vi.mock('next/headers', () => ({
   cookies: vi.fn().mockResolvedValue(cookieStore),
 }));
 
-import { getSessionFromHeader, hasRole, setSession, clearSession, getSession } from '../session';
+import {
+  getSessionFromHeader,
+  hasRole,
+  setSession,
+  clearSession,
+  getSession,
+} from '../session';
 import { adminAuth } from '@/lib/firebase/admin';
 const verifyToken = vi.mocked(adminAuth.verifyIdToken);
 
@@ -31,7 +41,11 @@ describe('getSessionFromHeader', () => {
       headers: { authorization: 'Bearer token' },
     });
     const result = await getSessionFromHeader(req);
-    expect(result).toMatchObject({ uid: '123', role: 'company-admin', permissions: ['read'] });
+    expect(result).toMatchObject({
+      uid: '123',
+      role: 'company-admin',
+      permissions: ['read'],
+    });
   });
 
   it('returns null for malformed authorization header', async () => {

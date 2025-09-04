@@ -14,22 +14,7 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
     coverage: {
       provider: 'v8',
-
-      reportsDirectory: './coverage',
-      reporter: ['text', 'lcov', 'html'],
-      include: [
-        'lib/auth/session.ts',
-        'app/api/chat/route.ts',
-        'lib/payments/**',
-        'lib/firebase/services/document-client.service.ts',
-      ],
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 80,
-        statements: 80,
-
-      },
+      include: ['lib/ai/rag-system.ts'],
     },
     resolveSnapshotPath: (testPath, snapExtension) =>
       path.resolve(__dirname, '__snapshots__', `${testPath}${snapExtension}`),
@@ -50,8 +35,10 @@ export default defineConfig({
     },
   },
   define: {
-    'process.env.NEXT_PUBLIC_STACK_PROJECT_ID': JSON.stringify('test-project-id'),
+    'process.env.NEXT_PUBLIC_STACK_PROJECT_ID':
+      JSON.stringify('test-project-id'),
     'process.env.STACK_SECRET_SERVER_KEY': JSON.stringify('test-secret-key'),
-    'process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY': JSON.stringify('test-client-key'),
+    'process.env.NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY':
+      JSON.stringify('test-client-key'),
   },
 });

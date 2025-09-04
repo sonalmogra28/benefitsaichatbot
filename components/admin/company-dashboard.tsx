@@ -49,12 +49,12 @@ export function CompanyDashboard({
 
   const { data: stats, error: statsError } = useSWR(
     companyId ? `/api/company-admin/stats?companyId=${companyId}` : null,
-    fetcher
+    fetcher,
   );
 
   const { data: recentActivity, error: recentActivityError } = useSWR(
     companyId ? `/api/company-admin/activity?companyId=${companyId}` : null,
-    fetcher
+    fetcher,
   );
 
   if (!stats || !recentActivity) {
@@ -311,7 +311,10 @@ export function CompanyDashboard({
 
         <TabsContent value="benefits" className="space-y-4">
           {companyId ? (
-            <BenefitsManagement companyId={companyId} companyName={companyName} />
+            <BenefitsManagement
+              companyId={companyId}
+              companyName={companyName}
+            />
           ) : (
             <Card>
               <CardContent className="flex items-center justify-center h-64">

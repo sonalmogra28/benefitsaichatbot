@@ -1,42 +1,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // --- Simplified Single-Company Rules --- //
-
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isRole(role) {
-      return request.auth.token.role == role;
-    }
-
-    function isAdmin() {
-      return isRole('super-admin') || isRole('company-admin');
-    }
-
-    // Users can only read/update their own data.
-    // Admins can read/write any user document.
-    match /users/{userId} {
-      allow read, update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
-      allow write: if isAdmin();
-    }
-
-    // A single, top-level collection for all documents.
-    match /documents/{docId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if isAdmin();
-    }
-
-    // Conversations are private to the user.
-    match /conversations/{conversationId}/{document=**} {
-      allow read, write: if isAuthenticated() && get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid;
-    }
-
-    // Deny all other access by default.
-    match /{path=**} {
-      allow read, write: if false;
+    match /{document=**} {
+      allow read, write: if request.auth != null &&
+        request.auth.token.companyId == resource.data.companyId;
     }
   }
 }
+

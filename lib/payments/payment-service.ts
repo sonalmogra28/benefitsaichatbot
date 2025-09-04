@@ -1,4 +1,8 @@
-export function calculateProratedAmount(amount: number, periodDays: number, usedDays: number): number {
+export function calculateProratedAmount(
+  amount: number,
+  periodDays: number,
+  usedDays: number,
+): number {
   if (periodDays <= 0) {
     throw new Error('periodDays must be greater than 0');
   }
