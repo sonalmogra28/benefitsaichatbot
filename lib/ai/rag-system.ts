@@ -1,19 +1,11 @@
-import { getModel } from './vertex-config';
 import { adminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { GenerativeModel } from '@google-cloud/vertexai';
 import { vectorSearchService } from './vector-search';
+import { generateEmbedding } from './embeddings';
 
 // ... (interfaces remain the same)
 
 class RAGSystem {
-  private embeddingModel: GenerativeModel | null;
-
-  constructor() {
-    this.embeddingModel = this.initializeEmbeddingModel();
-  }
-  
-  // ... (initializeEmbeddingModel remains the same)
 
   async processDocument(
     documentId: string,
@@ -29,9 +21,7 @@ class RAGSystem {
         const chunkContent = chunks[i];
         const chunkId = `${documentId}_chunk_${i}`;
         
-        const embedding = this.embeddingModel 
-          ? await this.generateEmbedding(chunkContent) 
-          : [];
+        const embedding = await generateEmbedding(chunkContent);
 
         // Save chunk metadata to Firestore
         const chunkData = {
@@ -73,16 +63,8 @@ class RAGSystem {
     limit: number = 5
   ): Promise<SearchResult[]> {
     try {
-      const queryEmbedding = this.embeddingModel 
-        ? await this.generateEmbedding(query)
-        : undefined;
-      
-      if (queryEmbedding) {
-        return await this.vectorSearch(queryEmbedding, companyId, limit);
-      } else {
-        // Fallback to keyword search if embedding model is not available
-        return await this.keywordSearch(query, companyId, limit);
-      }
+      const queryEmbedding = await generateEmbedding(query);
+      return await this.vectorSearch(queryEmbedding, companyId, limit);
     } catch (error) {
       console.error('Search error:', error);
       return [];
@@ -116,7 +98,7 @@ class RAGSystem {
     }).filter(result => result.chunk && result.chunk.companyId === companyId);
   }
 
-  // ... (keywordSearch, generateEmbedding, splitIntoChunks, cosineSimilarity, generateContext remain the same)
+  // ... (keywordSearch, splitIntoChunks, cosineSimilarity, generateContext remain the same)
 }
 
 export const ragSystem = new RAGSystem();
