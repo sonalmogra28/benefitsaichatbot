@@ -4,12 +4,15 @@ import { searchVectors } from '@/lib/ai/vector-search';
 // Function to build knowledge context from search results
 const buildKnowledgeContext = (results: any[]) => {
   return results
-    .map((result) => `${result.metadata?.title || 'Document'}: ${result.content}`)
+    .map(
+      (result) => `${result.metadata?.title || 'Document'}: ${result.content}`,
+    )
     .join('\n\n');
 };
 
 export const searchKnowledge = tool({
-  description: 'Search the knowledge base for answers to user questions about benefits, policies, and company information. Use this whenever the user asks a question that can be answered from documents.',
+  description:
+    'Search the knowledge base for answers to user questions about benefits, policies, and company information. Use this whenever the user asks a question that can be answered from documents.',
   parameters: z.object({
     query: z.string().describe('The user question to search for.'),
   }),

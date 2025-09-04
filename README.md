@@ -2,12 +2,13 @@
 
 A multi-tenant, AI-powered benefits management platform that transforms employee benefits decisions through conversational AI, visual analytics, and intelligent automation.
 
-## 🚀 Current Status
+## 🚀 Project Overview
 
 **Version**: MVP (Single-tenant)  
-**Stack**: Next.js 15, TypeScript, Drizzle ORM, Neon PostgreSQL, Vercel AI SDK  
-**Deployment**: Vercel (Production)  
-**AI Model**: xAI Grok-2 (with OpenAI GPT-4 fallback ready)
+**Stack**: Next.js 15, TypeScript, Firestore, Firebase Hosting, Vertex AI SDK
+**Deployment**: Firebase Hosting (Production)
+**AI Model**: Vertex AI Gemini (with xAI Grok-2 and OpenAI GPT-4 fallback ready)
+
 
 ### ✅ Completed Features
 - Basic conversational AI with benefits personality
@@ -55,39 +56,47 @@ A multi-tenant, AI-powered benefits management platform that transforms employee
          └───────────────────────┴─────────────────────────┘
                                  │
                     ┌────────────▼────────────┐
-                    │    Vercel Edge/CDN      │
-                    │  (Auth, Rate Limiting)  │
+                    │  Firebase Hosting/CDN   │
+                    │     (Auth, Routing)     │
                     └────────────┬────────────┘
                                  │
          ┌───────────────────────┴───────────────────────┐
          │                                               │
-    ┌────▼─────┐  ┌──────────────┐  ┌─────────────┐  ┌─▼──────────┐
-    │   Chat   │  │   Benefits   │  │  Analytics  │  │   Admin    │
-    │  Service │  │   Service    │  │   Service   │  │  Service   │
-    └────┬─────┘  └──────┬───────┘  └──────┬──────┘  └─────┬──────┘
+    ┌────▼──────┐  ┌──────────────┐  ┌─────────────┐  ┌─▼──────────┐
+    │   Chat    │  │   Benefits   │  │  Analytics  │  │   Admin    │
+    │ Function  │  │   Function   │  │  Function   │  │  Function  │
+    └────┬──────┘  └──────┬───────┘  └──────┬──────┘  └─────┬──────┘
          │               │                   │                │
          └───────────────┴───────────────────┴────────────────┘
                                  │
                     ┌────────────▼────────────┐
-                    │    AI Orchestration     │
-                    │  (Multi-Model Routing)  │
+                    │   AI Orchestration     │
+                    │      (Vertex AI)       │
                     └────────────┬────────────┘
                                  │
+                    ┌────────────▼────────────┐
+                    │       Firestore         │
+                    │   (Document Database)   │
+                    └─────────────────────────┘
+```
+
          ┌───────────────────────┴───────────────────────┐
+
          │                       │                       │
     ┌────▼─────┐         ┌──────▼───────┐      ┌───────▼──────┐
-    │PostgreSQL│         │   Pinecone    │      │    Redis     │
-    │  (Neon)  │         │ (Vector DB)   │      │   (Cache)    │
+    │Firestore │         │ Vertex AI VS  │      │ Memorystore │
+    │ Database │         │ (Vector DB)   │      │   (Cache)   │
     └──────────┘         └──────────────┘      └──────────────┘
-```
+
 
 ## 🚦 Quick Start
 
 ### Prerequisites
 - Node.js >= 20.0.0
 - pnpm >= 8.0.0
-- PostgreSQL (via Neon)
-- Vercel CLI (for deployment)
+- Firebase CLI
+
+- Google Cloud SDK (for Vertex AI)
 
 ### Environment Setup
 ```bash
@@ -100,20 +109,19 @@ pnpm install
 
 # Copy environment variables
 cp .env.example .env.local
+# Never commit real `.env` files or secrets to version control.
 
 # Required environment variables:
-POSTGRES_URL=              # Neon PostgreSQL URL
-POSTGRES_URL_NON_POOLING=  # Neon direct connection
-AUTH_SECRET=               # NextAuth secret (generate with: openssl rand -base64 32)
-OPENAI_API_KEY=            # For GPT-4 fallback
-XAI_API_KEY=               # For Grok-2 (primary)
+FIREBASE_PROJECT_ID=       # Firebase project identifier
+FIREBASE_CLIENT_EMAIL=     # Service account client email
+FIREBASE_PRIVATE_KEY=      # Base64-encoded private key
 ```
 
 #### Google Cloud Setup
 
-To use Vertex AI and Document AI features:
+To use Firestore and Vertex AI features:
 
-1. Enable the Vertex AI and Document AI APIs in your Google Cloud project.
+1. Enable the Firestore, Vertex AI, and Document AI APIs in your Google Cloud project.
 2. Create a Vertex AI index and endpoint, and note their IDs.
 3. Create a Document AI processor for the documents you need to process.
 4. Grant your service account the following IAM roles:
@@ -122,15 +130,14 @@ To use Vertex AI and Document AI features:
 5. Add the following variables to your `.env.local` file:
    - `GOOGLE_CLOUD_PROJECT`
    - `GOOGLE_CLOUD_LOCATION`
-   - `VERTEX_INDEX_ID`
-   - `VERTEX_ENDPOINT_ID`
+   - `VERTEX_AI_PROJECT_ID`
+   - `VERTEX_AI_LOCATION`
+   - `VERTEX_AI_INDEX_ID`
+   - `VERTEX_AI_INDEX_ENDPOINT_ID`
    - `DOCUMENT_AI_PROCESSOR_ID`
 
 ### Development
 ```bash
-# Run database migrations
-pnpm db:migrate
-
 # Start development server
 pnpm dev
 
@@ -145,6 +152,7 @@ pnpm lint:fix
 pnpm format
 ```
 
+
 ### Database Management
 ```bash
 # Generate migration
@@ -152,9 +160,6 @@ pnpm db:generate
 
 # Run migrations
 pnpm db:migrate
-
-# Open Drizzle Studio
-pnpm db:studio
 
 # Push schema changes (dev only)
 pnpm db:push
@@ -190,22 +195,22 @@ pnpm test:e2e           # Run E2E tests with Playwright
 
 ## 🚀 Deployment
 
-### Vercel Deployment (Production)
+### Firebase Deployment (Production)
 ```bash
 # Deploy to production
-vercel --prod
+firebase deploy --only hosting
 
-# Deploy to preview
-vercel
+# Deploy to preview channel
+firebase hosting:channel:deploy preview
 
 # Check deployment status
-vercel ls
+firebase hosting:sites:list
 ```
 
 ### Environment Configuration
-- **Development**: Local PostgreSQL, development API keys
-- **Staging**: Neon PostgreSQL (staging), test API keys
-- **Production**: Neon PostgreSQL (production), production API keys
+- **Development**: Firebase emulators, development API keys
+- **Staging**: Staging Firebase project, test API keys
+- **Production**: Production Firebase project, production API keys
 
 ## 📁 Project Structure
 
@@ -224,10 +229,9 @@ benefits-chatbot/
 │   │   ├── tools/         # AI function tools
 │   │   ├── prompts/       # System prompts
 │   │   └── context/       # Context management
-│   ├── db/                # Database layer
-│   │   ├── schema/        # Drizzle schemas
+│   ├── db/                # Firestore data layer
 │   │   ├── repositories/  # Data access layer
-│   │   └── migrations/    # SQL migrations
+│   │   └── converters/    # Firestore converters and utilities
 │   └── utils/             # Utility functions
 ├── public/                # Static assets
 ├── scripts/               # Build and maintenance scripts
@@ -245,7 +249,7 @@ benefits-chatbot/
 
 ### Data Protection
 - End-to-end encryption (TLS 1.3)
-- Row-level security in PostgreSQL
+- Security rules in Firestore
 - Encrypted environment variables
 - No PII/PHI storage in logs
 
@@ -271,6 +275,9 @@ benefits-chatbot/
 - 80%+ test coverage
 - All PRs must pass CI
 
+### CI Test Process
+Our GitHub Actions pipeline runs `npm test` with coverage on every push and pull request. The build fails if any test fails or if coverage falls below the configured thresholds (lines: 80%, statements: 80%, functions: 80%, branches: 15%). Run `npm test` locally before pushing to verify your changes.
+
 ### Using with Windsurf/Cascade
 When using AI coding assistants:
 1. Always provide full context from claude.md
@@ -281,7 +288,8 @@ When using AI coding assistants:
 ## 📊 Monitoring & Analytics
 
 ### Production Monitoring
-- **Vercel Analytics**: Page views, Web Vitals
+
+- **Firebase Analytics**: Page views, performance metrics
 - **Error Tracking**: Sentry (to be configured)
 - **AI Metrics**: Token usage, response times
 - **Business Metrics**: Custom analytics dashboard
@@ -295,15 +303,6 @@ When using AI coding assistants:
 
 ### Common Issues
 
-#### Database Connection Errors
-```bash
-# Check connection
-pnpm exec tsx scripts/check-db.ts
-
-# Reset connection pool
-pnpm db:push --force
-```
-
 #### Build Failures
 ```bash
 # Clear cache
@@ -314,8 +313,6 @@ pnpm build
 
 #### Type Errors
 ```bash
-# Regenerate types
-pnpm db:generate
 pnpm tsc --noEmit
 ```
 
@@ -337,4 +334,4 @@ Proprietary - All rights reserved
 
 ---
 
-**Note**: This is an active development project. Always check [claude.md](./claude.md) for the latest development status and [roadmap-v2.md](./docs/roadmap-v2.md) for upcoming features.
+**Note**: This is an active development project. 

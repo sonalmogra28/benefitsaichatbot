@@ -1,18 +1,24 @@
 // middleware.ts
 import { NextResponse, type NextRequest } from 'next/server';
 
-async function verifySession(sessionCookie: string | undefined, request: NextRequest): Promise<boolean> {
+async function verifySession(
+  sessionCookie: string | undefined,
+  request: NextRequest,
+): Promise<boolean> {
   if (!sessionCookie) {
     return false;
   }
   try {
-    const response = await fetch(new URL('/api/auth/verify-session', request.url).toString(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      new URL('/api/auth/verify-session', request.url).toString(),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionCookie }),
       },
-      body: JSON.stringify({ sessionCookie }),
-    });
+    );
     const { isValid } = await response.json();
     return isValid;
   } catch (error) {
@@ -21,30 +27,63 @@ async function verifySession(sessionCookie: string | undefined, request: NextReq
   }
 }
 
+async function attemptRefresh(request: NextRequest): Promise<string[] | null> {
+  const refreshToken = request.cookies.get('refresh_token')?.value;
+  if (!refreshToken) return null;
+  try {
+    const refreshResponse = await fetch(
+      new URL('/api/auth/refresh', request.url).toString(),
+      {
+        method: 'POST',
+        headers: {
+          Cookie: `refresh_token=${refreshToken}`,
+        },
+      },
+    );
+    if (!refreshResponse.ok) return null;
+    const setCookie = refreshResponse.headers.get('set-cookie');
+    return setCookie ? [setCookie] : [];
+  } catch (error) {
+    console.error('Middleware: Error refreshing session.', error);
+    return null;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get('__session');
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register');
+  const isAuthPage =
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/register');
+  const isApiRoute = request.nextUrl.pathname.startsWith('/api');
   const isApiAuthRoute = request.nextUrl.pathname.startsWith('/api/auth');
 
-  // Allow API auth routes to be accessed without a session
+  // Allow API auth routes to be accessed without checks
   if (isApiAuthRoute) {
     return NextResponse.next();
   }
 
-  const sessionIsValid = await verifySession(session?.value, request);
-
-  // If the user is on an auth page but has a valid session, redirect them to the home page.
-  if (sessionIsValid && isAuthPage) {
-    return NextResponse.redirect(new URL('/', request.url));
+  let sessionIsValid = await verifySession(session?.value, request);
+  let newCookies: string[] | null = null;
+  if (!sessionIsValid) {
+    newCookies = await attemptRefresh(request);
+    if (newCookies !== null) {
+      sessionIsValid = true;
+    }
   }
 
-  // If the user is on a protected page and does not have a valid session, redirect them to the login page.
+  if (sessionIsValid && isAuthPage) {
+    const res = NextResponse.redirect(new URL('/', request.url));
+    newCookies?.forEach((c) => res.headers.append('Set-Cookie', c));
+    return res;
+  }
+
   if (!sessionIsValid && !isAuthPage) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
-  
-  // If none of the above, continue to the requested page.
-  return NextResponse.next();
+
+  const res = NextResponse.next();
+  newCookies?.forEach((c) => res.headers.append('Set-Cookie', c));
+  return res;
 }
 
 // Middleware matcher: run on all routes except static assets and image optimization.

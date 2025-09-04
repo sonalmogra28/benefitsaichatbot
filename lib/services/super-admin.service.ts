@@ -1,8 +1,8 @@
 // lib/services/super-admin.service.ts
-import {
-  type SystemSettings,
-  type PlatformStats,
-  type ActivityLog,
+import type {
+  SystemSettings,
+  PlatformStats,
+  ActivityLog,
 } from '@/lib/types/super-admin';
 
 // Base URL for the new API route
@@ -35,7 +35,9 @@ class SuperAdminService {
    */
   async getRecentActivity(limit = 10): Promise<ActivityLog[]> {
     try {
-      const response = await fetch(`${API_URL}?action=getRecentActivity&limit=${limit}`);
+      const response = await fetch(
+        `${API_URL}?action=getRecentActivity&limit=${limit}`,
+      );
       if (!response.ok) {
         throw new Error('Failed to fetch activity logs');
       }
@@ -91,9 +93,16 @@ class SuperAdminService {
     return {
       maintenanceMode: false,
       signupsEnabled: true,
-      emailSettings: { fromEmail: 'noreply@benefitschatbot.com', fromName: 'Benefits Chatbot' },
+      emailSettings: {
+        fromEmail: 'noreply@benefitschatbot.com',
+        fromName: 'Benefits Chatbot',
+      },
       storageSettings: { maxFileSizeMB: 25, allowedFileTypes: ['pdf', 'md'] },
-      aiSettings: { provider: 'VertexAI', model: 'gemini-1.5-pro-preview-0409', rateLimitPerMinute: 60 },
+      aiSettings: {
+        provider: 'VertexAI',
+        model: 'gemini-1.5-pro-preview-0409',
+        rateLimitPerMinute: 60,
+      },
       featureFlags: {},
     };
   }

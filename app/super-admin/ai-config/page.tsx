@@ -1,22 +1,36 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { Heading } from '@/components/ui/heading';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'; // Assuming form components exist
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'; // Assuming form components exist
 
 // Define the validation schema with Zod
 const aiConfigSchema = z.object({
-  personality: z.string().min(10, 'Personality must be at least 10 characters.'),
+  personality: z
+    .string()
+    .min(10, 'Personality must be at least 10 characters.'),
   tone: z.enum(['formal', 'friendly', 'neutral', 'humorous']),
   // Example of a more complex field
   responseLength: z.number().min(50).max(500),
@@ -24,7 +38,6 @@ const aiConfigSchema = z.object({
 
 // Infer the TypeScript type from the schema
 type AiConfigFormValues = z.infer<typeof aiConfigSchema>;
-
 
 /**
  * Renders the AI Configuration page for the Super Admin.
@@ -55,11 +68,12 @@ export default function AiConfigPage() {
     setIsLoading(true);
     setIsSuccess(false);
     console.log('Submitting AI config:', data);
-    
+
     // TODO: Implement API call in the next task
     // await fetch('/api/super-admin/ai-config', { method: 'POST', body: JSON.stringify(data) });
-    
-    setTimeout(() => { // Simulate API latency
+
+    setTimeout(() => {
+      // Simulate API latency
       setIsLoading(false);
       setIsSuccess(true);
     }, 1000);
@@ -92,7 +106,8 @@ export default function AiConfigPage() {
                       />
                     </FormControl>
                     <FormDescription>
-                      This is the core instruction that defines the AI&apos;s character. 
+                      This is the core instruction that defines the AI&apos;s
+                      character.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -105,7 +120,10 @@ export default function AiConfigPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tone</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a tone" />
@@ -118,7 +136,9 @@ export default function AiConfigPage() {
                         <SelectItem value="humorous">Humorous</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormDescription>The default tone of the AI&apos;s responses.</FormDescription>
+                    <FormDescription>
+                      The default tone of the AI&apos;s responses.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -127,7 +147,9 @@ export default function AiConfigPage() {
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? 'Saving...' : 'Save Configuration'}
               </Button>
-              {isSuccess && <p className="text-green-500">Settings saved successfully!</p>}
+              {isSuccess && (
+                <p className="text-green-500">Settings saved successfully!</p>
+              )}
             </form>
           </Form>
         </CardContent>

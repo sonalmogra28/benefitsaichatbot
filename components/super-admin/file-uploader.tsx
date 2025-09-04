@@ -64,7 +64,8 @@ export function FileUploader() {
     uploadTask.on(
       'state_changed',
       (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         setUploadProgress(progress);
       },
       (error) => {
@@ -81,7 +82,7 @@ export function FileUploader() {
         try {
           const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
           const token = await user.getIdToken();
-          
+
           const response = await fetch('/api/super-admin/documents/upload', {
             method: 'POST',
             headers: {
@@ -106,10 +107,13 @@ export function FileUploader() {
           });
         } catch (apiError: any) {
           console.error('Failed to save metadata:', apiError);
-          setError(`Upload succeeded, but failed to save file details. Please contact support. Error: ${apiError.message}`);
+          setError(
+            `Upload succeeded, but failed to save file details. Please contact support. Error: ${apiError.message}`,
+          );
           toast({
             title: 'Metadata Save Failed',
-            description: 'The file was uploaded but could not be registered in the system.',
+            description:
+              'The file was uploaded but could not be registered in the system.',
             variant: 'destructive',
           });
         } finally {
@@ -117,15 +121,16 @@ export function FileUploader() {
           setFile(null);
           setUploadProgress(0);
         }
-      }
+      },
     );
   };
 
   return (
     <div className="space-y-4 rounded-lg border p-6">
-       <div
+      <div
         {...getRootProps()}
-        className={`flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-muted-foreground/30 hover:border-primary/50'}`}>
+        className={`flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed transition-colors ${isDragActive ? 'border-primary bg-primary/10' : 'border-muted-foreground/30 hover:border-primary/50'}`}
+      >
         <input {...getInputProps()} />
         {file ? (
           <p className="text-lg font-semibold">{file.name}</p>
@@ -134,25 +139,33 @@ export function FileUploader() {
         ) : (
           <div className="text-center">
             <p className="font-semibold">Drag & drop a PDF file here</p>
-            <p className="text-sm text-muted-foreground">or click to select a file</p>
+            <p className="text-sm text-muted-foreground">
+              or click to select a file
+            </p>
           </div>
         )}
       </div>
 
       {file && (
         <div className="flex flex-col items-center gap-4">
-           <Button onClick={handleUpload} disabled={isUploading || !file} className="w-full max-w-xs">
+          <Button
+            onClick={handleUpload}
+            disabled={isUploading || !file}
+            className="w-full max-w-xs"
+          >
             {isUploading ? `Uploading...` : `Upload ${file.name}`}
           </Button>
           {isUploading && (
             <div className="w-full max-w-xs">
               <Progress value={uploadProgress} />
-              <p className="mt-1 text-center text-sm text-muted-foreground">{uploadProgress.toFixed(0)}%</p>
+              <p className="mt-1 text-center text-sm text-muted-foreground">
+                {uploadProgress.toFixed(0)}%
+              </p>
             </div>
           )}
         </div>
       )}
-     
+
       {error && <p className="text-center text-sm text-destructive">{error}</p>}
     </div>
   );
