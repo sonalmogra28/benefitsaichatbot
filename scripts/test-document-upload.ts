@@ -9,6 +9,9 @@ import { knowledgeBaseDocuments } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { IndexEndpointServiceClient } from '@google-cloud/aiplatform';
 import { GoogleAuth } from 'google-auth-library';
+import { upsertDocumentChunks } from '../lib/ai/vector-search';
+import { generateEmbeddings } from '../lib/ai/embeddings';
+
 
 async function testDocumentProcessing() {
   console.log('🧪 Testing Document Processing Pipeline with Vertex AI');
@@ -83,7 +86,7 @@ async function testDocumentProcessing() {
 
     // Test 4: Process the document and upsert to Vertex AI
     console.log('4️⃣ Testing Document Processing and Upserting to Vertex AI...');
-    const documentChunks = chunks.slice(0, 3).map((chunk, i) => ({
+    const baseChunks = chunks.slice(0, 3).map((chunk, i) => ({
 
       id: `${testDocument.id}-chunk-${i}`,
       text: chunk,
@@ -96,6 +99,7 @@ async function testDocumentProcessing() {
         tags: (testDocument.tags as string[]) || [],
       },
     }));
+
     const embeddings = await generateEmbeddings(baseChunks.map((c) => c.text));
     const documentChunks = baseChunks.map((chunk, i) => ({
       ...chunk,
