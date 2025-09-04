@@ -11,7 +11,7 @@ Multi‑tenant AI platform empowering employees to understand, compare, and mana
 | **Current Version** | 3.1.0 |
 | **Deployment Target** | Firebase / Google Cloud |
 | **Primary Model** | Vertex AI (OpenAI & Anthropic as fallback) |
-| **Database Migration** | PostgreSQL ➜ Firebase (in progress) |
+| **Database Migration** | PostgreSQL ➜ Firebase |
 
 ---
 
