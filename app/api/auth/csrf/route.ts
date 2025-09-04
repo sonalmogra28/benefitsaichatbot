@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const csrfToken = crypto.randomBytes(32).toString('hex');
 
     const response = NextResponse.json({
-      csrfToken
+      csrfToken,
     });
 
     // Set CSRF token as httpOnly cookie
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60, // 1 hour
-      path: '/'
+      path: '/',
     });
 
     return response;
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     console.error('CSRF token generation error:', error);
     return NextResponse.json(
       { error: 'Failed to generate CSRF token' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

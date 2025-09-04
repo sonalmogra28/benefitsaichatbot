@@ -1,12 +1,31 @@
 'use client';
 
 import { useState, useCallback, type KeyboardEvent } from 'react';
-import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  Upload,
+  FileText,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -34,7 +53,10 @@ const ALLOWED_FILE_TYPES = [
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadProps) {
+export function DocumentUpload({
+  companyId,
+  onUploadComplete,
+}: DocumentUploadProps) {
   const [files, setFiles] = useState<UploadingFile[]>([]);
   const [documentType, setDocumentType] = useState<string>('policy');
   const [category, setCategory] = useState<string>('');
@@ -56,11 +78,11 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
     if (!selectedFiles) return;
 
     const newFiles: UploadingFile[] = [];
-    
+
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
       const error = validateFile(file);
-      
+
       newFiles.push({
         file,
         progress: 0,
@@ -69,44 +91,57 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
       });
     }
 
-    setFiles(prev => [...prev, ...newFiles]);
+    setFiles((prev) => [...prev, ...newFiles]);
   }, []);
 
   const uploadFile = async (uploadingFile: UploadingFile, index: number) => {
     try {
       // Update status to uploading
-      setFiles(prev => {
+      setFiles((prev) => {
         const updated = [...prev];
-        updated[index] = { ...uploadingFile, status: 'uploading', progress: 10 };
+        updated[index] = {
+          ...uploadingFile,
+          status: 'uploading',
+          progress: 10,
+        };
         return updated;
       });
 
       // Prepare form data
       const formData = new FormData();
       formData.append('file', uploadingFile.file);
-      formData.append('metadata', JSON.stringify({
-        title: uploadingFile.file.name.replace(/\.[^/.]+$/, ''), // Remove extension
-        documentType,
-        category: category || undefined,
-        tags: tags ? tags.split(',').map(t => t.trim()) : [],
-      }));
+      formData.append(
+        'metadata',
+        JSON.stringify({
+          title: uploadingFile.file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+          documentType,
+          category: category || undefined,
+          tags: tags ? tags.split(',').map((t) => t.trim()) : [],
+        }),
+      );
 
       // Simulate progress updates
       const progressInterval = setInterval(() => {
-        setFiles(prev => {
+        setFiles((prev) => {
           const updated = [...prev];
           if (updated[index].progress < 90) {
-            updated[index] = { ...updated[index], progress: updated[index].progress + 10 };
+            updated[index] = {
+              ...updated[index],
+              progress: updated[index].progress + 10,
+            };
           }
           return updated;
         });
       }, 500);
 
       // Upload file
-      const response = await fetch(`/api/admin/companies/${companyId}/documents/upload`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(
+        `/api/admin/companies/${companyId}/documents/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        },
+      );
 
       clearInterval(progressInterval);
 
@@ -118,21 +153,25 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
       const result = await response.json();
 
       // Update to processing status
-      setFiles(prev => {
+      setFiles((prev) => {
         const updated = [...prev];
-        updated[index] = { 
-          ...uploadingFile, 
-          status: 'processing', 
+        updated[index] = {
+          ...uploadingFile,
+          status: 'processing',
           progress: 95,
-          documentId: result.document.id 
+          documentId: result.document.id,
         };
         return updated;
       });
 
       // Mark as complete
-      setFiles(prev => {
+      setFiles((prev) => {
         const updated = [...prev];
-        updated[index] = { ...uploadingFile, status: 'complete', progress: 100 };
+        updated[index] = {
+          ...uploadingFile,
+          status: 'complete',
+          progress: 100,
+        };
         return updated;
       });
 
@@ -144,29 +183,31 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
       if (onUploadComplete) {
         onUploadComplete(result.document);
       }
-
     } catch (error) {
-      setFiles(prev => {
+      setFiles((prev) => {
         const updated = [...prev];
-        updated[index] = { 
-          ...uploadingFile, 
-          status: 'error', 
-          error: error instanceof Error ? error.message : 'Upload failed' 
+        updated[index] = {
+          ...uploadingFile,
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Upload failed',
         };
         return updated;
       });
 
       toast({
         title: 'Upload failed',
-        description: error instanceof Error ? error.message : 'An error occurred during upload',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'An error occurred during upload',
         variant: 'destructive',
       });
     }
   };
 
   const handleUpload = async () => {
-    const pendingFiles = files.filter(f => f.status === 'pending');
-    
+    const pendingFiles = files.filter((f) => f.status === 'pending');
+
     for (let i = 0; i < files.length; i++) {
       if (files[i].status === 'pending') {
         await uploadFile(files[i], i);
@@ -175,7 +216,7 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
   };
 
   const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -188,11 +229,14 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    handleFileSelect(e.dataTransfer.files);
-  }, [handleFileSelect]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setIsDragging(false);
+      handleFileSelect(e.dataTransfer.files);
+    },
+    [handleFileSelect],
+  );
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -201,15 +245,18 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
     }
   };
 
-  const pendingCount = files.filter(f => f.status === 'pending').length;
-  const uploadingCount = files.filter(f => f.status === 'uploading' || f.status === 'processing').length;
+  const pendingCount = files.filter((f) => f.status === 'pending').length;
+  const uploadingCount = files.filter(
+    (f) => f.status === 'uploading' || f.status === 'processing',
+  ).length;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Upload Knowledge Base Documents</CardTitle>
         <CardDescription>
-          Upload PDF, Word, or text documents to enhance the AI&apos;s knowledge about your benefits.
+          Upload PDF, Word, or text documents to enhance the AI&apos;s knowledge
+          about your benefits.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -257,7 +304,9 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
           role="button"
           tabIndex={0}
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-            isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
+            isDragging
+              ? 'border-primary bg-primary/5'
+              : 'border-muted-foreground/25'
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -293,15 +342,20 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
               >
                 <FileText className="size-5 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{file.file.name}</p>
+                  <p className="text-sm font-medium truncate">
+                    {file.file.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {(file.file.size / 1024 / 1024).toFixed(2)} MB
                   </p>
-                  {file.status === 'uploading' || file.status === 'processing' ? (
+                  {file.status === 'uploading' ||
+                  file.status === 'processing' ? (
                     <Progress value={file.progress} className="h-1 mt-1" />
                   ) : null}
                   {file.error && (
-                    <p className="text-xs text-destructive mt-1">{file.error}</p>
+                    <p className="text-xs text-destructive mt-1">
+                      {file.error}
+                    </p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -349,15 +403,16 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
 
         {/* Upload button */}
         {pendingCount > 0 && (
-          <Button 
-            onClick={handleUpload} 
+          <Button
+            onClick={handleUpload}
             disabled={uploadingCount > 0}
             className="w-full"
           >
             {uploadingCount > 0 ? (
               <>
                 <Loader2 className="size-4 mr-2 animate-spin" />
-                Uploading {uploadingCount} file{uploadingCount > 1 ? 's' : ''}...
+                Uploading {uploadingCount} file{uploadingCount > 1 ? 's' : ''}
+                ...
               </>
             ) : (
               <>
@@ -373,9 +428,10 @@ export function DocumentUpload({ companyId, onUploadComplete }: DocumentUploadPr
           <AlertCircle className="size-4" />
           <AlertTitle>Processing Information</AlertTitle>
           <AlertDescription>
-            After upload, documents are automatically processed to extract text and generate embeddings. 
-            This may take a few minutes depending on file size. Documents will be available for search 
-            once processing is complete.
+            After upload, documents are automatically processed to extract text
+            and generate embeddings. This may take a few minutes depending on
+            file size. Documents will be available for search once processing is
+            complete.
           </AlertDescription>
         </Alert>
       </CardContent>

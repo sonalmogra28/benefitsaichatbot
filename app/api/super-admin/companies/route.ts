@@ -12,6 +12,9 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ id: docRef.id }, { status: 201 });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to create company' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create company' },
+      { status: 500 },
+    );
   }
 }

@@ -47,7 +47,7 @@ class Logger {
   private shouldLog(level: LogLevel): boolean {
     const levels: LogLevel[] = ['debug', 'info', 'warn', 'error'];
     const configLevel = this.config.level;
-    
+
     return levels.indexOf(level) >= levels.indexOf(configLevel);
   }
 
@@ -55,20 +55,20 @@ class Logger {
     const timestamp = entry.timestamp.toISOString();
     const level = entry.level.toUpperCase().padEnd(5);
     const env = entry.environment.padEnd(11);
-    
+
     let message = `[${timestamp}] [${level}] [${env}] ${entry.message}`;
-    
+
     if (entry.context) {
       message += ` | Context: ${JSON.stringify(entry.context)}`;
     }
-    
+
     if (entry.error) {
       message += ` | Error: ${entry.error.name}: ${entry.error.message}`;
       if (entry.error.stack && this.environment === 'development') {
         message += `\n${entry.error.stack}`;
       }
     }
-    
+
     return message;
   }
 
@@ -76,7 +76,7 @@ class Logger {
     if (!this.config.enableConsole) return;
 
     const formattedMessage = this.formatMessage(entry);
-    
+
     // In production, console logging should be handled by the runtime
     // In development, we can use console methods for debugging
     if (this.environment === 'development') {
@@ -109,13 +109,21 @@ class Logger {
     } catch (error) {
       // Fallback: cloud logging failed, but we can't use console here as it would create a cycle
       // Log to stderr directly only in development
-      if (this.environment === 'development' && typeof process !== 'undefined') {
+      if (
+        this.environment === 'development' &&
+        typeof process !== 'undefined'
+      ) {
         process.stderr.write(`Failed to write to cloud logs: ${error}\n`);
       }
     }
   }
 
-  private async log(level: LogLevel, message: string, context?: LogContext, error?: Error): Promise<void> {
+  private async log(
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+    error?: Error,
+  ): Promise<void> {
     if (!this.shouldLog(level)) return;
 
     const entry: LogEntry = {
@@ -135,10 +143,7 @@ class Logger {
     }
 
     // Log to multiple destinations
-    await Promise.all([
-      this.logToConsole(entry),
-      this.logToCloud(entry),
-    ]);
+    await Promise.all([this.logToConsole(entry), this.logToCloud(entry)]);
   }
 
   public debug(message: string, context?: LogContext): void {
@@ -163,11 +168,12 @@ class Logger {
     path: string,
     statusCode: number,
     duration: number,
-    context?: LogContext
+    context?: LogContext,
   ): void {
     const message = `API ${method} ${path} - ${statusCode} (${duration}ms)`;
-    const level: LogLevel = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
-    
+    const level: LogLevel =
+      statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
+
     this.log(level, message, context);
   }
 
@@ -175,11 +181,11 @@ class Logger {
     event: 'login' | 'logout' | 'signup' | 'password-reset',
     userId?: string,
     success = true,
-    context?: LogContext
+    context?: LogContext,
   ): void {
     const message = `Auth event: ${event} - ${success ? 'Success' : 'Failed'}`;
     const level: LogLevel = success ? 'info' : 'warn';
-    
+
     this.log(level, message, { ...context, userId, action: event });
   }
 
@@ -188,11 +194,11 @@ class Logger {
     tokensUsed: number,
     duration: number,
     success: boolean,
-    context?: LogContext
+    context?: LogContext,
   ): void {
     const message = `AI interaction with ${model} - ${tokensUsed} tokens in ${duration}ms`;
     const level: LogLevel = success ? 'info' : 'error';
-    
+
     this.log(level, message, {
       ...context,
       metadata: {
@@ -207,18 +213,19 @@ class Logger {
   public logSecurityEvent(
     event: string,
     severity: 'low' | 'medium' | 'high' | 'critical',
-    context?: LogContext
+    context?: LogContext,
   ): void {
     const message = `Security event: ${event} (Severity: ${severity})`;
-    const level: LogLevel = severity === 'critical' || severity === 'high' ? 'error' : 'warn';
-    
+    const level: LogLevel =
+      severity === 'critical' || severity === 'high' ? 'error' : 'warn';
+
     this.log(level, message, { ...context, action: `security:${event}` });
   }
 
   // Performance logging
   public startTimer(label: string): () => void {
     const start = Date.now();
-    
+
     return () => {
       const duration = Date.now() - start;
       this.debug(`Performance: ${label} took ${duration}ms`);
@@ -226,7 +233,12 @@ class Logger {
   }
 
   // Structured logging for monitoring
-  public metric(name: string, value: number, unit = '', tags?: Record<string, string>): void {
+  public metric(
+    name: string,
+    value: number,
+    unit = '',
+    tags?: Record<string, string>,
+  ): void {
     this.info(`Metric: ${name}`, {
       metadata: {
         metricName: name,
@@ -242,8 +254,14 @@ class Logger {
 export const logger = Logger.getInstance();
 
 // Export convenience functions
-export const logDebug = (message: string, context?: LogContext) => logger.debug(message, context);
-export const logInfo = (message: string, context?: LogContext) => logger.info(message, context);
-export const logWarn = (message: string, context?: LogContext) => logger.warn(message, context);
-export const logError = (message: string, error?: Error, context?: LogContext) => 
-  logger.error(message, error, context);
+export const logDebug = (message: string, context?: LogContext) =>
+  logger.debug(message, context);
+export const logInfo = (message: string, context?: LogContext) =>
+  logger.info(message, context);
+export const logWarn = (message: string, context?: LogContext) =>
+  logger.warn(message, context);
+export const logError = (
+  message: string,
+  error?: Error,
+  context?: LogContext,
+) => logger.error(message, error, context);

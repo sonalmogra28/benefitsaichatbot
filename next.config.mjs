@@ -3,9 +3,11 @@ async function setupDevelopmentEnvironment() {
   const isDevelopment = process.env.NODE_ENV === 'development';
   if (isDevelopment) {
     // Use a dynamic import for the JavaScript file
-    const { FIREBASE_EMULATOR_CONFIG } = await import('./lib/config/env.local.js');
+    const { FIREBASE_EMULATOR_CONFIG } = await import(
+      './lib/config/env.local.js'
+    );
     const { projectId, host, ports } = FIREBASE_EMULATOR_CONFIG;
-    
+
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = projectId;
     process.env.GCLOUD_PROJECT = projectId;
     process.env.FIREBASE_AUTH_EMULATOR_HOST = `${host}:${ports.auth}`;
@@ -13,7 +15,7 @@ async function setupDevelopmentEnvironment() {
     process.env.FIREBASE_STORAGE_EMULATOR_HOST = `${host}:${ports.storage}`;
     console.log('✓ Using Firebase Emulators for local development');
   }
-  
+
   /** @type {import('next').NextConfig} */
   const nextConfig = {
     reactStrictMode: true,

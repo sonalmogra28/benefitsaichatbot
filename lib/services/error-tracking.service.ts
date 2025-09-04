@@ -66,25 +66,32 @@ class ErrorTracker {
       context?.component || 'unknown',
       context?.action || 'unknown',
     ];
-    
+
     // Simple hash function
     return parts.join('|').replace(/[^a-zA-Z0-9|]/g, '');
   }
 
-  private determineSeverity(error: Error, errorType: TrackedError['errorType']): TrackedError['severity'] {
+  private determineSeverity(
+    error: Error,
+    errorType: TrackedError['errorType'],
+  ): TrackedError['severity'] {
     // Determine severity based on error type and message
     if (error.message.includes('CRITICAL') || error.message.includes('FATAL')) {
       return 'critical';
     }
-    
-    if (errorType === 'server' || error.name === 'TypeError' || error.name === 'ReferenceError') {
+
+    if (
+      errorType === 'server' ||
+      error.name === 'TypeError' ||
+      error.name === 'ReferenceError'
+    ) {
       return 'high';
     }
-    
+
     if (errorType === 'api' || errorType === 'network') {
       return 'medium';
     }
-    
+
     return 'low';
   }
 
@@ -96,19 +103,23 @@ class ErrorTracker {
 
     try {
       // Group errors by fingerprint
-      const grouped = errors.reduce((acc, error) => {
-        if (!acc[error.fingerprint]) {
-          acc[error.fingerprint] = { ...error, count: 1 };
-        } else {
-          acc[error.fingerprint].count = (acc[error.fingerprint].count || 0) + 1;
-        }
-        return acc;
-      }, {} as Record<string, TrackedError>);
+      const grouped = errors.reduce(
+        (acc, error) => {
+          if (!acc[error.fingerprint]) {
+            acc[error.fingerprint] = { ...error, count: 1 };
+          } else {
+            acc[error.fingerprint].count =
+              (acc[error.fingerprint].count || 0) + 1;
+          }
+          return acc;
+        },
+        {} as Record<string, TrackedError>,
+      );
 
       // Save to Firestore
       const batch = adminDb.batch();
-      
-      Object.values(grouped).forEach(error => {
+
+      Object.values(grouped).forEach((error) => {
         const docRef = adminDb.collection('errors').doc();
         batch.set(docRef, {
           ...error,
@@ -117,8 +128,10 @@ class ErrorTracker {
       });
 
       await batch.commit();
-      
-      logger.info(`Flushed ${Object.keys(grouped).length} unique errors to database`);
+
+      logger.info(
+        `Flushed ${Object.keys(grouped).length} unique errors to database`,
+      );
     } catch (error) {
       logger.error('Failed to flush errors to database', error as Error);
     }
@@ -127,7 +140,7 @@ class ErrorTracker {
   public track(
     error: Error,
     errorType: TrackedError['errorType'] = 'unknown',
-    context?: ErrorContext
+    context?: ErrorContext,
   ): void {
     const fingerprint = this.generateFingerprint(error, context);
     const severity = this.determineSeverity(error, errorType);
@@ -149,7 +162,7 @@ class ErrorTracker {
     // Add to queue for batch processing
     if (this.config.monitoring.enableErrorTracking) {
       this.errorQueue.push(trackedError);
-      
+
       // Immediate flush for critical errors
       if (severity === 'critical') {
         this.flushErrors();
@@ -167,7 +180,7 @@ class ErrorTracker {
     method: string,
     statusCode: number,
     error: Error,
-    context?: ErrorContext
+    context?: ErrorContext,
   ): void {
     const enhancedContext: ErrorContext = {
       ...context,
@@ -185,7 +198,7 @@ class ErrorTracker {
   public trackClientError(
     error: Error,
     component: string,
-    context?: ErrorContext
+    context?: ErrorContext,
   ): void {
     const enhancedContext: ErrorContext = {
       ...context,
@@ -199,14 +212,17 @@ class ErrorTracker {
     field: string,
     value: any,
     error: Error,
-    context?: ErrorContext
+    context?: ErrorContext,
   ): void {
     const enhancedContext: ErrorContext = {
       ...context,
       metadata: {
         ...context?.metadata,
         field,
-        invalidValue: typeof value === 'object' ? '[object]' : String(value).substring(0, 100),
+        invalidValue:
+          typeof value === 'object'
+            ? '[object]'
+            : String(value).substring(0, 100),
       },
     };
 
@@ -250,25 +266,32 @@ class ErrorTracker {
         .where('timestamp', '>=', since)
         .get();
 
-      const errors = snapshot.docs.map(doc => doc.data() as TrackedError);
+      const errors = snapshot.docs.map((doc) => doc.data() as TrackedError);
 
       // Calculate statistics
       const stats = {
         total: errors.length,
         bySeverity: {} as Record<string, number>,
         byType: {} as Record<string, number>,
-        topErrors: [] as Array<{ fingerprint: string; count: number; message: string }>,
+        topErrors: [] as Array<{
+          fingerprint: string;
+          count: number;
+          message: string;
+        }>,
       };
 
-      const errorCounts: Record<string, { count: number; message: string }> = {};
+      const errorCounts: Record<string, { count: number; message: string }> =
+        {};
 
-      errors.forEach(error => {
+      errors.forEach((error) => {
         // Count by severity
-        stats.bySeverity[error.severity] = (stats.bySeverity[error.severity] || 0) + 1;
-        
+        stats.bySeverity[error.severity] =
+          (stats.bySeverity[error.severity] || 0) + 1;
+
         // Count by type
-        stats.byType[error.errorType] = (stats.byType[error.errorType] || 0) + 1;
-        
+        stats.byType[error.errorType] =
+          (stats.byType[error.errorType] || 0) + 1;
+
         // Count by fingerprint
         if (!errorCounts[error.fingerprint]) {
           errorCounts[error.fingerprint] = { count: 0, message: error.message };
@@ -298,7 +321,7 @@ class ErrorTracker {
       clearInterval(this.flushInterval);
       this.flushInterval = null;
     }
-    
+
     // Final flush
     this.flushErrors();
   }
@@ -308,16 +331,22 @@ class ErrorTracker {
 export const errorTracker = ErrorTracker.getInstance();
 
 // Export convenience functions
-export const trackError = (error: Error, type?: TrackedError['errorType'], context?: ErrorContext) =>
-  errorTracker.track(error, type, context);
+export const trackError = (
+  error: Error,
+  type?: TrackedError['errorType'],
+  context?: ErrorContext,
+) => errorTracker.track(error, type, context);
 
 export const trackApiError = (
   endpoint: string,
   method: string,
   statusCode: number,
   error: Error,
-  context?: ErrorContext
+  context?: ErrorContext,
 ) => errorTracker.trackApiError(endpoint, method, statusCode, error, context);
 
-export const trackClientError = (error: Error, component: string, context?: ErrorContext) =>
-  errorTracker.trackClientError(error, component, context);
+export const trackClientError = (
+  error: Error,
+  component: string,
+  context?: ErrorContext,
+) => errorTracker.trackClientError(error, component, context);

@@ -1,4 +1,3 @@
-
 import { db } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -25,15 +24,15 @@ class PlatformService {
         // If no settings exist, create with default values
         const defaultSettings: PlatformSettings = {
           id: 'default',
-          allowRegistrations: true, 
+          allowRegistrations: true,
         };
         await this.settingsDocRef.set(defaultSettings);
         return defaultSettings;
       }
       return doc.data() as PlatformSettings;
     } catch (error) {
-      console.error("Error retrieving platform settings:", error);
-      throw new Error("Could not retrieve platform settings.");
+      console.error('Error retrieving platform settings:', error);
+      throw new Error('Could not retrieve platform settings.');
     }
   }
 
@@ -42,7 +41,9 @@ class PlatformService {
    * @param updates The partial settings data to update.
    * @returns The updated platform settings.
    */
-  async updatePlatformSettings(updates: Partial<Omit<PlatformSettings, 'id'>>): Promise<PlatformSettings> {
+  async updatePlatformSettings(
+    updates: Partial<Omit<PlatformSettings, 'id'>>,
+  ): Promise<PlatformSettings> {
     try {
       const updateData = {
         ...updates,
@@ -53,8 +54,8 @@ class PlatformService {
       const updatedDoc = await this.settingsDocRef.get();
       return updatedDoc.data() as PlatformSettings;
     } catch (error) {
-      console.error("Error updating platform settings:", error);
-      throw new Error("Could not update platform settings.");
+      console.error('Error updating platform settings:', error);
+      throw new Error('Could not update platform settings.');
     }
   }
 }

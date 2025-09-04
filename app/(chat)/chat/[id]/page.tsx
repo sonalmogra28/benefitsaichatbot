@@ -14,7 +14,6 @@ interface ChatPageProps {
     id: string;
   };
 }
-
 export default function ChatPage({ params }: ChatPageProps) {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -66,6 +65,11 @@ export default function ChatPage({ params }: ChatPageProps) {
         </div>
       </div>
     );
+  // Verify the user has access to this conversation
+  const conversation = await getConversation(params.id, session.uid);
+
+  if (!conversation) {
+    notFound();
   }
 
   return (

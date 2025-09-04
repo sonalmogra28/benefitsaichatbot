@@ -20,13 +20,13 @@ const tests = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer demo-token' // Replace with actual token
+      Authorization: 'Bearer demo-token', // Replace with actual token
     },
     body: {
       message: 'What are the health insurance benefits?',
       chatId: 'test-chat-001',
-      companyId: 'demo-company'
-    }
+      companyId: 'demo-company',
+    },
   },
   searchDocuments: {
     name: 'Document Search Function',
@@ -34,12 +34,12 @@ const tests = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer demo-token'
+      Authorization: 'Bearer demo-token',
     },
     body: {
       query: 'health insurance deductible',
-      companyId: 'demo-company'
-    }
+      companyId: 'demo-company',
+    },
   },
   getCompanyStats: {
     name: 'Company Statistics Function',
@@ -47,11 +47,11 @@ const tests = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer demo-token'
+      Authorization: 'Bearer demo-token',
     },
     body: {
-      companyId: 'demo-company'
-    }
+      companyId: 'demo-company',
+    },
   },
   setUserRole: {
     name: 'User Role Management Function',
@@ -59,13 +59,13 @@ const tests = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer admin-token' // Requires admin token
+      Authorization: 'Bearer admin-token', // Requires admin token
     },
     body: {
       userId: 'test-user-001',
       role: 'employee',
-      companyId: 'demo-company'
-    }
+      companyId: 'demo-company',
+    },
   },
   createCompany: {
     name: 'Company Creation Function',
@@ -73,14 +73,14 @@ const tests = {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer super-admin-token' // Requires super admin token
+      Authorization: 'Bearer super-admin-token', // Requires super admin token
     },
     body: {
       name: 'Test Company',
       domain: 'testcompany.com',
-      adminEmail: 'admin@testcompany.com'
-    }
-  }
+      adminEmail: 'admin@testcompany.com',
+    },
+  },
 };
 
 // Test runner
@@ -88,12 +88,12 @@ async function runTest(testName, config) {
   return new Promise((resolve, reject) => {
     console.log(`\n🧪 Testing: ${config.name}`);
     console.log(`   Endpoint: ${config.endpoint}`);
-    
+
     const options = {
       hostname: `${REGION}-${PROJECT_ID}.cloudfunctions.net`,
       path: config.endpoint,
       method: config.method,
-      headers: config.headers
+      headers: config.headers,
     };
 
     const req = https.request(options, (res) => {
@@ -108,7 +108,10 @@ async function runTest(testName, config) {
           console.log(`   ✅ Success (${res.statusCode})`);
           try {
             const response = JSON.parse(data);
-            console.log(`   Response:`, JSON.stringify(response, null, 2).substring(0, 200));
+            console.log(
+              `   Response:`,
+              JSON.stringify(response, null, 2).substring(0, 200),
+            );
           } catch (e) {
             console.log(`   Response:`, data.substring(0, 200));
           }
@@ -136,20 +139,28 @@ async function runTest(testName, config) {
 // Local test using fetch (for development)
 async function runLocalTest(testName, config) {
   console.log(`\n🧪 Testing Locally: ${config.name}`);
-  console.log(`   Endpoint: http://localhost:5001/${PROJECT_ID}/${REGION}${config.endpoint}`);
-  
+  console.log(
+    `   Endpoint: http://localhost:5001/${PROJECT_ID}/${REGION}${config.endpoint}`,
+  );
+
   try {
-    const response = await fetch(`http://localhost:5001/${PROJECT_ID}/${REGION}${config.endpoint}`, {
-      method: config.method,
-      headers: config.headers,
-      body: JSON.stringify(config.body)
-    });
+    const response = await fetch(
+      `http://localhost:5001/${PROJECT_ID}/${REGION}${config.endpoint}`,
+      {
+        method: config.method,
+        headers: config.headers,
+        body: JSON.stringify(config.body),
+      },
+    );
 
     const data = await response.json();
-    
+
     if (response.ok) {
       console.log(`   ✅ Success (${response.status})`);
-      console.log(`   Response:`, JSON.stringify(data, null, 2).substring(0, 200));
+      console.log(
+        `   Response:`,
+        JSON.stringify(data, null, 2).substring(0, 200),
+      );
       return true;
     } else {
       console.log(`   ❌ Failed (${response.status})`);
@@ -166,37 +177,39 @@ async function runLocalTest(testName, config) {
 async function main() {
   console.log('🚀 Firebase Backend Services Test Suite');
   console.log('=====================================');
-  
+
   const isLocal = process.argv.includes('--local');
-  
+
   if (isLocal) {
     console.log('📍 Running tests against local emulators');
     console.log('   Make sure emulators are running: firebase emulators:start');
   } else {
     console.log(`📍 Running tests against: ${BASE_URL}`);
-    console.log('   Make sure functions are deployed: firebase deploy --only functions');
+    console.log(
+      '   Make sure functions are deployed: firebase deploy --only functions',
+    );
   }
 
   const results = [];
-  
+
   for (const [testName, config] of Object.entries(tests)) {
-    const result = isLocal 
+    const result = isLocal
       ? await runLocalTest(testName, config)
       : await runTest(testName, config);
     results.push({ name: config.name, passed: result });
-    
+
     // Add delay between tests
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
   // Summary
   console.log('\n📊 Test Summary');
   console.log('================');
-  
+
   let passed = 0;
   let failed = 0;
-  
-  results.forEach(result => {
+
+  results.forEach((result) => {
     if (result.passed) {
       console.log(`✅ ${result.name}`);
       passed++;
@@ -205,9 +218,9 @@ async function main() {
       failed++;
     }
   });
-  
+
   console.log(`\nTotal: ${passed} passed, ${failed} failed`);
-  
+
   if (failed === 0) {
     console.log('\n🎉 All tests passed! Your backend is working correctly.');
   } else {
