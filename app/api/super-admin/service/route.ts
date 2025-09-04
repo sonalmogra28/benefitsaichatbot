@@ -8,22 +8,31 @@ export async function GET(request: Request) {
 
   try {
     switch (action) {
-      case 'getPlatformStats':
+      case 'getPlatformStats': {
         const stats = await superAdminService.getPlatformStats();
         return NextResponse.json(stats);
-      case 'getRecentActivity':
-        const limit = parseInt(searchParams.get('limit') || '10', 10);
+      }
+      case 'getRecentActivity': {
+        const limit = Number.parseInt(searchParams.get('limit') || '10', 10);
         const activity = await superAdminService.getRecentActivity(limit);
         return NextResponse.json(activity);
-      case 'getSystemSettings':
+      }
+      case 'getSystemSettings': {
         const settings = await superAdminService.getSystemSettings();
         return NextResponse.json(settings);
+      }
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
-    console.error(`Error in Super Admin service API (action: ${action}):`, error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error(
+      `Error in Super Admin service API (action: ${action}):`,
+      error,
+    );
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -33,15 +42,22 @@ export async function POST(request: Request) {
 
   try {
     switch (action) {
-      case 'updateSystemSettings':
+      case 'updateSystemSettings': {
         const body = await request.json();
         await superAdminService.updateSystemSettings(body);
         return NextResponse.json({ message: 'Settings updated successfully' });
+      }
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
-    console.error(`Error in Super Admin service API (action: ${action}):`, error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    console.error(
+      `Error in Super Admin service API (action: ${action}):`,
+      error,
+    );
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 },
+    );
   }
 }

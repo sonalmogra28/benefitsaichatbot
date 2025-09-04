@@ -29,7 +29,7 @@ export function sanitizePrompt(input: string): string {
     /\[\/INST\]/gi,
     /<<SYS>>/gi,
     /<\/SYS>>/gi,
-    
+
     // Instruction injection attempts
     /ignore\s+previous\s+instructions?/gi,
     /disregard\s+all\s+prior/gi,
@@ -39,14 +39,14 @@ export function sanitizePrompt(input: string): string {
     /act\s+as/gi,
     /pretend\s+to\s+be/gi,
     /roleplay\s+as/gi,
-    
+
     // Data extraction attempts
     /show\s+me\s+all\s+data/gi,
     /list\s+all\s+users?/gi,
     /dump\s+database/gi,
     /reveal\s+system/gi,
     /show\s+prompts?/gi,
-    
+
     // Code injection markers
     /<script[\s\S]*?<\/script>/gi,
     /<style[\s\S]*?<\/style>/gi,
@@ -57,7 +57,7 @@ export function sanitizePrompt(input: string): string {
   let sanitized = input;
 
   // Remove injection patterns
-  injectionPatterns.forEach(pattern => {
+  injectionPatterns.forEach((pattern) => {
     sanitized = sanitized.replace(pattern, '');
   });
 
@@ -81,13 +81,13 @@ export function sanitizeHtml(input: string): string {
 
   // Remove all HTML tags
   let sanitized = input.replace(/<[^>]*>/g, '');
-  
+
   // Decode HTML entities to prevent double encoding
   sanitized = decodeHTMLEntities(sanitized);
-  
+
   // Escape remaining special characters
   sanitized = escapeHtml(sanitized);
-  
+
   return sanitized;
 }
 
@@ -104,7 +104,7 @@ export function escapeHtml(input: string): string {
     '/': '&#x2F;',
   };
 
-  return input.replace(/[&<>"'\/]/g, char => htmlEscapeMap[char] || char);
+  return input.replace(/[&<>"'\/]/g, (char) => htmlEscapeMap[char] || char);
 }
 
 /**
@@ -120,7 +120,7 @@ function decodeHTMLEntities(text: string): string {
     '&#x2F;': '/',
   };
 
-  return text.replace(/&[#\w]+;/g, entity => entities[entity] || entity);
+  return text.replace(/&[#\w]+;/g, (entity) => entities[entity] || entity);
 }
 
 /**
@@ -132,10 +132,7 @@ export function sanitizeEmail(email: string): string {
   }
 
   // Basic email sanitization
-  return email
-    .toLowerCase()
-    .trim()
-    .substring(0, MAX_EMAIL_LENGTH);
+  return email.toLowerCase().trim().substring(0, MAX_EMAIL_LENGTH);
 }
 
 /**
@@ -166,15 +163,15 @@ export function sanitizeFileName(fileName: string): string {
 
   // Remove path traversal attempts
   sanitizedFileName = sanitizedFileName.replace(/[\/\\\.]+/g, '_');
-  
+
   // Remove special characters except dots and hyphens
   sanitizedFileName = sanitizedFileName.replace(/[^a-zA-Z0-9._\-]/g, '_');
-  
+
   // Ensure it doesn't start with a dot (hidden files)
   if (sanitizedFileName.startsWith('.')) {
     sanitizedFileName = `_${sanitizedFileName.substring(1)}`;
   }
-  
+
   return sanitizedFileName.substring(0, 255);
 }
 
@@ -188,12 +185,12 @@ export function sanitizeUrl(url: string): string {
 
   try {
     const parsed = new URL(url);
-    
+
     // Only allow http(s) protocols
     if (!['http:', 'https:'].includes(parsed.protocol)) {
       return '';
     }
-    
+
     // Reconstruct URL to ensure it's properly formatted
     return parsed.toString();
   } catch {
@@ -210,17 +207,23 @@ export const sanitizedChatMessageSchema = z.object({
   content: z.string().transform(sanitizePrompt),
   id: z.string().optional(),
   createdAt: z.date().optional(),
-  attachments: z.array(z.object({
-    name: z.string().transform(sanitizeFileName),
-    contentType: z.string(),
-    url: z.string().transform(sanitizeUrl),
-  })).optional(),
+  attachments: z
+    .array(
+      z.object({
+        name: z.string().transform(sanitizeFileName),
+        contentType: z.string(),
+        url: z.string().transform(sanitizeUrl),
+      }),
+    )
+    .optional(),
 });
 
 /**
  * Sanitize an entire chat message
  */
-export function sanitizeChatMessage(message: unknown): z.infer<typeof sanitizedChatMessageSchema> {
+export function sanitizeChatMessage(
+  message: unknown,
+): z.infer<typeof sanitizedChatMessageSchema> {
   return sanitizedChatMessageSchema.parse(message);
 }
 
@@ -232,9 +235,7 @@ export function sanitizeTitle(title: string): string {
     return '';
   }
 
-  return sanitizeHtml(title)
-    .substring(0, MAX_TITLE_LENGTH)
-    .trim();
+  return sanitizeHtml(title).substring(0, MAX_TITLE_LENGTH).trim();
 }
 
 /**
@@ -244,11 +245,11 @@ export function sanitizeJson(data: unknown): unknown {
   if (typeof data === 'string') {
     return sanitizeHtml(data);
   }
-  
+
   if (Array.isArray(data)) {
     return data.map(sanitizeJson);
   }
-  
+
   if (data && typeof data === 'object') {
     const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
@@ -258,7 +259,7 @@ export function sanitizeJson(data: unknown): unknown {
     }
     return sanitized;
   }
-  
+
   return data;
 }
 
@@ -267,11 +268,11 @@ export function sanitizeJson(data: unknown): unknown {
  */
 export function sanitizeApiRequest<T extends z.ZodTypeAny>(
   schema: T,
-  data: unknown
+  data: unknown,
 ): z.infer<T> {
   // First sanitize any string fields
   const sanitized = sanitizeJson(data);
-  
+
   // Then validate with schema
   return schema.parse(sanitized);
 }

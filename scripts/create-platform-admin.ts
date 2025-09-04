@@ -8,8 +8,12 @@ async function createPlatformAdmin() {
   const stackUserId = process.argv[3];
 
   if (!email || !stackUserId) {
-    console.log('Usage: pnpm tsx scripts/create-platform-admin.ts <email> <stackUserId>');
-    console.log('Example: pnpm tsx scripts/create-platform-admin.ts admin@example.com user_abc123');
+    console.log(
+      'Usage: pnpm tsx scripts/create-platform-admin.ts <email> <stackUserId>',
+    );
+    console.log(
+      'Example: pnpm tsx scripts/create-platform-admin.ts admin@example.com user_abc123',
+    );
     console.log('\nTo get the stackUserId:');
     console.log('1. Sign up normally through the app');
     console.log('2. Check Stack Auth dashboard for the user ID');
@@ -36,7 +40,7 @@ async function createPlatformAdmin() {
           isActive: true,
         })
         .returning();
-      
+
       platformCompany = [newCompany];
       console.log('✅ Created platform company');
     }
@@ -58,28 +62,27 @@ async function createPlatformAdmin() {
           updatedAt: new Date(),
         })
         .where(eq(users.stackUserId, stackUserId));
-      
+
       console.log('✅ Updated existing user to platform admin');
     } else {
       // Create new platform admin user
-      await db
-        .insert(users)
-        .values({
-          stackUserId,
-          email,
-          companyId: platformCompany[0].id,
-          role: 'platform_admin',
-          firstName: 'Platform',
-          lastName: 'Admin',
-          isActive: true,
-        });
-      
+      await db.insert(users).values({
+        stackUserId,
+        email,
+        companyId: platformCompany[0].id,
+        role: 'platform_admin',
+        firstName: 'Platform',
+        lastName: 'Admin',
+        isActive: true,
+      });
+
       console.log('✅ Created new platform admin user');
     }
 
     console.log(`\n🎉 Successfully set up ${email} as platform admin!`);
-    console.log('You can now log in and access the Super Admin dashboard at /super-admin');
-
+    console.log(
+      'You can now log in and access the Super Admin dashboard at /super-admin',
+    );
   } catch (error) {
     console.error('❌ Error creating platform admin:', error);
     process.exit(1);

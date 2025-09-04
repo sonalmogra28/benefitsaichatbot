@@ -3,7 +3,7 @@ declare module 'ai' {
   export * from '@ai-sdk/react';
   export * from '@ai-sdk/provider';
   export * from '@ai-sdk/provider-utils';
-  
+
   // Re-export commonly used types and functions
   export type UIMessage = import('@ai-sdk/react').Message;
   export type ChatMessage = import('@ai-sdk/react').Message;
@@ -12,33 +12,35 @@ declare module 'ai' {
     type: 'data-ui';
     data: T;
   };
-  
+
   // Additional data part types for artifacts
   export type DataCodeDeltaPart = {
     type: 'data-codeDelta';
     data: string;
   };
-  
+
   export type DataImageDeltaPart = {
     type: 'data-imageDelta';
     data: any;
   };
-  
+
   export type DataSheetDeltaPart = {
     type: 'data-sheetDelta';
     data: any;
   };
-  
+
   export type DataSuggestionPart = {
     type: 'data-suggestion';
     data: any;
   };
-  
+
   export type CustomUIDataTypes = string | any;
-  
+
   // Add missing InferUITool type
-  export type InferUITool<T> = T extends { execute: (...args: any[]) => any } ? T : never;
-  
+  export type InferUITool<T> = T extends { execute: (...args: any[]) => any }
+    ? T
+    : never;
+
   // Add missing UIMessageStreamWriter type
   export type UIMessageStreamWriter = {
     write: (data: any) => void;
@@ -50,21 +52,21 @@ declare module 'ai' {
   export type ModelMessage = any;
   export type ReadStreamResult = any;
   export type DataStreamPart = any;
-  
+
   // Add missing core message types
   export type CoreAssistantMessage = {
     role: 'assistant';
     content: string;
   };
-  
+
   export type CoreToolMessage = {
     role: 'tool';
     content: any;
     toolCallId: string;
   };
-  
+
   export type UIMessagePart = any;
-  
+
   // Export functions that are missing
   export const generateText: any;
   export const streamText: any;

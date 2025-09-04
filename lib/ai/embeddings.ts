@@ -1,4 +1,4 @@
-import { GenerativeModel } from '@google-cloud/vertexai';
+import type { GenerativeModel } from '@google-cloud/vertexai';
 import { getVertexAI, AI_MODELS } from './vertex-config';
 
 // --- LAZY INITIALIZATION ---
@@ -13,7 +13,6 @@ function getEmbeddingModel() {
 }
 // --- END LAZY INITIALIZATION ---
 
-
 /**
  * Generate embedding for text using Vertex AI's embedding model
  */
@@ -24,9 +23,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
   // Truncate text if too long (max ~8000 tokens, but we'll be conservative)
   const maxLength = 6000;
-  const truncatedText = text.length > maxLength
-    ? `${text.substring(0, maxLength)}...`
-    : text;
+  const truncatedText =
+    text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
 
   try {
     const model = getEmbeddingModel();
@@ -51,11 +49,11 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   try {
     const model = getEmbeddingModel();
     const response = await model.batchEmbedContents({
-      requests: texts.map(text => ({
+      requests: texts.map((text) => ({
         content: { parts: [{ text }] },
       })),
     });
-    return response.embeddings?.map(e => e.values) ?? [];
+    return response.embeddings?.map((e) => e.values) ?? [];
   } catch (error) {
     console.error('Vertex AI batch embedding error:', error);
     throw new Error('Failed to generate embeddings');

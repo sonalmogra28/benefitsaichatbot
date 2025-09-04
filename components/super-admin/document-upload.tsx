@@ -51,13 +51,16 @@ export function DocumentUpload() {
             setIsUploading(false);
             setIsProcessing(true);
             const gcsUri = `gs://benefitschatbotac-383.appspot.com/documents/${file.name}`;
-            const processResponse = await fetch('/api/super-admin/documents/process', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
+            const processResponse = await fetch(
+              '/api/super-admin/documents/process',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ gcsUri, contentType: file.type }),
               },
-              body: JSON.stringify({ gcsUri, contentType: file.type }),
-            });
+            );
             const data = await processResponse.json();
             setEmbeddings(data.embeddings);
             setIsProcessing(false);
@@ -86,8 +89,15 @@ export function DocumentUpload() {
           <Label htmlFor="file">Choose a file</Label>
           <Input id="file" type="file" onChange={handleFileChange} />
         </div>
-        <Button onClick={handleUpload} disabled={!file || isUploading || isProcessing}>
-          {isUploading ? 'Uploading...' : isProcessing ? 'Processing...' : 'Upload and Process'}
+        <Button
+          onClick={handleUpload}
+          disabled={!file || isUploading || isProcessing}
+        >
+          {isUploading
+            ? 'Uploading...'
+            : isProcessing
+              ? 'Processing...'
+              : 'Upload and Process'}
         </Button>
         {isUploading && <Progress value={progress} />}
         {error && <p className="text-red-500">{error}</p>}

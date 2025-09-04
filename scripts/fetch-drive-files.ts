@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 const { JWT } = require('google-auth-library');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 // Your service account key file path
 const KEY_FILE_PATH = './service-account-key.json';
@@ -19,7 +19,8 @@ const SCOPES = ['https://www.googleapis.com/auth/drive.readonly'];
  * Creates an authenticated JWT client
  * @returns {Promise<JWT>} An authenticated JWT client
  */
-async function getAuthenticatedClient(): Promise<any> { // Changed to any to avoid TS errors with require
+async function getAuthenticatedClient(): Promise<any> {
+  // Changed to any to avoid TS errors with require
   const client = new JWT({
     keyFile: KEY_FILE_PATH,
     scopes: SCOPES,
@@ -36,12 +37,16 @@ async function getAuthenticatedClient(): Promise<any> { // Changed to any to avo
  */
 async function downloadFile(drive: any, fileId: string, fileName: string) {
   const dest = fs.createWriteStream(path.join(OUTPUT_DIR, fileName));
-  await drive.files.get({ fileId, alt: 'media' }, { responseType: 'stream' }).then((res: any) => {
-    res.data
-      .on('end', () => console.log(`Downloaded ${fileName}`))
-      .on('error', (err: any) => console.error(`Error downloading ${fileName}:`, err))
-      .pipe(dest);
-  });
+  await drive.files
+    .get({ fileId, alt: 'media' }, { responseType: 'stream' })
+    .then((res: any) => {
+      res.data
+        .on('end', () => console.log(`Downloaded ${fileName}`))
+        .on('error', (err: any) =>
+          console.error(`Error downloading ${fileName}:`, err),
+        )
+        .pipe(dest);
+    });
 }
 
 /**
@@ -69,12 +74,24 @@ async function syncFiles() {
         if (file.id && file.name) {
           if (file.mimeType === 'application/vnd.google-apps.document') {
             // Handle Google Docs export to .docx
-            const dest = fs.createWriteStream(path.join(OUTPUT_DIR, `${file.name}.docx`));
-            drive.files.export({ fileId: file.id, mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }, { responseType: 'stream' })
+            const dest = fs.createWriteStream(
+              path.join(OUTPUT_DIR, `${file.name}.docx`),
+            );
+            drive.files
+              .export(
+                {
+                  fileId: file.id,
+                  mimeType:
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                },
+                { responseType: 'stream' },
+              )
               .then((res: any) => {
                 res.data
                   .on('end', () => console.log(`Exported ${file.name}.docx`))
-                  .on('error', (err: any) => console.error(`Error exporting ${file.name}:`, err))
+                  .on('error', (err: any) =>
+                    console.error(`Error exporting ${file.name}:`, err),
+                  )
                   .pipe(dest);
               });
           } else {

@@ -3,7 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
@@ -74,7 +80,7 @@ export default function AssignRolePage() {
   return (
     <div className="container mx-auto p-8">
       <h1 className="text-3xl font-bold mb-8">Assign User Roles</h1>
-      
+
       <div className="space-y-4">
         {users.map((user) => (
           <Card key={user.id} className="p-4">
@@ -85,7 +91,7 @@ export default function AssignRolePage() {
                   Current role: {user.role || 'employee'}
                 </p>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <Select
                   defaultValue={user.role || 'employee'}
@@ -98,7 +104,9 @@ export default function AssignRolePage() {
                     <SelectItem value="employee">Employee</SelectItem>
                     <SelectItem value="hr_admin">HR Admin</SelectItem>
                     <SelectItem value="company_admin">Company Admin</SelectItem>
-                    <SelectItem value="platform_admin">Platform Admin</SelectItem>
+                    <SelectItem value="platform_admin">
+                      Platform Admin
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -108,9 +116,7 @@ export default function AssignRolePage() {
       </div>
 
       <div className="mt-8">
-        <Button onClick={handleBackToDashboard}>
-          Back to Dashboard
-        </Button>
+        <Button onClick={handleBackToDashboard}>Back to Dashboard</Button>
       </div>
     </div>
   );

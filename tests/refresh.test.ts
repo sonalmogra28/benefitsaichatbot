@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { storeRefreshToken, verifyRefreshToken, rotateRefreshToken, revokeRefreshToken, clearAllTokens } from '@/lib/auth/refresh-tokens';
+import {
+  storeRefreshToken,
+  verifyRefreshToken,
+  rotateRefreshToken,
+  revokeRefreshToken,
+  clearAllTokens,
+} from '@/lib/auth/refresh-tokens';
 
 const userId = 'user123';
 

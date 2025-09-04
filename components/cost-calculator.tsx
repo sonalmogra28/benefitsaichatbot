@@ -4,7 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { DollarSign } from 'lucide-react';
 
 interface PlanCost {
@@ -25,9 +32,24 @@ export function CostCalculator() {
     // This is a simplified calculation. In a real application, this logic
     // would be much more complex and would likely be handled by the backend.
     const plans = [
-      { name: 'PPO Plan', premium: 4800, deductible: 1000, outOfPocketMax: 5000 },
-      { name: 'HMO Plan', premium: 3600, deductible: 2000, outOfPocketMax: 7000 },
-      { name: 'HDHP Plan', premium: 2400, deductible: 5000, outOfPocketMax: 8000 },
+      {
+        name: 'PPO Plan',
+        premium: 4800,
+        deductible: 1000,
+        outOfPocketMax: 5000,
+      },
+      {
+        name: 'HMO Plan',
+        premium: 3600,
+        deductible: 2000,
+        outOfPocketMax: 7000,
+      },
+      {
+        name: 'HDHP Plan',
+        premium: 2400,
+        deductible: 5000,
+        outOfPocketMax: 8000,
+      },
     ];
 
     const estimatedMedicalCosts =

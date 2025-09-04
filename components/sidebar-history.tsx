@@ -51,9 +51,10 @@ const groupChatsByDate = (chats: Chat[]): GroupedChats => {
   return chats.reduce(
     (groups, chat) => {
       // Convert Timestamp to Date
-      const chatDate = 'toDate' in chat.createdAt 
-        ? (chat.createdAt as any).toDate() 
-        : new Date();
+      const chatDate =
+        'toDate' in chat.createdAt
+          ? (chat.createdAt as any).toDate()
+          : new Date();
 
       if (isToday(chatDate)) {
         groups.today.push(chat);
@@ -108,7 +109,13 @@ export function SidebarHistory() {
     isLoading,
     mutate,
   } = useSWRInfinite<ChatHistory>(
-    user ? (pageIndex: number, previousPageData: ChatHistory | null) => getChatHistoryPaginationKey(pageIndex, previousPageData as ChatHistory) : () => null,
+    user
+      ? (pageIndex: number, previousPageData: ChatHistory | null) =>
+          getChatHistoryPaginationKey(
+            pageIndex,
+            previousPageData as ChatHistory,
+          )
+      : () => null,
     fetcher,
     {
       fallbackData: [],

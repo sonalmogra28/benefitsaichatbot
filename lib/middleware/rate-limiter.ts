@@ -13,38 +13,38 @@ export const RATE_LIMIT_CONFIGS = {
   auth: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     maxRequests: 5,
-    message: 'Too many authentication attempts. Please try again later.'
+    message: 'Too many authentication attempts. Please try again later.',
   },
   // File uploads - moderate limits
   upload: {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 20,
-    message: 'Upload limit exceeded. Please try again later.'
+    message: 'Upload limit exceeded. Please try again later.',
   },
   // API reads - generous limits
   read: {
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 100,
-    message: 'Too many requests. Please slow down.'
+    message: 'Too many requests. Please slow down.',
   },
   // API writes - moderate limits
   write: {
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 30,
-    message: 'Too many write operations. Please try again later.'
+    message: 'Too many write operations. Please try again later.',
   },
   // AI/LLM endpoints - expensive operations
   ai: {
     windowMs: 60 * 60 * 1000, // 1 hour
     maxRequests: 50,
-    message: 'AI request limit exceeded. Please try again later.'
+    message: 'AI request limit exceeded. Please try again later.',
   },
   // Admin operations - strict limits
   admin: {
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 10,
-    message: 'Admin operation limit exceeded.'
-  }
+    message: 'Admin operation limit exceeded.',
+  },
 };
 
 export type RateLimitConfig = keyof typeof RATE_LIMIT_CONFIGS;
@@ -58,18 +58,26 @@ function getClientIdentifier(req: NextRequest): string {
   if (authHeader) {
     // Hash the token to create a consistent identifier
     const token = authHeader.replace('Bearer ', '');
-    return crypto.createHash('sha256').update(token).digest('hex').substring(0, 16);
+    return crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex')
+      .substring(0, 16);
   }
 
   // Fall back to IP address
   const forwarded = req.headers.get('x-forwarded-for');
   const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
-  
+
   // Combine IP with user agent for better fingerprinting
   const userAgent = req.headers.get('user-agent') || 'unknown';
   const fingerprint = `${ip}-${userAgent}`;
-  
-  return crypto.createHash('sha256').update(fingerprint).digest('hex').substring(0, 16);
+
+  return crypto
+    .createHash('sha256')
+    .update(fingerprint)
+    .digest('hex')
+    .substring(0, 16);
 }
 
 /**
@@ -78,7 +86,7 @@ function getClientIdentifier(req: NextRequest): string {
 async function isRateLimited(
   clientId: string,
   endpoint: string,
-  config: typeof RATE_LIMIT_CONFIGS[RateLimitConfig]
+  config: (typeof RATE_LIMIT_CONFIGS)[RateLimitConfig],
 ): Promise<{ limited: boolean; remaining: number; resetAt: Date }> {
   const now = Date.now();
   const windowStart = now - config.windowMs;
@@ -88,7 +96,7 @@ async function isRateLimited(
     // Get rate limit document from Firestore
     const docRef = adminDb.collection('rate_limits').doc(rateLimitKey);
     const doc = await docRef.get();
-    
+
     if (!doc.exists) {
       // First request - create rate limit entry
       await docRef.set({
@@ -96,13 +104,13 @@ async function isRateLimited(
         endpoint,
         requests: [{ timestamp: now }],
         windowStart: now,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
-      
+
       return {
         limited: false,
         remaining: config.maxRequests - 1,
-        resetAt: new Date(now + config.windowMs)
+        resetAt: new Date(now + config.windowMs),
       };
     }
 
@@ -112,52 +120,51 @@ async function isRateLimited(
       return {
         limited: false,
         remaining: config.maxRequests,
-        resetAt: new Date(now + config.windowMs)
+        resetAt: new Date(now + config.windowMs),
       };
     }
     const requests = data.requests || [];
-    
+
     // Filter out requests outside the current window
     const recentRequests = requests.filter(
-      (r: { timestamp: number }) => r.timestamp > windowStart
+      (r: { timestamp: number }) => r.timestamp > windowStart,
     );
-    
+
     // Check if limit exceeded
     if (recentRequests.length >= config.maxRequests) {
       const oldestRequest = recentRequests[0].timestamp;
       const resetAt = new Date(oldestRequest + config.windowMs);
-      
+
       // Log rate limit violation
       await adminDb.collection('rate_limit_violations').add({
         clientId,
         endpoint,
         timestamp: new Date().toISOString(),
         requestCount: recentRequests.length,
-        limit: config.maxRequests
+        limit: config.maxRequests,
       });
-      
+
       return {
         limited: true,
         remaining: 0,
-        resetAt
+        resetAt,
       };
     }
-    
+
     // Add current request
     recentRequests.push({ timestamp: now });
-    
+
     // Update the document
     await docRef.update({
       requests: recentRequests,
-      lastRequestAt: new Date().toISOString()
+      lastRequestAt: new Date().toISOString(),
     });
-    
+
     return {
       limited: false,
       remaining: config.maxRequests - recentRequests.length,
-      resetAt: new Date(now + config.windowMs)
+      resetAt: new Date(now + config.windowMs),
     };
-    
   } catch (error) {
     console.error('Rate limiter error:', error);
     // On error, allow the request but log it
@@ -166,13 +173,13 @@ async function isRateLimited(
       error: error instanceof Error ? error.message : 'Unknown error',
       clientId,
       endpoint,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     return {
       limited: false,
       remaining: config.maxRequests,
-      resetAt: new Date(now + config.windowMs)
+      resetAt: new Date(now + config.windowMs),
     };
   }
 }
@@ -182,10 +189,10 @@ async function isRateLimited(
  */
 export function rateLimit(configType: RateLimitConfig = 'read') {
   const config = RATE_LIMIT_CONFIGS[configType];
-  
+
   return async function rateLimitMiddleware(
     req: NextRequest,
-    handler: () => Promise<NextResponse>
+    handler: () => Promise<NextResponse>,
   ): Promise<NextResponse> {
     // Skip rate limiting in development
     if (process.env.NODE_ENV === 'development') {
@@ -194,30 +201,30 @@ export function rateLimit(configType: RateLimitConfig = 'read') {
 
     const clientId = getClientIdentifier(req);
     const endpoint = `${req.method}:${req.nextUrl.pathname}`;
-    
+
     const { limited, remaining, resetAt } = await isRateLimited(
       clientId,
       endpoint,
-      config
+      config,
     );
-    
+
     // Add rate limit headers to response
     const response = limited
-      ? NextResponse.json(
-          { error: config.message },
-          { status: 429 }
-        )
+      ? NextResponse.json({ error: config.message }, { status: 429 })
       : await handler();
-    
+
     // Add rate limit headers
     response.headers.set('X-RateLimit-Limit', config.maxRequests.toString());
     response.headers.set('X-RateLimit-Remaining', remaining.toString());
     response.headers.set('X-RateLimit-Reset', resetAt.toISOString());
-    
+
     if (limited) {
-      response.headers.set('Retry-After', Math.ceil((resetAt.getTime() - Date.now()) / 1000).toString());
+      response.headers.set(
+        'Retry-After',
+        Math.ceil((resetAt.getTime() - Date.now()) / 1000).toString(),
+      );
     }
-    
+
     return response;
   };
 }
@@ -227,7 +234,7 @@ export function rateLimit(configType: RateLimitConfig = 'read') {
  */
 export function withRateLimit(
   configType: RateLimitConfig,
-  handler: (req: NextRequest, context: any) => Promise<NextResponse>
+  handler: (req: NextRequest, context: any) => Promise<NextResponse>,
 ) {
   return async (req: NextRequest, context: any) => {
     const limiter = rateLimit(configType);
@@ -240,20 +247,20 @@ export function withRateLimit(
  */
 export async function cleanupRateLimits(): Promise<void> {
   const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 hours ago
-  
+
   try {
     const snapshot = await adminDb
       .collection('rate_limits')
       .where('windowStart', '<', cutoff)
       .get();
-    
+
     const batch = adminDb.batch();
-    snapshot.docs.forEach(doc => {
+    snapshot.docs.forEach((doc) => {
       batch.delete(doc.ref);
     });
-    
+
     await batch.commit();
-    
+
     console.log(`Cleaned up ${snapshot.size} old rate limit entries`);
   } catch (error) {
     console.error('Failed to cleanup rate limits:', error);
@@ -266,7 +273,7 @@ export async function cleanupRateLimits(): Promise<void> {
 export async function getRateLimitStatus(
   clientId: string,
   endpoint: string,
-  configType: RateLimitConfig = 'read'
+  configType: RateLimitConfig = 'read',
 ): Promise<{
   used: number;
   limit: number;
@@ -277,33 +284,33 @@ export async function getRateLimitStatus(
   const now = Date.now();
   const windowStart = now - config.windowMs;
   const rateLimitKey = `rateLimit:${endpoint}:${clientId}`;
-  
+
   try {
     const doc = await adminDb.collection('rate_limits').doc(rateLimitKey).get();
-    
+
     if (!doc.exists) {
       return {
         used: 0,
         limit: config.maxRequests,
         remaining: config.maxRequests,
-        resetAt: new Date(now + config.windowMs)
+        resetAt: new Date(now + config.windowMs),
       };
     }
-    
+
     const data = doc.data();
     if (!data) {
       return {
         used: 0,
         limit: config.maxRequests,
         remaining: config.maxRequests,
-        resetAt: new Date(now + config.windowMs)
+        resetAt: new Date(now + config.windowMs),
       };
     }
     const requests = data.requests || [];
     const recentRequests = requests.filter(
-      (r: { timestamp: number }) => r.timestamp > windowStart
+      (r: { timestamp: number }) => r.timestamp > windowStart,
     );
-    
+
     return {
       used: recentRequests.length,
       limit: config.maxRequests,
@@ -311,15 +318,15 @@ export async function getRateLimitStatus(
       resetAt: new Date(
         recentRequests.length > 0
           ? recentRequests[0].timestamp + config.windowMs
-          : now + config.windowMs
-      )
+          : now + config.windowMs,
+      ),
     };
   } catch (error) {
     return {
       used: 0,
       limit: aconfig.maxRequests,
       remaining: config.maxRequests,
-      resetAt: new Date(now + config.windowMs)
+      resetAt: new Date(now + config.windowMs),
     };
   }
 }

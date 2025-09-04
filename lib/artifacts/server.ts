@@ -111,17 +111,20 @@ export const artifactKinds = ['text', 'code', 'image', 'sheet'] as const;
 async function saveDocument(props: SaveDocumentProps) {
   try {
     const documentRef = adminDb.collection('documents').doc(props.id);
-    
-    await documentRef.set({
-      id: props.id,
-      title: props.title,
-      kind: props.kind,
-      content: props.content,
-      userId: props.userId,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
-    
+
+    await documentRef.set(
+      {
+        id: props.id,
+        title: props.title,
+        kind: props.kind,
+        content: props.content,
+        userId: props.userId,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
     return true;
   } catch (error) {
     console.error('Failed to save document:', error);

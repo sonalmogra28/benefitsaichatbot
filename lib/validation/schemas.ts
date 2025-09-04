@@ -40,7 +40,14 @@ export const updateCompanySchema = z.object({
 
 export const createBenefitPlanSchema = z.object({
   name: z.string().min(1, 'Plan name is required'),
-  type: z.enum(['health', 'dental', 'vision', 'life', 'disability', 'retirement']),
+  type: z.enum([
+    'health',
+    'dental',
+    'vision',
+    'life',
+    'disability',
+    'retirement',
+  ]),
   category: z.string(),
   provider: z.string(),
   monthlyPremiumEmployee: z.number().positive(),
