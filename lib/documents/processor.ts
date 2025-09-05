@@ -2,12 +2,14 @@ import { extractText } from 'unpdf';
 import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
 import { vectorSearchService, upsertDocumentChunks } from '@/lib/ai/vector-search';
 import { generateEmbeddings } from '@/lib/ai/embeddings';
+import { notificationService } from '@/lib/services/notification.service';
 
 
 /**
  * Process a document: extract text, chunk it, generate embeddings, and store in Vertex AI Vector Search
  */
 export async function processDocument(documentId: string) {
+  let document: any;
   try {
     // Fetch document from Firestore
     const docRef = await adminDb.collection('documents').doc(documentId).get();
@@ -16,7 +18,7 @@ export async function processDocument(documentId: string) {
       throw new Error('Document not found');
     }
 
-    const document = { id: docRef.id, ...docRef.data() } as any;
+    document = { id: docRef.id, ...docRef.data() } as any;
 
     if (!document.fileUrl) {
       throw new Error('Document has no file URL');
@@ -94,15 +96,14 @@ export async function processDocument(documentId: string) {
       chunksCount: chunks.length,
     });
 
-    // TODO: Implement document processing notifications
     // Send success notification if the document has an associated user
-    // if (document.createdBy) {
-    //   await notificationService.sendDocumentProcessedNotification({
-    //     userId: document.createdBy,
-    //     documentName: document.title,
-    //     status: 'processed',
-    //   });
-    // }
+    if (document.createdBy) {
+      await notificationService.sendDocumentProcessedNotification({
+        userId: document.createdBy,
+        documentName: document.title,
+        status: 'processed',
+      });
+    }
 
     return {
       success: upsertStatus === 'success',
@@ -124,6 +125,20 @@ export async function processDocument(documentId: string) {
         });
     } catch (updateError) {
       console.error('Failed to update document status:', updateError);
+    }
+
+    // Notify user of failure if we have creator information
+    if (document?.createdBy) {
+      try {
+        await notificationService.sendDocumentProcessedNotification({
+          userId: document.createdBy,
+          documentName: document.title,
+          status: 'failed',
+          errorMessage: error instanceof Error ? error.message : undefined,
+        });
+      } catch (notifyError) {
+        console.error('Failed to send failure notification:', notifyError);
+      }
     }
 
     throw error;
