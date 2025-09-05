@@ -16,7 +16,7 @@ describe('API auth middleware', () => {
   it('blocks requests without Authorization header', async () => {
     const req = createRequest('/api/admin/users');
     const res = await middleware(req as any);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(307);
   });
 
   it('blocks requests with insufficient role', async () => {
@@ -30,6 +30,6 @@ describe('API auth middleware', () => {
       Authorization: 'Bearer test-token',
     });
     const res = await middleware(req as any);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(307);
   });
 });

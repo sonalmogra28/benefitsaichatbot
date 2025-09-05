@@ -81,11 +81,24 @@ export const calculateBenefitsCost = tool({
         // Get monthly premium based on coverage type
         let monthlyPremium = 0;
         if (coverageType === 'individual') {
-          monthlyPremium = plan.monthlyPremium || 0;
+          monthlyPremium =
+            plan.contributionAmounts?.employee ||
+            plan.coverageLevels?.employee ||
+            plan.monthlyPremium ||
+            0;
         } else if (coverageType === 'family') {
-          monthlyPremium = plan.monthlyPremium || 0; // TODO: Add family premium
+          monthlyPremium =
+            plan.coverageLevels?.family ||
+            plan.contributionAmounts?.employee ||
+            plan.monthlyPremium ||
+            0;
         } else if (coverageType === 'employee_spouse') {
-          monthlyPremium = (plan.monthlyPremium || 0) * 1.6; // TODO: Add spouse premium
+          monthlyPremium =
+            plan.coverageLevels?.employee_spouse ||
+            plan.coverageLevels?.family ||
+            plan.contributionAmounts?.employee ||
+            plan.monthlyPremium ||
+            0;
         }
 
         const annualPremium = monthlyPremium * 12;

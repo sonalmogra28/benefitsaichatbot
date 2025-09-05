@@ -67,7 +67,8 @@ export const compareBenefitsPlans = tool({
       // Calculate costs and prepare comparison data
       const coverageType = userContext?.coverageType || 'individual';
       const plansWithAnalysis = plans.map((plan: any) => {
-        const monthlyCost = plan.monthlyPremium || 0;
+        const monthlyCost =
+          plan.contributionAmounts?.employee ?? plan.monthlyPremium ?? 0;
         const annualCost = monthlyCost * 12;
         const deductible =
           coverageType === 'family'
@@ -84,17 +85,22 @@ export const compareBenefitsPlans = tool({
           type: plan.type,
           category: plan.category,
           provider: plan.provider,
-          description: '', // TODO: Add description to benefit plan model
+          description: plan.description || '',
           costs: {
             monthlyCost,
             annualCost,
             deductible,
             outOfPocketMax,
-            copayPrimaryCare: 0, // TODO: Add copay to benefit plan model
-            copaySpecialist: 0, // TODO: Add copay to benefit plan model
-            coinsurancePercentage: 0, // TODO: Add coinsurance to benefit plan model
+            copayPrimaryCare: plan.copays?.primaryCare ?? 0,
+            copaySpecialist: plan.copays?.specialist ?? 0,
+            coinsurancePercentage:
+              plan.coinsurance?.inNetwork ?? plan.coinsurance?.base ?? 0,
           },
-          features: [], // TODO: Add features to benefit plan model
+          features: plan.features || [],
+          contributionAmounts: plan.contributionAmounts || {
+            employee: monthlyCost,
+            employer: 0,
+          },
           coverageDetails: plan.coverageDetails || {},
         };
       });
