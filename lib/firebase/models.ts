@@ -139,7 +139,7 @@ export interface BenefitPlan {
   costs: {
     deductible?: number;
     outOfPocketMax?: number;
-    copays?: Record<string, number>;
+    copay?: Record<string, number>;
     coinsurance?: Record<string, number>;
     contributionAmounts?: {
       employee: number;
