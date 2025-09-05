@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { db } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { emailService } from './email.service';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -218,6 +219,63 @@ class NotificationService {
     `;
 
     return this.sendEmail(email, subject, html);
+  }
+
+  /**
+   * Send notification when a document has been processed
+   */
+  async sendDocumentProcessedNotification(params: {
+    userId: string;
+    documentName: string;
+    status: 'processed' | 'failed';
+    errorMessage?: string;
+  }): Promise<boolean> {
+    try {
+      const userDoc = await db.collection('users').doc(params.userId).get();
+
+      if (!userDoc.exists) {
+        console.warn('User not found for document notification');
+        return false;
+      }
+
+      const user = userDoc.data() as any;
+      const email = user?.email as string | undefined;
+      const name = (user?.name || user?.displayName || 'there') as string;
+
+      let emailResult = false;
+      if (email) {
+        const res = await emailService.sendDocumentProcessedNotification(
+          email,
+          name,
+          params.documentName,
+          params.status,
+          params.errorMessage,
+        );
+        emailResult = res.success;
+      }
+
+      const title =
+        params.status === 'processed'
+          ? 'Document processed successfully'
+          : 'Document processing failed';
+      const message =
+        params.status === 'processed'
+          ? `Your document "${params.documentName}" has been processed and is ready to use.`
+          : `We couldn't process your document "${params.documentName}".${
+              params.errorMessage ? ` Error: ${params.errorMessage}` : ''
+            }`;
+
+      await this.sendInAppNotification(params.userId, title, message, {
+        documentName: params.documentName,
+        status: params.status,
+        errorMessage: params.errorMessage,
+      });
+
+      return emailResult;
+    } catch (error) {
+      console.error('Failed to send document processed notification:', error);
+      return false;
+    }
   }
 
   /**
