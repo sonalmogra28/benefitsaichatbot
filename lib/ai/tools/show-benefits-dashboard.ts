@@ -45,23 +45,44 @@ export const showBenefitsDashboard = tool({
         user.uid,
       );
 
+      const plans = await benefitService.getBenefitPlans();
+      const planMap = new Map(plans.map((p: any) => [p.id, p]));
+
       // Transform enrollments for dashboard display
-      const enrollments = userEnrollments.map((enrollment) => ({
-        id: enrollment.id,
-        planName: 'Unknown Plan', // TODO: Get plan name
-        type: 'unknown', // TODO: Get plan type
-        category: 'N/A', // TODO: Get plan category
-        provider: 'N/A', // TODO: Get plan provider
-        monthlyPremium: enrollment.monthlyCost,
-        employeeContribution: 0, // TODO: Calculate employee contribution
-        employerContribution: 0, // TODO: Calculate employer contribution
-        deductible: 0, // TODO: Get plan deductible
-        outOfPocketMax: 0, // TODO: Get plan out of pocket max
-        coverageType: enrollment.coverageType,
-        effectiveDate: enrollment.electedOn,
-        endDate: null, // TODO: Get end date
-        status: enrollment.status,
-      }));
+      const enrollments = userEnrollments.map((enrollment) => {
+        const plan: any = planMap.get(enrollment.benefitPlanId) || {};
+        const monthlyPremium =
+          plan.contributionAmounts?.employee ?? enrollment.monthlyCost;
+        const employeeContribution = plan.contributionAmounts?.employee ?? 0;
+        const employerContribution = plan.contributionAmounts?.employer ?? 0;
+        const deductible = plan
+          ? enrollment.coverageType === 'family'
+            ? plan.deductibleFamily || 0
+            : plan.deductibleIndividual || 0
+          : 0;
+        const outOfPocketMax = plan
+          ? enrollment.coverageType === 'family'
+            ? plan.outOfPocketMaxFamily || 0
+            : plan.outOfPocketMaxIndividual || 0
+          : 0;
+
+        return {
+          id: enrollment.id,
+          planName: plan.name || 'Unknown Plan',
+          type: plan.type || 'unknown',
+          category: plan.category || 'N/A',
+          provider: plan.provider || 'N/A',
+          monthlyPremium,
+          employeeContribution,
+          employerContribution,
+          deductible,
+          outOfPocketMax,
+          coverageType: enrollment.coverageType,
+          effectiveDate: enrollment.electedOn,
+          endDate: null,
+          status: enrollment.status,
+        };
+      });
 
       // Calculate summary
       const summary = {

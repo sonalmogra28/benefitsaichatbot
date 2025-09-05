@@ -140,8 +140,11 @@ export interface BenefitPlan {
     deductible?: number;
     outOfPocketMax?: number;
     copay?: Record<string, number>;
-    coinsurance?: number;
-    employerContribution?: number;
+    coinsurance?: Record<string, number>;
+    contributionAmounts?: {
+      employee: number;
+      employer?: number;
+    };
   };
   features: string[];
   eligibility: {

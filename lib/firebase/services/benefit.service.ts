@@ -15,6 +15,16 @@ export const benefitPlanSchema = z.object({
   ]),
   category: z.string().optional(),
   provider: z.string().optional(),
+  description: z.string().optional(),
+  copays: z.record(z.number()).optional(),
+  coinsurance: z.record(z.number()).optional(),
+  features: z.array(z.string()).optional(),
+  contributionAmounts: z
+    .object({
+      employee: z.number(),
+      employer: z.number().optional(),
+    })
+    .optional(),
   deductibleIndividual: z.number().optional(),
   deductibleFamily: z.number().optional(),
   outOfPocketMaxIndividual: z.number().optional(),

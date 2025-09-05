@@ -48,6 +48,13 @@ export interface BenefitPlan extends DocumentBase {
     | 'fsa';
   provider: string;
   description: string;
+  copays?: Record<string, number>; // e.g., { primaryCare: 20, specialist: 40 }
+  coinsurance?: Record<string, number>; // e.g., { inNetwork: 0.2 }
+  features?: string[]; // List of highlighted plan features
+  contributionAmounts?: {
+    employee: number;
+    employer?: number;
+  };
   annualCost: number; // Base annual cost for employee
   coverageLevels: {
     employee: number;
