@@ -33,7 +33,7 @@ export const POST = requireSuperAdmin(async (request: NextRequest) => {
       );
     }
   } catch (error) {
-    console.error('Error sending test email:', error);
+    logger.error('Error sending test email:', error);
     return NextResponse.json(
       { error: 'Failed to send test email' },
       { status: 500 },

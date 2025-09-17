@@ -30,6 +30,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { AMERIVET_BENEFIT_PLANS, AMERIVET_OPEN_ENROLLMENT } from '@/lib/data/amerivet-benefits';
 import {
   Heart,
   Shield,
@@ -90,60 +91,37 @@ export function BenefitsManagement({
     description: '',
   });
 
-  // Mock data for now - will be replaced with API calls
+  // Load real Amerivet benefits data
   useEffect(() => {
-    const mockPlans: BenefitPlan[] = [
-      {
-        id: '1',
-        name: 'Premium Health Insurance',
-        planType: 'health',
-        provider: 'Blue Cross Blue Shield',
-        coverage: 'Comprehensive medical coverage',
-        monthlyCost: 450,
-        employerContribution: 350,
-        deductible: 1500,
-        outOfPocketMax: 5000,
-        coverageDetails: { network: 'PPO', copay: 30 },
-        eligibilityRules: { waitingPeriod: 30 },
-        isActive: true,
-        enrollmentCount: 45,
-        createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    const amerivetPlans: BenefitPlan[] = AMERIVET_BENEFIT_PLANS.map(plan => ({
+      id: plan.id,
+      name: plan.name,
+      planType: plan.type as any,
+      provider: plan.provider,
+      coverage: plan.features.join(', '),
+      monthlyCost: plan.premiums.employee.monthly,
+      employerContribution: plan.premiums.employer?.monthly || 0,
+      deductible: plan.coverage.deductibles.individual,
+      outOfPocketMax: plan.coverage.outOfPocketMax.individual,
+      coverageDetails: {
+        deductibles: plan.coverage.deductibles,
+        coinsurance: plan.coverage.coinsurance,
+        copays: plan.coverage.copays,
+        outOfPocketMax: plan.coverage.outOfPocketMax,
       },
-      {
-        id: '2',
-        name: 'Basic Dental Coverage',
-        planType: 'dental',
-        provider: 'Delta Dental',
-        coverage: 'Preventive and basic dental care',
-        monthlyCost: 50,
-        employerContribution: 30,
-        coverageDetails: { preventive: '100%', basic: '80%', major: '50%' },
-        eligibilityRules: { waitingPeriod: 0 },
-        isActive: true,
-        enrollmentCount: 38,
-        createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      eligibilityRules: {
+        waitingPeriod: plan.eligibility.waitingPeriod,
+        hoursRequired: plan.eligibility.hoursRequired,
+        employeeType: plan.eligibility.employeeType,
       },
-      {
-        id: '3',
-        name: 'Vision Care',
-        planType: 'vision',
-        provider: 'VSP',
-        coverage: 'Annual eye exams and corrective lenses',
-        monthlyCost: 15,
-        employerContribution: 10,
-        coverageDetails: { examCoverage: '$10 copay', frameAllowance: '$150' },
-        eligibilityRules: { waitingPeriod: 0 },
-        isActive: true,
-        enrollmentCount: 25,
-        createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-      },
-    ];
+      isActive: true,
+      enrollmentCount: Math.floor(Math.random() * 50) + 10, // Mock enrollment data
+      createdAt: new Date(plan.coverageYear.start),
+      updatedAt: new Date(),
+    }));
 
     setTimeout(() => {
-      setPlans(mockPlans);
+      setPlans(amerivetPlans);
       setLoading(false);
     }, 500);
   }, [companyId]);

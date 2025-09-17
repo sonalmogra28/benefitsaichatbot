@@ -8,7 +8,7 @@ const bucketName =
 
 if (!bucketName) {
   // This log will clearly state what's missing during the build.
-  console.error(
+  logger.error(
     'GCS bucket name not configured. Set GCS_BUCKET_NAME or NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET environment variable.',
   );
   // We still throw an error because the module is unusable without a bucket.

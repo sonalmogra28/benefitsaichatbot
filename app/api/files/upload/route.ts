@@ -1,8 +1,7 @@
 // app/api/files/upload/route.ts
 import { type NextRequest, NextResponse } from 'next/server';
 import { gcsFileStorage } from '@/lib/storage/gcs';
-import { getSession } from '@/lib/auth/session';
-import { adminDb } from '@/lib/firebase/admin';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import crypto from 'node:crypto';
 import path from 'node:path';
 

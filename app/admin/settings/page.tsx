@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logging/logger';
 import {
   Card,
   CardContent,
@@ -20,7 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 
 export default function AdminSettingsPage() {
-  const [user, loading] = useAuthState(auth);
+  const { account, loading } = useAuth();
   const router = useRouter();
   const [settings, setSettings] = useState({
     platform: {
@@ -52,7 +52,7 @@ export default function AdminSettingsPage() {
       streamingEnabled: true,
     },
     storage: {
-      provider: 'firebase',
+      provider: 'azure',
       maxStoragePerCompany: 10,
       autoDeleteAfter: 90,
       compressionEnabled: true,
@@ -60,10 +60,10 @@ export default function AdminSettingsPage() {
   });
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !account) {
       router.push('/login');
-    } else if (user) {
-      user.getIdTokenResult().then((idTokenResult) => {
+    } else if (account) {
+      account?.getIdTokenResult().then((idTokenResult: any) => {
         if (
           !idTokenResult.claims.platform_admin &&
           !idTokenResult.claims.super_admin
@@ -72,10 +72,10 @@ export default function AdminSettingsPage() {
         }
       });
     }
-  }, [user, loading, router]);
+  }, [account, loading, router]);
 
   const handleSave = async (section: string) => {
-    console.log(`Saving ${section} settings:`, settings);
+    logger.info(`Saving ${section} settings:`, settings);
     // TODO: Implement save functionality
   };
 
@@ -556,7 +556,7 @@ export default function AdminSettingsPage() {
                     })
                   }
                 >
-                  <option value="firebase">Firebase Storage</option>
+                  <option value="azure">Firebase Storage</option>
                   <option value="gcs">Google Cloud Storage</option>
                   <option value="s3">Amazon S3</option>
                 </select>

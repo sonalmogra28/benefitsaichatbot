@@ -67,7 +67,7 @@ export default function AiConfigPage() {
   const onSubmit = async (data: AiConfigFormValues) => {
     setIsLoading(true);
     setIsSuccess(false);
-    console.log('Submitting AI config:', data);
+    logger.info('Submitting AI config:', data);
 
     // TODO: Implement API call in the next task
     // await fetch('/api/super-admin/ai-config', { method: 'POST', body: JSON.stringify(data) });

@@ -22,8 +22,7 @@ import { useAutoResume } from '@/hooks/use-auto-resume';
 import { ChatSDKError } from '@/lib/errors';
 import type { Attachment, ChatMessage } from '@/lib/types';
 import { useDataStream } from './data-stream-provider';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
 
 export function Chat({
   id,
@@ -40,7 +39,7 @@ export function Chat({
   isReadonly: boolean;
   autoResume: boolean;
 }) {
-  const [user] = useAuthState(auth);
+  const { account } = useAuth();
   const { visibilityType } = useChatVisibility({
     chatId: id,
     initialVisibilityType,

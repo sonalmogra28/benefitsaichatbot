@@ -114,7 +114,7 @@ export default function DocumentUploadSection({
             body: JSON.stringify({ documentId: data.document.id }),
           });
         } catch (error) {
-          console.error('Failed to trigger processing:', error);
+          logger.error('Failed to trigger processing:', error);
         }
       }, 1000);
     } catch (error) {

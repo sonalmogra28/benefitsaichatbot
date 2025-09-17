@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 
 export default function AdminLayout({
@@ -11,14 +10,14 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [user, loading] = useAuthState(auth);
+  const { account, loading } = useAuth();
   const router = useRouter();
 
   if (loading) {
     return <div>Loading...</div>;
   }
 
-  if (!user) {
+  if (!account) {
     router.push('/login');
     return null;
   }

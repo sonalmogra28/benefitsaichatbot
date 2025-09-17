@@ -1,8 +1,14 @@
 import { z } from 'zod';
+import { getRepositories } from '@/lib/azure/cosmos';
+import { logger } from '@/lib/logging/logger';
+import { azureOpenAIService } from '@/lib/azure/openai';
+import { azureAuthService } from '@/lib/azure/auth';
+import { getStorageServices } from '@/lib/azure/storage';
+import { redisService } from '@/lib/azure/redis';
 import { streamObject, tool } from 'ai';
 import type { UIMessageStreamWriter } from 'ai';
-import { adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { adminDb } from '@/lib/azure/admin';
+
 import { generateUUID } from '@/lib/utils';
 import { myProvider } from '../providers';
 
@@ -18,7 +24,7 @@ interface Suggestion {
   originalText: string;
   suggestedText: string;
   description: string;
-  createdAt: FieldValue | Date;
+  createdAt: Date | Date;
   isResolved: boolean;
 }
 
@@ -38,7 +44,7 @@ export const requestSuggestions = ({
         // Get document from Firestore
         const documentRef = await adminDb
           .collection('documents')
-          .doc(documentId)
+          .getById(documentId)
           .get();
 
         if (!documentRef.exists) {
@@ -101,10 +107,10 @@ export const requestSuggestions = ({
           suggestions.forEach((suggestion) => {
             const suggestionRef = adminDb
               .collection('suggestions')
-              .doc(suggestion.id);
-            batch.set(suggestionRef, {
+              .getById(suggestion.id);
+            batch.create(suggestionRef, {
               ...suggestion,
-              createdAt: FieldValue.serverTimestamp(),
+              createdAt: new Date().toISOString(),
             });
           });
 
@@ -120,7 +126,7 @@ export const requestSuggestions = ({
           })),
         };
       } catch (error) {
-        console.error('Failed to generate suggestions:', error);
+        logger.error('Failed to generate suggestions:', error);
         return {
           error: 'Failed to generate suggestions',
         };
@@ -131,7 +137,7 @@ export const requestSuggestions = ({
 // Helper function to get document by ID
 export async function getDocumentById(documentId: string) {
   try {
-    const doc = await adminDb.collection('documents').doc(documentId).get();
+    const doc = await adminDb.collection('documents').getById(documentId).get();
     if (!doc.exists) {
       return null;
     }
@@ -140,7 +146,7 @@ export async function getDocumentById(documentId: string) {
       ...doc.data(),
     };
   } catch (error) {
-    console.error('Failed to get document:', error);
+    logger.error('Failed to get document:', error);
     return null;
   }
 }
@@ -155,17 +161,17 @@ export async function saveSuggestions(
     suggestions.forEach((suggestion) => {
       const suggestionRef = adminDb
         .collection('suggestions')
-        .doc(suggestion.id);
-      batch.set(suggestionRef, {
+        .getById(suggestion.id);
+      batch.create(suggestionRef, {
         ...suggestion,
-        createdAt: FieldValue.serverTimestamp(),
+        createdAt: new Date().toISOString(),
       });
     });
 
     await batch.commit();
     return true;
   } catch (error) {
-    console.error('Failed to save suggestions:', error);
+    logger.error('Failed to save suggestions:', error);
     return false;
   }
 }

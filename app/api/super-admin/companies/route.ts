@@ -1,7 +1,7 @@
 // app/api/super-admin/companies/route.ts
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { getContainer } from '@/lib/azure/cosmos-db';
+
 
 export async function POST(request: Request) {
   const { name } = await request.json();

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
 import { z } from 'zod';
 import { updateUserSchema } from '@/lib/validation/schemas';
-import { userService } from '@/lib/firebase/services/user.service';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import { isValidRole, type UserRole } from '@/lib/constants/roles';
 
 // PUT /api/super-admin/users/[id] - Update a user

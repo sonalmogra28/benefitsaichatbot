@@ -1,7 +1,7 @@
 'use client';
 
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+// Sign out - to be implemented with Azure AD B2C
+import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 
 export const SignOutForm = () => {
@@ -12,7 +12,7 @@ export const SignOutForm = () => {
       await signOut(auth);
       router.push('/login');
     } catch (error) {
-      console.error('Error signing out:', error);
+      logger.error('Error signing out:', error);
     }
   };
 

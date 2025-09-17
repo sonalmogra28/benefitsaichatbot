@@ -1,6 +1,6 @@
 import { t } from '../index';
 import { authProcedure } from '../auth-procedure';
-import { superAdminService } from '@/lib/firebase/services/super-admin.service';
+import { getContainer } from '@/lib/azure/cosmos-db';
 
 export const adminRouter = t.router({
   getPlatformStats: authProcedure.query(async () => {

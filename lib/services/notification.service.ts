@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
-import { db } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getRepositories } from '@/lib/azure/cosmos';
+import { logger } from '@/lib/logging/logger';
 import { emailService } from './email.service';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -13,8 +13,8 @@ export interface Notification {
   message: string;
   status: 'pending' | 'sent' | 'failed';
   metadata?: Record<string, any>;
-  sentAt?: any;
-  createdAt: any;
+  sentAt?: string;
+  createdAt: string;
 }
 
 export interface EmailTemplate {
@@ -35,7 +35,7 @@ class NotificationService {
   ): Promise<boolean> {
     try {
       if (!process.env.RESEND_API_KEY) {
-        console.warn('Resend API key not configured, skipping email');
+        logger.warn('Resend API key not configured, skipping email');
         return false;
       }
 
@@ -48,11 +48,11 @@ class NotificationService {
       });
 
       if (response.error) {
-        console.error('Failed to send email:', response.error);
+        logger.error('Failed to send email', { error: response.error, to, subject });
         return false;
       }
 
-      // Log notification in Firestore
+      // Log notification in Cosmos DB
       await this.logNotification({
         userId: to,
         type: 'email',
@@ -62,9 +62,10 @@ class NotificationService {
         metadata: { emailId: response.data?.id },
       });
 
+      logger.info('Email sent successfully', { to, subject, messageId: response.data?.id });
       return true;
     } catch (error) {
-      console.error('Email send error:', error);
+      logger.error('Email send error', error, { to, subject });
 
       // Log failed notification
       await this.logNotification({
@@ -311,15 +312,24 @@ class NotificationService {
     notification: Omit<Notification, 'id' | 'createdAt'>,
   ): Promise<void> {
     try {
-      const notificationRef = db.collection('notification_logs').doc();
+      const repositories = await getRepositories();
+      const notificationsRepository = repositories.notifications;
 
-      await notificationRef.set({
-        id: notificationRef.id,
+      const newNotification: Notification = {
+        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         ...notification,
-        createdAt: FieldValue.serverTimestamp(),
+        createdAt: new Date().toISOString(),
+      };
+
+      await notificationsRepository.create(newNotification);
+      
+      logger.info('Notification logged successfully', {
+        notificationId: newNotification.id,
+        type: newNotification.type,
+        status: newNotification.status
       });
     } catch (error) {
-      console.error('Failed to log notification:', error);
+      logger.error('Failed to log notification', error, { notification });
     }
   }
 

@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error Boundary caught an error:', error, errorInfo);
+    logger.error('Error Boundary caught an error:', error, errorInfo);
 
     this.setState({
       error,
@@ -46,7 +46,7 @@ export class ErrorBoundary extends Component<
     // Log to external service (e.g., Sentry, LogRocket)
     if (typeof window !== 'undefined') {
       // Log to analytics/monitoring service
-      console.error('Error tracked:', {
+      logger.error('Error tracked:', {
         error: error.message,
         stack: error.stack,
         componentStack: errorInfo.componentStack,
@@ -174,7 +174,7 @@ export function ChatErrorBoundary({ children }: { children: React.ReactNode }) {
         </div>
       )}
       onError={(error, errorInfo) => {
-        console.error('Chat error:', error, errorInfo);
+        logger.error('Chat error:', error, errorInfo);
         // Log chat-specific errors
       }}
     >
@@ -214,7 +214,7 @@ export function DashboardErrorBoundary({
         </div>
       )}
       onError={(error, errorInfo) => {
-        console.error('Dashboard error:', error, errorInfo);
+        logger.error('Dashboard error:', error, errorInfo);
         // Log dashboard-specific errors
       }}
     >
@@ -241,7 +241,7 @@ export function DocumentErrorBoundary({
         </div>
       )}
       onError={(error, errorInfo) => {
-        console.error('Document error:', error, errorInfo);
+        logger.error('Document error:', error, errorInfo);
         // Log document-specific errors
       }}
     >

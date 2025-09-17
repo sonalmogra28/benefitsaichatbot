@@ -1,10 +1,16 @@
 import { codeDocumentHandler } from '@/artifacts/code/server';
+import { getRepositories } from '@/lib/azure/cosmos';
+import { logger } from '@/lib/logging/logger';
+import { azureOpenAIService } from '@/lib/azure/openai';
+import { azureAuthService } from '@/lib/azure/auth';
+import { getStorageServices } from '@/lib/azure/storage';
+import { redisService } from '@/lib/azure/redis';
 import { imageDocumentHandler } from '@/artifacts/image/server';
 import { sheetDocumentHandler } from '@/artifacts/sheet/server';
 import { textDocumentHandler } from '@/artifacts/text/server';
 import type { ArtifactKind } from '@/components/artifact';
-import { adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { adminDb } from '@/lib/azure/admin';
+
 import type { UIMessageStreamWriter } from 'ai';
 
 export interface SaveDocumentProps {
@@ -110,24 +116,24 @@ export const artifactKinds = ['text', 'code', 'image', 'sheet'] as const;
 // Helper function to save document to Firestore
 async function saveDocument(props: SaveDocumentProps) {
   try {
-    const documentRef = adminDb.collection('documents').doc(props.id);
+    const documentRef = adminDb.collection('documents').getById(props.id);
 
-    await documentRef.set(
+    await documentRef.create(
       {
         id: props.id,
         title: props.title,
         kind: props.kind,
         content: props.content,
         userId: props.userId,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
       { merge: true },
     );
 
     return true;
   } catch (error) {
-    console.error('Failed to save document:', error);
+    logger.error('Failed to save document:', error);
     return false;
   }
 }

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { userService } from '@/lib/firebase/services/user.service';
+import { getContainer } from '@/lib/azure/cosmos-db';
 
 export async function GET(request: NextRequest) {
   const userId = request.headers.get('X-User-Id');

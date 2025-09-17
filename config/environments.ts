@@ -7,7 +7,7 @@ export type Environment = 'development' | 'staging' | 'production';
 
 export interface EnvironmentConfig {
   name: string;
-  firebaseProject: string;
+  azureProject: string;
   apiUrl: string;
   appUrl: string;
   features: {
@@ -38,7 +38,7 @@ export interface EnvironmentConfig {
 const configs: Record<Environment, EnvironmentConfig> = {
   development: {
     name: 'Development',
-    firebaseProject:
+    azureProject:
       process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-dev',
     apiUrl: 'http://localhost:3000/api',
     appUrl: 'http://localhost:3000',
@@ -69,7 +69,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
 
   staging: {
     name: 'Staging',
-    firebaseProject:
+    azureProject:
       process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-staging',
     apiUrl:
       `${process.env.NEXT_PUBLIC_APP_URL}/api` ||
@@ -103,7 +103,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
 
   production: {
     name: 'Production',
-    firebaseProject:
+    azureProject:
       process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'benefits-prod',
     apiUrl:
       `${process.env.NEXT_PUBLIC_APP_URL}/api` || 'https://benefitsbot.com/api',

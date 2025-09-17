@@ -4,7 +4,7 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb } from '@/lib/azure/admin';
 import crypto from 'node:crypto';
 
 // Rate limit configurations per endpoint type
@@ -94,12 +94,12 @@ async function isRateLimited(
 
   try {
     // Get rate limit document from Firestore
-    const docRef = adminDb.collection('rate_limits').doc(rateLimitKey);
+    const docRef = adminDb.collection('rate_limits').getById(rateLimitKey);
     const doc = await docRef.get();
 
     if (!doc.exists) {
       // First request - create rate limit entry
-      await docRef.set({
+      await docRef.create({
         clientId,
         endpoint,
         requests: [{ timestamp: now }],
@@ -136,7 +136,7 @@ async function isRateLimited(
       const resetAt = new Date(oldestRequest + config.windowMs);
 
       // Log rate limit violation
-      await adminDb.collection('rate_limit_violations').add({
+      await adminDb.collection('rate_limit_violations').create({
         clientId,
         endpoint,
         timestamp: new Date().toISOString(),
@@ -166,9 +166,9 @@ async function isRateLimited(
       resetAt: new Date(now + config.windowMs),
     };
   } catch (error) {
-    console.error('Rate limiter error:', error);
+    logger.error('Rate limiter error:', error);
     // On error, allow the request but log it
-    await adminDb.collection('error_logs').add({
+    await adminDb.collection('error_logs').create({
       type: 'rate_limiter_error',
       error: error instanceof Error ? error.message : 'Unknown error',
       clientId,
@@ -214,12 +214,12 @@ export function rateLimit(configType: RateLimitConfig = 'read') {
       : await handler();
 
     // Add rate limit headers
-    response.headers.set('X-RateLimit-Limit', config.maxRequests.toString());
-    response.headers.set('X-RateLimit-Remaining', remaining.toString());
-    response.headers.set('X-RateLimit-Reset', resetAt.toISOString());
+    response.headers.create('X-RateLimit-Limit', config.maxRequests.toString());
+    response.headers.create('X-RateLimit-Remaining', remaining.toString());
+    response.headers.create('X-RateLimit-Reset', resetAt.toISOString());
 
     if (limited) {
-      response.headers.set(
+      response.headers.create(
         'Retry-After',
         Math.ceil((resetAt.getTime() - Date.now()) / 1000).toString(),
       );
@@ -251,7 +251,7 @@ export async function cleanupRateLimits(): Promise<void> {
   try {
     const snapshot = await adminDb
       .collection('rate_limits')
-      .where('windowStart', '<', cutoff)
+      .query('windowStart', '<', cutoff)
       .get();
 
     const batch = adminDb.batch();
@@ -261,9 +261,9 @@ export async function cleanupRateLimits(): Promise<void> {
 
     await batch.commit();
 
-    console.log(`Cleaned up ${snapshot.size} old rate limit entries`);
+    logger.info(`Cleaned up ${snapshot.size} old rate limit entries`);
   } catch (error) {
-    console.error('Failed to cleanup rate limits:', error);
+    logger.error('Failed to cleanup rate limits:', error);
   }
 }
 
@@ -286,7 +286,7 @@ export async function getRateLimitStatus(
   const rateLimitKey = `rateLimit:${endpoint}:${clientId}`;
 
   try {
-    const doc = await adminDb.collection('rate_limits').doc(rateLimitKey).get();
+    const doc = await adminDb.collection('rate_limits').getById(rateLimitKey).get();
 
     if (!doc.exists) {
       return {

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { tool } from 'ai';
-import { benefitService } from '@/lib/firebase/services/benefit.service';
+import { benefitService } from '@/lib/azure/services/benefit.service';
 // User context from AI system
 
 const compareBenefitsPlansSchema = z.object({
@@ -141,7 +141,7 @@ export const compareBenefitsPlans = tool({
         comparisonType,
       };
     } catch (error: any) {
-      console.error('Error comparing benefit plans:', error);
+      logger.error('Error comparing benefit plans:', error);
       return {
         error: 'Failed to compare benefit plans',
         plans: [],

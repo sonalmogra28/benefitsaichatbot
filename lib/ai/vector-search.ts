@@ -1,92 +1,49 @@
 // lib/ai/vector-search.ts
 
-import {
-  IndexServiceClient,
-  IndexEndpointServiceClient,
-} from '@google-cloud/aiplatform';
-import { adminDb, FieldValue } from '@/lib/firebase/admin';
+import { SearchClient, AzureKeyCredential } from '@azure/search-documents';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import { generateEmbedding, generateEmbeddings } from './embeddings';
+import { DefaultAzureCredential } from '@azure/identity';
 
-const PROJECT_ID =
-  process.env.VERTEX_AI_PROJECT_ID ||
-  process.env.GOOGLE_CLOUD_PROJECT ||
-  process.env.GCLOUD_PROJECT ||
-  '';
-const LOCATION = process.env.VERTEX_AI_LOCATION || 'us-central1';
-const INDEX_ID = process.env.VERTEX_AI_INDEX_ID || '';
-const INDEX_ENDPOINT_ID = process.env.VERTEX_AI_INDEX_ENDPOINT_ID || '';
+const AZURE_SEARCH_ENDPOINT = process.env.AZURE_SEARCH_ENDPOINT || '';
+const AZURE_SEARCH_API_KEY = process.env.AZURE_SEARCH_API_KEY || '';
+const AZURE_SEARCH_INDEX_NAME = process.env.AZURE_SEARCH_INDEX_NAME || 'document-chunks';
 
 class VectorSearchService {
-  private indexClient: IndexServiceClient;
-  private indexEndpointClient: IndexEndpointServiceClient;
+  private searchClient: SearchClient;
 
   constructor() {
-    const clientOptions = {
-      apiEndpoint: `${LOCATION}-aiplatform.googleapis.com`,
-    };
-    this.indexClient = new IndexServiceClient(clientOptions);
-    this.indexEndpointClient = new IndexEndpointServiceClient(clientOptions);
-  }
-
-  private get indexPath() {
-    if (!PROJECT_ID || !INDEX_ID) {
-      throw new Error('Vertex AI project or index ID is not configured');
+    if (!AZURE_SEARCH_ENDPOINT) {
+      throw new Error('AZURE_SEARCH_ENDPOINT not configured');
     }
-    return `projects/${PROJECT_ID}/locations/${LOCATION}/indexes/${INDEX_ID}`;
-  }
-
-  private get endpointPath() {
-    if (!PROJECT_ID || !INDEX_ENDPOINT_ID) {
-      throw new Error(
-        'Vertex AI project or index endpoint ID is not configured',
+    if (process.env.NODE_ENV === 'production') {
+      const credential = new DefaultAzureCredential();
+      this.searchClient = new SearchClient(
+        AZURE_SEARCH_ENDPOINT,
+        AZURE_SEARCH_INDEX_NAME,
+        credential,
+      );
+    } else {
+      if (!AZURE_SEARCH_API_KEY) {
+        throw new Error('AZURE_SEARCH_API_KEY not configured for development');
+      }
+      this.searchClient = new SearchClient(
+        AZURE_SEARCH_ENDPOINT,
+        AZURE_SEARCH_INDEX_NAME,
+        new AzureKeyCredential(AZURE_SEARCH_API_KEY),
       );
     }
-    return `projects/${PROJECT_ID}/locations/${LOCATION}/indexEndpoints/${INDEX_ENDPOINT_ID}`;
   }
 
   async upsertChunks(
     chunks: { id: string; embedding: number[]; companyId: string }[],
   ) {
-    const datapoints = chunks.map((chunk) => ({
-      datapointId: chunk.id,
-      featureVector: chunk.embedding,
-      restricts: [{ namespace: 'company_id', allowTokens: [chunk.companyId] }],
+    const docs = chunks.map((c) => ({
+      id: c.id,
+      embedding: c.embedding,
+      companyId: c.companyId,
     }));
-
-    const request = {
-      index: this.indexPath,
-      datapoints,
-    };
-
-    const maxRetries = 3;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log('Upserting datapoints to Vertex AI Vector Search...');
-        await this.indexClient.upsertDatapoints(request);
-        console.log('Successfully upserted datapoints.');
-        return;
-      } catch (error: any) {
-        const networkErrors = [
-          'ECONNRESET',
-          'ETIMEDOUT',
-          'EAI_AGAIN',
-          'ENOTFOUND',
-        ];
-        const isNetworkError = networkErrors.includes(error?.code);
-
-        if (!isNetworkError || attempt === maxRetries) {
-          console.error('Error upserting datapoints to Vertex AI:', error);
-          throw new Error('Could not update the vector search index.');
-        }
-
-        const delay = Math.pow(2, attempt - 1) * 1000;
-        console.warn(
-          `Network error during upsert, retrying in ${delay}ms (attempt ${attempt})`,
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
+    await this.searchClient.mergeOrUploadDocuments(docs);
   }
 
   async upsertDocumentChunks(
@@ -97,100 +54,75 @@ class VectorSearchService {
       const texts = chunks.map((c) => c.text);
       const embeddings = await generateEmbeddings(texts);
 
-      // Store chunk data with embeddings in Firestore
-      for (let i = 0; i < chunks.length; i += 500) {
-        const batch = adminDb.batch();
-        const slice = chunks.slice(i, i + 500);
-        slice.forEach((chunk, idx) => {
-          const docRef = adminDb.collection('document_chunks').doc(chunk.id);
-          batch.set(docRef, {
-            id: chunk.id,
-            companyId,
-            content: chunk.text,
-            metadata: chunk.metadata,
-            embedding: embeddings[i + idx],
-            createdAt: FieldValue.serverTimestamp(),
-          });
-        });
-        await batch.commit();
+      // Store chunk data with embeddings in Cosmos DB
+      const documentsContainer = await getContainer('Documents');
+      for (let i = 0; i < chunks.length; i += 100) {
+        const slice = chunks.slice(i, i + 100);
+        const chunkData = slice.map((chunk, idx) => ({
+          id: chunk.id,
+          companyId,
+          content: chunk.text,
+          metadata: chunk.metadata,
+          embedding: embeddings[i + idx],
+          createdAt: new Date().toISOString(),
+        }));
+        
+        // Batch insert into Cosmos DB
+        for (const chunk of chunkData) {
+          await documentsContainer.items.create(chunk);
+        }
       }
 
-      const datapoints = chunks.map((chunk, i) => ({
-        datapointId: chunk.id,
-        featureVector: embeddings[i],
-        restricts: [
-          { namespace: 'company_id', allowTokens: [companyId] },
-          {
-            namespace: 'document_id',
-            allowTokens: [chunk.metadata.documentId],
-          },
-        ],
+      const docs = chunks.map((chunk, i) => ({
+        id: chunk.id,
+        companyId,
+        documentId: chunk.metadata.documentId,
+        content: chunk.text,
+        embedding: embeddings[i],
       }));
-
-      const request = {
-        index: this.indexPath,
-        datapoints,
-      };
-
-      console.log(
-        `Upserting ${datapoints.length} document chunks for company ${companyId}`,
-      );
-      await this.indexClient.upsertDatapoints(request);
-      console.log(
-        `Successfully stored and upserted ${datapoints.length} document chunk embeddings.`,
-      );
-      return datapoints.length;
+      await this.searchClient.mergeOrUploadDocuments(docs as any);
+      return docs.length;
     } catch (error) {
-      console.error('Error upserting document chunks to Vertex AI:', error);
+      console.error('Error upserting document chunks to Azure AI Search:', error);
       throw new Error('Failed to upsert document chunks');
     }
   }
 
   async removeDatapoints(datapointIds: string[]) {
-    const request = {
-      index: this.indexPath,
-      datapointIds,
-    };
-
-    try {
-      console.log(
-        `Removing ${datapointIds.length} datapoints from Vertex AI index...`,
-      );
-      await this.indexClient.removeDatapoints(request);
-      console.log('Successfully removed datapoints.');
-    } catch (error) {
-      console.error('Error removing datapoints from Vertex AI:', error);
-      throw new Error(
-        'Could not remove datapoints from the vector search index.',
-      );
-    }
+    if (!datapointIds.length) return;
+    const docs = datapointIds.map((id) => ({ id }));
+    await this.searchClient.deleteDocuments(docs as any);
   }
 
-  async findNearestNeighbors(queryEmbedding: number[], numNeighbors = 5) {
-    const request = {
-      indexEndpoint: this.endpointPath,
-      queries: [
-        {
-          datapoint: {
-            featureVector: queryEmbedding,
-          },
-          neighborCount: numNeighbors,
-        },
-      ],
-    };
+  async findNearestNeighbors(
+    queryEmbedding: number[],
+    companyId: string,
+    numNeighbors = 5,
+  ) {
+    const vectorQuery = {
+      kind: 'vector',
+      fields: ['embedding'],
+      kNearestNeighborsCount: numNeighbors,
+      vector: queryEmbedding,
+    } as const;
 
-    try {
-      const [response] = await (this.indexEndpointClient as any).findNeighbors(
-        request,
-      );
-      if (response.nearestNeighbors && response.nearestNeighbors.length > 0) {
-        return response.nearestNeighbors[0].neighbors;
-      }
-      return [];
-    } catch (error) {
-      console.error('Error finding nearest neighbors in Vertex AI:', error);
-      throw new Error('Could not perform the vector search.');
+    const results = await this.searchClient.search('', {
+      vectorSearchOptions: {
+        queries: [vectorQuery],
+      },
+      filter: `companyId eq '${companyId}'`,
+      select: ['id', 'companyId', 'documentId', 'content'],
+      top: numNeighbors,
+    });
+
+    const items: { chunk: any; score: number }[] = [];
+    for await (const res of results.results) {
+      items.push({
+        chunk: res.document,
+        score: res.score,
+      });
     }
+    return items;
   }
 }
 
@@ -210,30 +142,29 @@ export async function upsertDocumentChunks(
   }
 
   try {
-    // Store chunk metadata and embeddings in Firestore in batches of 500
-    for (let i = 0; i < chunks.length; i += 500) {
-      const batch = adminDb.batch();
-      const slice = chunks.slice(i, i + 500);
-      slice.forEach((chunk) => {
-        const docRef = adminDb.collection('document_chunks').doc(chunk.id);
-        batch.set(docRef, {
+    // Store chunk metadata and embeddings in Cosmos DB in batches of 100
+    const documentsContainer = await getContainer('Documents');
+    for (let i = 0; i < chunks.length; i += 100) {
+      const slice = chunks.slice(i, i + 100);
+      for (const chunk of slice) {
+        await documentsContainer.items.create({
           id: chunk.id,
           companyId,
           content: chunk.text,
           metadata: chunk.metadata,
           embedding: chunk.embedding,
-          createdAt: FieldValue.serverTimestamp(),
+          createdAt: new Date().toISOString(),
         });
-      });
-      await batch.commit();
+      }
     }
 
-    // Upsert embeddings to Vertex AI in batches of 100
+    // Upsert embeddings to Azure AI Search in batches of 100
     let upserted = 0;
     for (let i = 0; i < chunks.length; i += 100) {
       const slice = chunks.slice(i, i + 100).map((chunk) => ({
         id: chunk.id,
         embedding: chunk.embedding,
+        companyId,
       }));
       if (slice.length > 0) {
         await vectorSearchService.upsertChunks(slice);
@@ -249,9 +180,17 @@ export async function upsertDocumentChunks(
   }
 }
 
-export async function searchVectors(companyId: string, query: string) {
+export async function searchVectors(
+  companyId: string,
+  query: string,
+  numNeighbors = 5,
+) {
   const embedding = await generateEmbedding(query);
-  return vectorSearchService.findNearestNeighbors(embedding, 5);
+  return vectorSearchService.findNearestNeighbors(
+    embedding,
+    companyId,
+    numNeighbors,
+  );
 }
 
 export const deleteDocumentVectors = async (
@@ -272,7 +211,7 @@ export const deleteDocumentVectors = async (
 
     const chunkIds = snapshot.docs.map((doc) => doc.id);
 
-    // Remove vectors from Vertex AI index
+    // Remove vectors from Azure AI Search index
     await vectorSearchService.removeDatapoints(chunkIds);
 
     // Delete chunk docs from Firestore in batches of 500

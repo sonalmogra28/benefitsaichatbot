@@ -1,7 +1,6 @@
 import { useSWRConfig } from 'swr';
 import { useCopyToClipboard } from 'usehooks-ts';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
 
 import type { Vote } from '@/lib/db/schema-chat';
 

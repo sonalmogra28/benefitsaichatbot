@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection } from 'azure/firestore';
 import { db } from '@/lib/firestore';
 
 export function CreateCompanyForm() {
@@ -21,7 +21,7 @@ export function CreateCompanyForm() {
       });
       router.push('/super-admin/companies');
     } catch (error) {
-      console.error('Error creating company:', error);
+      logger.error('Error creating company:', error);
     }
   };
 

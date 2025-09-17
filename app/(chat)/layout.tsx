@@ -5,31 +5,29 @@ import Script from 'next/script';
 import { DataStreamProvider } from '@/components/data-stream-provider';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarUserNav } from '@/components/sidebar-user-nav';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export const experimental_ppr = true;
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const [user, loading] = useAuthState(auth);
+  const { account, loading } = useAuth();
   const router = useRouter();
   const [isEmployee, setIsEmployee] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !account) {
       router.push('/login');
-    } else if (user) {
-      user.getIdTokenResult().then((token) => {
-        if (token.claims.role === 'employee') {
-          setIsEmployee(true);
-        } else {
-          router.push('/');
-        }
-      });
+    } else if (account) {
+      // Check if user has employee role
+      if (account.role === 'employee') {
+        setIsEmployee(true);
+      } else {
+        router.push('/');
+      }
     }
-  }, [user, loading, router]);
+  }, [account, loading, router]);
 
   if (loading || !isEmployee) {
     return (

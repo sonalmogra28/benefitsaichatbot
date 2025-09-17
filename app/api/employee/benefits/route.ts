@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/admin-middleware';
 import { USER_ROLES } from '@/lib/constants/roles';
-import { benefitService } from '@/lib/firebase/services/benefit.service';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import type { BenefitsSummary } from '@/types/api';
 
 export const GET = withAuth(

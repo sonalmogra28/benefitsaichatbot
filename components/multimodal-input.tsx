@@ -191,7 +191,7 @@ function PureMultimodalInput({
           ...successfullyUploadedAttachments,
         ]);
       } catch (error) {
-        console.error('Error uploading files!', error);
+        logger.error('Error uploading files!', error);
       } finally {
         setUploadQueue([]);
       }

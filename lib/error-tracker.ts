@@ -14,7 +14,7 @@ export const ErrorTracker = {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('ERROR TRACKED:', errorData);
+      logger.error('ERROR TRACKED:', errorData);
     }
 
     // Send to logging endpoint

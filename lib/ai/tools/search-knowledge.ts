@@ -36,7 +36,7 @@ export const searchKnowledge = tool({
         })),
       };
     } catch (error) {
-      console.error('Error searching knowledge base:', error);
+      logger.error('Error searching knowledge base:', error);
       return {
         error: 'Failed to search knowledge base.',
       };

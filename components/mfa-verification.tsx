@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { PhoneAuthProvider } from 'firebase/auth';
+import { PhoneAuthProvider } from 'azure/auth';
 
 export function MfaVerification({ resolver }: { resolver: any }) {
   const [verificationCode, setVerificationCode] = useState('');

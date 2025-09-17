@@ -84,7 +84,7 @@ export function CreateCompanyDialog({
         router.push(`/super-admin/companies/${data.companyId}`);
       }
     } catch (error) {
-      console.error('Error creating company:', error);
+      logger.error('Error creating company:', error);
       toast.error('Failed to create company. Please try again.');
     } finally {
       setLoading(false);

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { superAdminService } from '@/lib/services/super-admin.service';
-import { adminAuth } from '@/lib/firebase/admin';
+import { getContainer } from '@/lib/azure/cosmos-db';
+
 import { USER_ROLES } from '@/lib/constants/roles';
 
 export async function GET(request: NextRequest) {

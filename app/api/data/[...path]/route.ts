@@ -1,5 +1,5 @@
 
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import { NextResponse } from 'next/server';
 
 /**
@@ -10,8 +10,9 @@ import { NextResponse } from 'next/server';
  */
 export async function PUT(
   request: Request,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
+  const { path } = await params;
   try {
     // Extract and validate authentication token
     const authHeader = request.headers.get('authorization');
@@ -39,11 +40,11 @@ export async function PUT(
     const companyId = decodedToken.companyId || decodedToken.custom_claims?.companyId;
 
     // Build and validate document path
-    const path = params.path.join('/');
+    const documentPath = path.join('/');
     
     // Prevent access to sensitive system collections
     const restrictedPaths = ['system', 'config', 'admin_keys'];
-    const firstSegment = params.path[0];
+    const firstSegment = path[0];
     if (restrictedPaths.includes(firstSegment)) {
       return NextResponse.json(
         { success: false, error: 'Access to this collection is restricted' },
@@ -52,8 +53,8 @@ export async function PUT(
     }
 
     // Enforce company-level data isolation
-    if (firstSegment === 'companies' && params.path.length > 1) {
-      const targetCompanyId = params.path[1];
+    if (firstSegment === 'companies' && path.length > 1) {
+      const targetCompanyId = path[1];
       // Users can only modify their own company's data unless super-admin
       if (targetCompanyId !== companyId && userRole !== 'super-admin') {
         return NextResponse.json(
@@ -75,12 +76,12 @@ export async function PUT(
     };
 
     // Perform the Firestore update
-    await adminDb.doc(path).set(auditedData, { merge: true });
+    await adminDb.doc(documentPath).set(auditedData, { merge: true });
 
     // Log the operation for audit purposes
     await adminDb.collection('audit_logs').add({
       action: 'document_update',
-      path: path,
+      path: documentPath,
       userId: decodedToken.uid,
       userEmail: decodedToken.email,
       userRole: userRole,

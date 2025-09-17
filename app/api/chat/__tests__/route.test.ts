@@ -11,7 +11,7 @@ const { mockCollection, mockDoc } = vi.hoisted(() => {
   };
 });
 
-vi.mock('@/lib/firebase/admin', () => {
+vi.mock('@/lib/azure/admin', () => {
   mockCollection.mockImplementation(() => ({
     doc: (id?: string) =>
       id
@@ -34,8 +34,8 @@ vi.mock('@/lib/firebase/admin', () => {
   };
 });
 
-vi.mock('firebase-admin/firestore', () => ({
-  FieldValue: { serverTimestamp: vi.fn(() => new Date()) },
+vi.mock('azure-admin/firestore', () => ({
+  Date: { serverTimestamp: vi.fn(() => new Date()) },
 }));
 
 vi.mock('@/lib/ai/rag-system', () => ({

@@ -4,7 +4,7 @@
  */
 
 import { getLoggingConfig, getEnvironment } from '@/config/environments';
-import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
+import { getContainer } from '@/lib/azure/cosmos-db';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 

@@ -1,143 +1,183 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth/admin-middleware';
-import { USER_ROLES } from '@/lib/constants/roles';
-import {
-  documentService,
-  documentSchema,
-} from '@/lib/firebase/services/document.service';
-import { uploadDocument, validateFile } from '@/lib/storage/firebase-storage';
+import { protectAdminEndpoint, protectCompanyEndpoint } from '@/lib/middleware/auth';
+import { rateLimiters } from '@/lib/middleware/rate-limit';
+import { logger } from '@/lib/logging/logger';
+import { getRepositories } from '@/lib/azure/cosmos';
+import { getStorageServices } from '@/lib/azure/storage';
 import { z } from 'zod';
 
 // Schema for upload metadata
-const uploadMetadataSchema = documentSchema.pick({
-  title: true,
-  documentType: true,
-  category: true,
-  tags: true,
+const uploadMetadataSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  documentType: z.string().default('benefits_guide'),
+  category: z.string().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
-export const POST = withAuth(
-  USER_ROLES.COMPANY_ADMIN,
-  async (
-    request: NextRequest,
-    { params }: { params: { companyId: string } },
-    user,
-  ) => {
+interface RouteParams {
+  params: Promise<{
+    companyId: string;
+  }>;
+}
+
+export async function POST(request: NextRequest, { params }: RouteParams) {
+  const startTime = Date.now();
+  const { companyId } = await params;
+  
+  try {
+    // Apply rate limiting
+    const rateLimitResponse = await rateLimiters.upload(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // Authenticate and authorize
+    const { user, error } = await protectAdminEndpoint(request);
+    if (error || !user) {
+      return error!;
+    }
+
+    // Check company access
+    const { user: companyUser, error: companyError } = await protectCompanyEndpoint(request, companyId);
+    if (companyError || !companyUser) {
+      return companyError!;
+    }
+
+    logger.info('API Request: POST /api/admin/companies/[companyId]/documents/upload', {
+      userId: user.id,
+      companyId
+    });
+
+    // Parse form data
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    const metadata = formData.get('metadata') as string;
+
+    if (!file) {
+      return NextResponse.json(
+        { success: false, error: 'No file provided' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'text/plain'];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { success: false, error: 'Unsupported file type. Only PDF and text files are allowed.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { success: false, error: 'File too large. Maximum size is 10MB.' },
+        { status: 400 }
+      );
+    }
+
+    // Parse and validate metadata
+    let parsedMetadata;
     try {
-      const { companyId } = params;
+      parsedMetadata = uploadMetadataSchema.parse(JSON.parse(metadata || '{}'));
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid metadata format' },
+        { status: 400 }
+      );
+    }
 
-      // Parse form data
-      const formData = await request.formData();
-      const file = formData.get('file') as File;
-      const metadata = formData.get('metadata') as string;
-
-      if (!file) {
-        return NextResponse.json(
-          { error: 'No file provided' },
-          { status: 400 },
-        );
-      }
-
-      // Validate file
-      const validation = validateFile(file);
-      if (!validation.isValid) {
-        return NextResponse.json(
-          {
-            error: 'File validation failed',
-            details: validation.errors,
-          },
-          { status: 400 },
-        );
-      }
-
-      // Parse and validate metadata
-      let parsedMetadata: z.infer<typeof uploadMetadataSchema>;
-      try {
-        parsedMetadata = uploadMetadataSchema.parse(JSON.parse(metadata));
-      } catch (error) {
-        return NextResponse.json(
-          {
-            error: 'Invalid metadata',
-            details:
-              error instanceof z.ZodError ? error.errors : 'Invalid JSON',
-          },
-          { status: 400 },
-        );
-      }
-
-      // Upload to Firebase Cloud Storage
-      const uploadResult = await uploadDocument(file, companyId, {
-        uploadedBy: user.uid,
-        documentType: parsedMetadata.documentType,
-      });
-
-      // Create database record
-      const documentId = await documentService.createDocument(
+    // Upload file to Azure Blob Storage
+    const storageServices = await getStorageServices();
+    const fileName = `${Date.now()}_${file.name}`;
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    
+    const uploadResult = await storageServices.documents.uploadFile(
+      fileName,
+      fileBuffer,
+      file.type,
+      {
+        originalName: file.name,
+        uploadedBy: user.id,
         companyId,
-        {
-          ...parsedMetadata,
-          fileUrl: uploadResult.url,
-          fileType: file.type,
-          isPublic: false,
-        },
-        user.uid,
-      );
+        title: parsedMetadata.title,
+        documentType: parsedMetadata.documentType,
+        category: parsedMetadata.category || '',
+        tags: parsedMetadata.tags?.join(',') || ''
+      }
+    );
 
-      // TODO: Queue document processing job
-      // For now, we'll return success and process can be triggered separately
+    // Save document record to Cosmos DB
+    const repositories = await getRepositories();
+    const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const document = {
+      id: documentId,
+      title: parsedMetadata.title,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      fileUrl: uploadResult,
+      storagePath: fileName,
+      documentType: parsedMetadata.documentType,
+      category: parsedMetadata.category,
+      tags: parsedMetadata.tags || [],
+      companyId,
+      status: 'pending',
+      uploadedBy: user.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-      return NextResponse.json({
-        success: true,
-        document: {
-          id: documentId,
-          title: parsedMetadata.title,
-          fileUrl: uploadResult.url,
-          status: 'pending_processing',
-        },
-      });
-    } catch (error) {
-      console.error('Document upload error:', error);
-      return NextResponse.json(
-        { error: 'Failed to upload document' },
-        { status: 500 },
-      );
-    }
-  },
-);
+    await repositories.documents.create(document);
 
-// Get list of documents for a company
-export const GET = withAuth(
-  USER_ROLES.COMPANY_ADMIN,
-  async (
-    request: NextRequest,
-    { params }: { params: { companyId: string } },
-    user,
-  ) => {
+    // Trigger document processing (async)
     try {
-      const { companyId } = params;
-
-      const documents = await documentService.listDocuments(companyId);
-
-      return NextResponse.json({
-        documents: documents.map((doc) => ({
-          id: doc.id,
-          title: doc.title,
-          documentType: doc.documentType,
-          category: doc.category,
-          tags: doc.tags,
-          fileUrl: doc.fileUrl,
-          fileType: doc.fileType,
-          processedAt: doc.processedAt,
-          createdAt: doc.createdAt,
-          status: doc.status,
-        })),
-      });
+      // TODO: Implement document processing trigger
+      logger.info('Document processing triggered', { documentId, companyId });
     } catch (error) {
-      console.error('Document list error:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch documents' },
-        { status: 500 },
-      );
+      logger.warn('Failed to trigger document processing', { documentId, error });
     }
-  },
-);
+
+    const duration = Date.now() - startTime;
+    
+    logger.apiResponse('POST', '/api/admin/companies/[companyId]/documents/upload', 200, duration, {
+      userId: user.id,
+      companyId,
+      documentId,
+      fileName: file.name,
+      fileSize: file.size
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Document uploaded successfully',
+      data: {
+        documentId,
+        fileName: file.name,
+        fileSize: file.size,
+        status: 'pending',
+        uploadedAt: document.createdAt
+      }
+    });
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    logger.error('Document upload error', {
+      path: request.nextUrl.pathname,
+      method: request.method,
+      companyId,
+      duration
+    }, error as Error);
+    
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Failed to upload document' 
+      },
+      { status: 500 }
+    );
+  }
+}

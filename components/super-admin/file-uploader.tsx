@@ -5,8 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { auth, storage } from '@/lib/firebase/client';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+// File upload - to be implemented with Azure Blob Storage
 
 export function FileUploader() {
   const [file, setFile] = useState<File | null>(null);
@@ -69,7 +68,7 @@ export function FileUploader() {
         setUploadProgress(progress);
       },
       (error) => {
-        console.error('Upload failed:', error);
+        logger.error('Upload failed:', error);
         setError('File upload failed. Please try again.');
         toast({
           title: 'Upload Failed',
@@ -106,7 +105,7 @@ export function FileUploader() {
             description: `"${file.name}" has been uploaded and is being processed.`,
           });
         } catch (apiError: any) {
-          console.error('Failed to save metadata:', apiError);
+          logger.error('Failed to save metadata:', apiError);
           setError(
             `Upload succeeded, but failed to save file details. Please contact support. Error: ${apiError.message}`,
           );

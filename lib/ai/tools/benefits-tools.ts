@@ -1,8 +1,8 @@
 // AI Tools for Benefits-Specific Functionality
 import { z } from 'zod';
 import { tool } from 'ai';
-import { benefitService } from '@/lib/firebase/services/benefit.service';
-import { companyService } from '@/lib/firebase/services/company.service';
+import { benefitService } from '@/lib/azure/services/benefit.service';
+import { companyService } from '@/lib/azure/services/company.service';
 
 // Tool schemas using Zod for validation
 const comparePlansSchema = z.object({

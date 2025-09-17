@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const settings = await superAdminService.getSystemSettings();
     return NextResponse.json(settings.aiSettings);
   } catch (error) {
-    console.error('Error fetching AI settings:', error);
+    logger.error('Error fetching AI settings:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return new NextResponse(JSON.stringify(error.errors), { status: 400 });
     }
-    console.error('Error updating AI settings:', error);
+    logger.error('Error updating AI settings:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

@@ -20,7 +20,7 @@ class SuperAdminService {
       }
       return await response.json();
     } catch (error) {
-      console.error('Error fetching platform stats:', error);
+      logger.error('Error fetching platform stats:', error);
       return {
         totalUsers: 0,
         totalDocuments: 0,
@@ -43,7 +43,7 @@ class SuperAdminService {
       }
       return await response.json();
     } catch (error) {
-      console.error('Error fetching activity logs:', error);
+      logger.error('Error fetching activity logs:', error);
       return [];
     }
   }
@@ -59,7 +59,7 @@ class SuperAdminService {
       }
       return await response.json();
     } catch (error) {
-      console.error('Error fetching system settings:', error);
+      logger.error('Error fetching system settings:', error);
       // Return default settings on failure
       return this.getDefaultSettings();
     }
@@ -81,7 +81,7 @@ class SuperAdminService {
         throw new Error('Failed to update system settings');
       }
     } catch (error) {
-      console.error('Error updating system settings:', error);
+      logger.error('Error updating system settings:', error);
       throw error;
     }
   }

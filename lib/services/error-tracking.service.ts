@@ -3,8 +3,8 @@
  * Captures, logs, and reports errors throughout the application
  */
 
-import { logger } from './logger.service';
-import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
+import { logger } from '@/lib/logging/logger';
+import { getRepositories } from '@/lib/azure/cosmos';
 import { getConfig, isProduction } from '@/config/environments';
 
 export interface ErrorContext {
@@ -120,10 +120,10 @@ class ErrorTracker {
       const batch = adminDb.batch();
 
       Object.values(grouped).forEach((error) => {
-        const docRef = adminDb.collection('errors').doc();
-        batch.set(docRef, {
+        const docRef = adminDb.collection('errors').getById();
+        batch.create(docRef, {
           ...error,
-          timestamp: AdminFieldValue.serverTimestamp(),
+          timestamp: Adminnew Date().toISOString(),
         });
       });
 
@@ -241,9 +241,9 @@ class ErrorTracker {
 
     // Store critical errors in a special collection for immediate attention
     try {
-      await adminDb.collection('critical_errors').add({
+      await adminDb.collection('critical_errors').create({
         ...error,
-        timestamp: AdminFieldValue.serverTimestamp(),
+        timestamp: Adminnew Date().toISOString(),
         alerted: true,
       });
     } catch (err) {
@@ -263,7 +263,7 @@ class ErrorTracker {
 
       const snapshot = await adminDb
         .collection('errors')
-        .where('timestamp', '>=', since)
+        .query('timestamp', '>=', since)
         .get();
 
       const errors = snapshot.docs.map((doc) => doc.data() as TrackedError);

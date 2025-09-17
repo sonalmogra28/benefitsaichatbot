@@ -1,13 +1,14 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getContainer } from '@/lib/azure/cosmos-db';
+import { validateToken } from '@/lib/azure/token-validation';
 import { USER_ROLES } from '@/lib/constants/roles';
 
 // GET /api/companies/[id] - Get a specific company
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -18,47 +19,40 @@ export async function GET(
     let decodedToken: any;
 
     try {
-      decodedToken = await adminAuth.verifyIdToken(token);
+      decodedToken = await validateToken(token);
+      if (!decodedToken) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
     } catch (error) {
       console.error('Token verification failed:', error);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const companyId = params.id;
+    const companyId = id;
 
     // Check permissions
     const isSuperAdmin =
       decodedToken.role === USER_ROLES.SUPER_ADMIN ||
       decodedToken.role === USER_ROLES.PLATFORM_ADMIN;
-    const isCompanyAdmin =
-      decodedToken.role === USER_ROLES.COMPANY_ADMIN &&
-      decodedToken.companyId === companyId;
-    const isHRAdmin =
-      decodedToken.role === USER_ROLES.HR_ADMIN &&
-      decodedToken.companyId === companyId;
+    const isCompanyAdmin = decodedToken.role === USER_ROLES.COMPANY_ADMIN;
+    const isHRAdmin = decodedToken.role === USER_ROLES.HR_ADMIN;
 
-    if (!isSuperAdmin && !isCompanyAdmin && !isHRAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // If not super admin, can only access their own company
+    if (!isSuperAdmin) {
+      if (decodedToken.companyId !== companyId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
-    // Fetch company
-    const companyDoc = await adminDb
-      .collection('companies')
-      .doc(companyId)
-      .get();
+    // Get company from Cosmos DB
+    const companiesContainer = await getContainer('Companies');
+    const { resource: company } = await companiesContainer.item(companyId).read();
 
-    if (!companyDoc.exists) {
+    if (!company) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    const companyData = companyDoc.data();
-
-    return NextResponse.json({
-      id: companyDoc.id,
-      ...companyData,
-      createdAt: companyData?.createdAt?.toDate?.() || null,
-      updatedAt: companyData?.updatedAt?.toDate?.() || null,
-    });
+    return NextResponse.json(company);
   } catch (error) {
     console.error('Error fetching company:', error);
     return NextResponse.json(
@@ -68,11 +62,12 @@ export async function GET(
   }
 }
 
-// PATCH /api/companies/[id] - Update a company
-export async function PATCH(
+// PUT /api/companies/[id] - Update a company
+export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -83,84 +78,83 @@ export async function PATCH(
     let decodedToken: any;
 
     try {
-      decodedToken = await adminAuth.verifyIdToken(token);
+      decodedToken = await validateToken(token);
+      if (!decodedToken) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
     } catch (error) {
       console.error('Token verification failed:', error);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const companyId = params.id;
+    const companyId = id;
 
-    // Check permissions - only super admin and company admin can update
+    // Check permissions
     const isSuperAdmin =
       decodedToken.role === USER_ROLES.SUPER_ADMIN ||
       decodedToken.role === USER_ROLES.PLATFORM_ADMIN;
-    const isCompanyAdmin =
-      decodedToken.role === USER_ROLES.COMPANY_ADMIN &&
-      decodedToken.companyId === companyId;
+    const isCompanyAdmin = decodedToken.role === USER_ROLES.COMPANY_ADMIN;
+    const isHRAdmin = decodedToken.role === USER_ROLES.HR_ADMIN;
 
-    if (!isSuperAdmin && !isCompanyAdmin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // If not super admin, can only update their own company
+    if (!isSuperAdmin) {
+      if (decodedToken.companyId !== companyId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
     }
 
     // Parse request body
     const body = await request.json();
+    const {
+      name,
+      domain,
+      industry,
+      size,
+      contactEmail,
+      contactName,
+      settings,
+      status,
+    } = body;
 
-    // Prepare update data
-    const updateData: any = {
-      updatedAt: FieldValue.serverTimestamp(),
-    };
+    // Get existing company
+    const companiesContainer = await getContainer('Companies');
+    const { resource: existingCompany } = await companiesContainer.item(companyId).read();
 
-    // Fields that can be updated
-    const allowedFields = ['name', 'domain', 'employeeLimit', 'settings'];
-
-    // Super admin can also update status
-    if (isSuperAdmin && body.status) {
-      updateData.status = body.status;
-    }
-
-    // Add allowed fields to update
-    allowedFields.forEach((field) => {
-      if (body[field] !== undefined) {
-        updateData[field] = body[field];
-      }
-    });
-
-    // Check if company exists
-    const companyRef = adminDb.collection('companies').doc(companyId);
-    const companyDoc = await companyRef.get();
-
-    if (!companyDoc.exists) {
+    if (!existingCompany) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    // Update company
-    await companyRef.update(updateData);
+    // Update company data
+    const updatedCompany = {
+      ...existingCompany,
+      ...(name && { name }),
+      ...(domain && { domain }),
+      ...(industry !== undefined && { industry }),
+      ...(size !== undefined && { size }),
+      ...(contactEmail && { contactEmail }),
+      ...(contactName !== undefined && { contactName }),
+      ...(settings && { settings: { ...existingCompany.settings, ...settings } }),
+      ...(status && { status }),
+      updatedAt: new Date().toISOString(),
+      updatedBy: decodedToken.oid,
+    };
+
+    await companiesContainer.item(companyId).replace(updatedCompany);
 
     // Log activity
-    const activityRef = adminDb.collection('activity_logs').doc();
-    await activityRef.set({
-      id: activityRef.id,
+    const activityContainer = await getContainer('ActivityLogs');
+    await activityContainer.items.create({
+      id: `activity_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'company_updated',
-      message: `Company \"${companyDoc.data()?.name}\" updated`,
+      message: `Company "${name || existingCompany.name}" updated`,
       metadata: {
-        companyId,
-        updatedBy: decodedToken.uid,
-        changes: Object.keys(updateData).filter((key) => key !== 'updatedAt'),
+        companyId: companyId,
+        updatedBy: decodedToken.oid,
       },
-      timestamp: FieldValue.serverTimestamp(),
+      timestamp: new Date().toISOString(),
     });
 
-    // Fetch updated company
-    const updatedDoc = await companyRef.get();
-    const updatedData = updatedDoc.data();
-
-    return NextResponse.json({
-      id: updatedDoc.id,
-      ...updatedData,
-      createdAt: updatedData?.createdAt?.toDate?.() || null,
-      updatedAt: updatedData?.updatedAt?.toDate?.() || null,
-    });
+    return NextResponse.json(updatedCompany);
   } catch (error) {
     console.error('Error updating company:', error);
     return NextResponse.json(
@@ -173,8 +167,9 @@ export async function PATCH(
 // DELETE /api/companies/[id] - Delete a company (super admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -182,52 +177,60 @@ export async function DELETE(
     }
 
     const token = authHeader.split('Bearer ')[1];
+    let decodedToken: any;
 
     try {
-      const decodedToken = await adminAuth.verifyIdToken(token);
-
-      // Check if user has super admin role
-      if (decodedToken.role !== USER_ROLES.SUPER_ADMIN) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      decodedToken = await validateToken(token);
+      if (!decodedToken) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
       }
     } catch (error) {
       console.error('Token verification failed:', error);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const companyId = params.id;
+    // Only super admins can delete companies
+    if (
+      decodedToken.role !== USER_ROLES.SUPER_ADMIN &&
+      decodedToken.role !== USER_ROLES.PLATFORM_ADMIN
+    ) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
-    // Check if company exists
-    const companyRef = adminDb.collection('companies').doc(companyId);
-    const companyDoc = await companyRef.get();
+    const companyId = id;
 
-    if (!companyDoc.exists) {
+    // Get existing company
+    const companiesContainer = await getContainer('Companies');
+    const { resource: existingCompany } = await companiesContainer.item(companyId).read();
+
+    if (!existingCompany) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    const companyName = companyDoc.data()?.name;
-
-    // Soft delete by updating status
-    await companyRef.update({
+    // Soft delete - mark as deleted
+    const deletedCompany = {
+      ...existingCompany,
       status: 'deleted',
-      deletedAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+      deletedAt: new Date().toISOString(),
+      deletedBy: decodedToken.oid,
+    };
+
+    await companiesContainer.item(companyId).replace(deletedCompany);
 
     // Log activity
-    const activityRef = adminDb.collection('activity_logs').doc();
-    await activityRef.set({
-      id: activityRef.id,
+    const activityContainer = await getContainer('ActivityLogs');
+    await activityContainer.items.create({
+      id: `activity_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: 'company_deleted',
-      message: `Company \"${companyName}\" deleted`,
-      metadata: { companyId },
-      timestamp: FieldValue.serverTimestamp(),
+      message: `Company "${existingCompany.name}" deleted`,
+      metadata: {
+        companyId: companyId,
+        deletedBy: decodedToken.oid,
+      },
+      timestamp: new Date().toISOString(),
     });
 
-    return NextResponse.json(
-      { message: 'Company deleted successfully' },
-      { status: 200 },
-    );
+    return NextResponse.json({ message: 'Company deleted successfully' });
   } catch (error) {
     console.error('Error deleting company:', error);
     return NextResponse.json(

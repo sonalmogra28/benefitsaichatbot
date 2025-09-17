@@ -19,5 +19,5 @@ const hasServiceAccount =
 export const FIREBASE_ADMIN_CONFIG = {
   serviceAccount: hasServiceAccount ? serviceAccount : undefined,
   // The databaseURL is often required for the Admin SDK.
-  databaseURL: `https://${(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)}.firebaseio.com`,
+  databaseURL: `https://${(process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID)}.azureio.com`,
 };

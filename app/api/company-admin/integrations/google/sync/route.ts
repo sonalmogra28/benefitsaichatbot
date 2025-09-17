@@ -7,7 +7,7 @@ async function handler() {
     // TODO: Implement actual Google Workspace sync
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Google Workspace sync failed:', error);
+    logger.error('Google Workspace sync failed:', error);
     return NextResponse.json({ error: 'Sync failed' }, { status: 500 });
   }
 }

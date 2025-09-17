@@ -24,7 +24,7 @@ export const PUT = requireSuperAdmin(
           { status: 400 },
         );
       }
-      console.error('Error updating company:', error);
+      logger.error('Error updating company:', error);
       return NextResponse.json(
         { error: 'Failed to update company' },
         { status: 500 },
@@ -43,7 +43,7 @@ export const DELETE = requireSuperAdmin(
         message: 'Delete company not implemented yet',
       });
     } catch (error) {
-      console.error('Error deleting company:', error);
+      logger.error('Error deleting company:', error);
       return NextResponse.json(
         { error: 'Failed to delete company' },
         { status: 500 },

@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { benefitService } from '@/lib/firebase/services/benefit.service';
+import { benefitService } from '@/lib/azure/services/benefit.service';
 // User context from AI system
 
 export const showBenefitsDashboard = tool({
@@ -148,7 +148,7 @@ export const showBenefitsDashboard = tool({
         upcomingDeadlines,
       };
     } catch (error) {
-      console.error('Error in showBenefitsDashboard tool:', error);
+      logger.error('Error in showBenefitsDashboard tool:', error);
       return {
         error:
           'Unable to retrieve benefits dashboard data. Please try again later.',

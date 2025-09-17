@@ -5,7 +5,7 @@ export async function POST(req: NextRequest) {
     const errorData = await req.json();
 
     // Log error to console (in production, send to logging service)
-    console.error('[ERROR LOG]:', {
+    logger.error('[ERROR LOG]:', {
       ...errorData,
       serverTime: new Date().toISOString(),
     });

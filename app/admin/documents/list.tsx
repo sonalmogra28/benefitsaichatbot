@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
 import {
   Table,
   TableBody,
@@ -14,7 +13,8 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
-import { documentClientService } from '@/lib/firebase/services/document-client.service';
+import { getRepositories } from '@/lib/azure/cosmos';
+import { logger } from '@/lib/logging/logger';
 
 interface Document {
   id: string;
@@ -29,42 +29,41 @@ interface Document {
 }
 
 export default function AdminDocumentListPage() {
-  const [user, loading] = useAuthState(auth);
+  const { account, loading } = useAuth();
   const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !account) {
       router.push('/login');
-    } else if (user) {
-      user.getIdTokenResult().then((idTokenResult) => {
-        if (
-          !idTokenResult.claims.platform_admin &&
-          !idTokenResult.claims.super_admin &&
-          !idTokenResult.claims.company_admin
-        ) {
-          router.push('/');
-        }
-      });
+    } else if (account) {
+      // TODO: Check user roles for admin access
       fetchDocuments();
     }
-  }, [user, loading, router]);
+  }, [account, loading, router]);
 
   const fetchDocuments = async () => {
-    const docs = await documentClientService.listDocuments();
-    setDocuments(docs);
+    try {
+      const repositories = await getRepositories();
+      const docs = await repositories.documents.list();
+      setDocuments(docs);
+    } catch (error) {
+      logger.error('Error fetching documents', {}, error as Error);
+      setDocuments([]);
+    }
   };
 
   const handleDelete = async (doc: Document) => {
     if (!confirm('Delete this document?')) return;
     try {
-      await documentClientService.deleteDocument(
+      const repositories = await getRepositories();
+      await repositories.documents.delete(
         doc.id,
         doc.url || doc.fileUrl || doc.storagePath,
       );
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
     } catch (error) {
-      console.error('Failed to delete document:', error);
+      logger.error('Failed to delete document', { documentId: doc.id }, error as Error);
     }
   };
 

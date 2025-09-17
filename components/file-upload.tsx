@@ -41,7 +41,7 @@ export function FileUpload() {
         setMessage(`Error: ${data.error}`);
       }
     } catch (error) {
-      console.error('Upload failed:', error);
+      logger.error('Upload failed:', error);
       setMessage('An unexpected error occurred.');
     } finally {
       setIsUploading(false);

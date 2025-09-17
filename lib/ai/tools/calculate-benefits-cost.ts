@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { benefitService } from '@/lib/firebase/services/benefit.service';
+import { benefitService } from '@/lib/azure/services/benefit.service';
 // User context from AI system
 
 const inputSchema = z.object({
@@ -182,7 +182,7 @@ export const calculateBenefitsCost = tool({
         },
       };
     } catch (error) {
-      console.error('Error calculating benefits cost:', error);
+      logger.error('Error calculating benefits cost:', error);
       return {
         error: 'Unable to calculate benefits cost. Please try again later.',
         estimatedAnnualCost: 0,

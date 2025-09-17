@@ -1,67 +1,51 @@
 // app/api/super-admin/documents/process/route.ts
-import { NextResponse } from 'next/server';
-import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
-import { PredictionServiceClient, helpers } from '@google-cloud/aiplatform';
-import { db } from '@/lib/firestore';
-import { collection, addDoc } from 'firebase/firestore';
+import { NextResponse, type NextRequest } from 'next/server';
+import { getContainerClient, DOCUMENTS_CONTAINER_NAME } from '@/lib/azure/blob-storage';
+import { getContainer, DOCUMENTS_CONTAINER } from '@/lib/azure/cosmos-db';
+import { ragSystem } from '@/lib/ai/rag-system';
 
-const documentaiClient = new DocumentProcessorServiceClient();
-const predictionServiceClient = new PredictionServiceClient({
-  apiEndpoint: 'us-central1-aiplatform.googleapis.com',
-});
+async function streamToString(readableStream: NodeJS.ReadableStream): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: any[] = [];
+    readableStream.on('data', (data) => {
+      chunks.push(data.toString());
+    });
+    readableStream.on('end', () => {
+      resolve(chunks.join(''));
+    });
+    readableStream.on('error', reject);
+  });
+}
 
-export async function POST(request: Request) {
-  const { gcsUri, contentType } = await request.json();
-
+export async function POST(request: NextRequest) {
   try {
-    // 1. Extract text from the document using Document AI
-    const name = `projects/benefitschatbotac-383/locations/us/processors/e4ee083e45e70862`;
-    const docRequest = {
-      name,
-      rawDocument: {
-        content: null,
-        gcsUri: gcsUri,
-        mimeType: contentType,
-      },
-    };
-    const [result] = await documentaiClient.processDocument(docRequest);
-    const text = result.document?.text || '';
+    const { blobName, fileName, companyId } = await request.json();
 
-    // 2. Generate embeddings using Vertex AI
-    const publisher = 'google';
-    const model = 'textembedding-gecko@003';
-    const endpoint = `projects/benefitschatbotac-383/locations/us-central1/publishers/${publisher}/models/${model}`;
-    const instances = [helpers.toValue({ content: text })] as any[];
-    const parameters = helpers.toValue({
-      autoTruncate: true,
-    }) as any;
+    const containerClient = await getContainerClient(DOCUMENTS_CONTAINER_NAME);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+    const downloadResponse = await blockBlobClient.download(0);
+    const content = await streamToString(downloadResponse.readableStreamBody as NodeJS.ReadableStream);
 
-    const embeddingRequest = {
-      endpoint,
-      instances,
-      parameters,
-    } as any;
-
-    const [response] = (await predictionServiceClient.predict(
-      embeddingRequest,
-    )) as any;
-    const embeddings =
-      response?.predictions?.[0]?.structValue?.fields?.embedding?.listValue?.values?.map(
-        (v: any) => v.numberValue,
-      ) || [];
-
-    // 3. Store the text and embeddings in Firestore
-    await addDoc(collection(db, 'documents'), {
-      text,
-      embeddings,
+    const documentsContainer = await getContainer(DOCUMENTS_CONTAINER);
+    const { resource: newDoc } = await documentsContainer.items.create({
+      id: blobName,
+      partitionKey: companyId,
+      fileName,
+      companyId,
+      status: 'processing',
+      createdAt: new Date().toISOString(),
     });
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    await ragSystem.processDocument(
+      newDoc.id,
+      companyId,
+      content,
+      { fileName }
+    );
+
+    return NextResponse.json({ success: true, documentId: newDoc.id });
   } catch (error) {
     console.error('Error processing document:', error);
-    return NextResponse.json(
-      { error: 'Failed to process document' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to process document' }, { status: 500 });
   }
 }

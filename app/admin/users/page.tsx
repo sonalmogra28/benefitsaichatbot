@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,16 +44,16 @@ interface User {
 }
 
 export default function AdminUsersPage() {
-  const [user, loading] = useAuthState(auth);
+  const { account, loading } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !account) {
       router.push('/login');
-    } else if (user) {
-      user.getIdTokenResult().then((idTokenResult) => {
+    } else if (account) {
+      account?.getIdTokenResult().then((idTokenResult: any) => {
         if (
           !idTokenResult.claims.platform_admin &&
           !idTokenResult.claims.super_admin
@@ -63,7 +62,7 @@ export default function AdminUsersPage() {
         }
       });
     }
-  }, [user, loading, router]);
+  }, [account, loading, router]);
 
   const filteredUsers = users.filter(
     (u) =>

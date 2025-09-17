@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getContainer, USERS_CONTAINER } from '@/lib/azure/cosmos-db';
+import { validateToken } from '@/lib/azure/token-validation';
 import { USER_ROLES } from '@/lib/constants/roles';
 
 // GET /api/users - List users
@@ -15,7 +15,10 @@ export async function GET(request: NextRequest) {
     let decodedToken: any;
 
     try {
-      decodedToken = await adminAuth.verifyIdToken(token);
+      decodedToken = await validateToken(token);
+      if (!decodedToken) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
     } catch (error) {
       console.error('Token verification failed:', error);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
@@ -37,59 +40,61 @@ export async function GET(request: NextRequest) {
     const isHRAdmin = decodedToken.role === USER_ROLES.HR_ADMIN;
 
     // Build query based on permissions
-    let query = adminDb.collection('users').orderBy('createdAt', 'desc');
+    const usersContainer = await getContainer(USERS_CONTAINER);
+    let query = 'SELECT * FROM c';
+    const parameters: any[] = [];
 
     // If not super admin, restrict to their company
     if (!isSuperAdmin) {
       if (isCompanyAdmin || isHRAdmin) {
-        query = query.where('companyId', '==', decodedToken.companyId);
+        query += ' WHERE c.companyId = @companyId';
+        parameters.push({ name: '@companyId', value: decodedToken.companyId });
       } else {
         // Regular employees can only see themselves
-        query = query.where('uid', '==', decodedToken.uid);
+        query += ' WHERE c.oid = @oid';
+        parameters.push({ name: '@oid', value: decodedToken.oid });
       }
     } else if (companyId) {
       // Super admin filtering by company
-      query = query.where('companyId', '==', companyId);
+      query += ' WHERE c.companyId = @companyId';
+      parameters.push({ name: '@companyId', value: companyId });
     }
 
     // Apply filters
     if (role) {
-      query = query.where('role', '==', role);
+      query += query.includes('WHERE') ? ' AND c.role = @role' : ' WHERE c.role = @role';
+      parameters.push({ name: '@role', value: role });
     }
 
     if (status) {
-      query = query.where('status', '==', status);
+      query += query.includes('WHERE') ? ' AND c.status = @status' : ' WHERE c.status = @status';
+      parameters.push({ name: '@status', value: status });
     }
 
-    // Pagination
-    if (startAfter) {
-      const startDoc = await adminDb.collection('users').doc(startAfter).get();
-      if (startDoc.exists) {
-        query = query.startAfter(startDoc);
-      }
-    }
-
-    query = query.limit(limit);
+    // Add ordering and pagination
+    query += ' ORDER BY c.createdAt DESC';
+    query += ` OFFSET ${startAfter ? 1 : 0} LIMIT ${limit}`;
 
     // Execute query
-    const snapshot = await query.get();
+    const { resources: users } = await usersContainer.items
+      .query({ query, parameters })
+      .fetchAll();
 
-    const users = snapshot.docs.map((doc) => {
-      const data = doc.data();
-      // Remove sensitive data
-      const { passwordHash, ...userData } = data;
+    // Remove sensitive data
+    const sanitizedUsers = users.map((user: any) => {
+      const { passwordHash, ...userData } = user;
       return {
-        id: doc.id,
+        id: user.id,
         ...userData,
-        createdAt: userData.createdAt?.toDate?.() || null,
-        updatedAt: userData.updatedAt?.toDate?.() || null,
+        createdAt: userData.createdAt || null,
+        updatedAt: userData.updatedAt || null,
       };
     });
 
     return NextResponse.json({
-      users,
-      hasMore: snapshot.size === limit,
-      lastDoc: snapshot.docs[snapshot.docs.length - 1]?.id || null,
+      users: sanitizedUsers,
+      hasMore: users.length === limit,
+      lastDoc: users[users.length - 1]?.id || null,
     });
   } catch (error) {
     console.error('Error fetching users:', error);
@@ -112,7 +117,10 @@ export async function POST(request: NextRequest) {
     let decodedToken: any;
 
     try {
-      decodedToken = await adminAuth.verifyIdToken(token);
+      decodedToken = await validateToken(token);
+      if (!decodedToken) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
     } catch (error) {
       console.error('Token verification failed:', error);
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
@@ -133,16 +141,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       email,
-      password,
       displayName,
       role,
       companyId: requestCompanyId,
     } = body;
 
     // Validate required fields
-    if (!email || !password || !displayName) {
+    if (!email || !displayName) {
       return NextResponse.json(
-        { error: 'Email, password, and display name are required' },
+        { error: 'Email and display name are required' },
         { status: 400 },
       );
     }
@@ -170,80 +177,39 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Create Firebase Auth user
-      const userRecord = await adminAuth.createUser({
-        email,
-        password,
-        displayName,
-        emailVerified: false,
-      });
-
-      // Set custom claims
-      const customClaims: any = {
-        role: targetRole,
-      };
-
-      if (targetCompanyId) {
-        customClaims.companyId = targetCompanyId;
-      }
-
-      await adminAuth.setCustomUserClaims(userRecord.uid, customClaims);
-
-      // Create user document in Firestore
-      const userDocRef = adminDb.collection('users').doc(userRecord.uid);
+      // Create user document in Cosmos DB
+      const usersContainer = await getContainer(USERS_CONTAINER);
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       const userData = {
-        uid: userRecord.uid,
+        id: userId,
+        oid: userId, // Azure AD object ID
         email,
         displayName,
         role: targetRole,
         companyId: targetCompanyId || null,
         emailVerified: false,
         status: 'active',
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-        createdBy: decodedToken.uid,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: decodedToken.oid,
       };
 
-      await userDocRef.set(userData);
-
-      // If company user, add to company's users subcollection
-      if (targetCompanyId) {
-        const companyUserRef = adminDb
-          .collection('companies')
-          .doc(targetCompanyId)
-          .collection('users')
-          .doc(userRecord.uid);
-
-        await companyUserRef.set({
-          uid: userRecord.uid,
-          email,
-          displayName,
-          role: targetRole,
-          status: 'active',
-          joinedAt: FieldValue.serverTimestamp(),
-        });
-
-        // Update employee count
-        const companyRef = adminDb.collection('companies').doc(targetCompanyId);
-        await companyRef.update({
-          employeeCount: FieldValue.increment(1),
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-      }
+      await usersContainer.items.create(userData);
 
       // Log activity
-      const activityRef = adminDb.collection('activity_logs').doc();
-      await activityRef.set({
-        id: activityRef.id,
+      const activityContainer = await getContainer('ActivityLogs');
+      await activityContainer.items.create({
+        id: `activity_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: 'user_created',
-        message: `New user \"${displayName}\" created`,
+        message: `New user "${displayName}" created`,
         metadata: {
-          userId: userRecord.uid,
+          userId: userId,
           role: targetRole,
           companyId: targetCompanyId,
-          createdBy: decodedToken.uid,
+          createdBy: decodedToken.oid,
         },
-        timestamp: FieldValue.serverTimestamp(),
+        timestamp: new Date().toISOString(),
       });
 
       return NextResponse.json(
@@ -256,7 +222,7 @@ export async function POST(request: NextRequest) {
       );
     } catch (error: any) {
       console.error('Error creating user:', error);
-      if (error.code === 'auth/email-already-exists') {
+      if (error.code === 'CONFLICT') {
         return NextResponse.json(
           { error: 'A user with this email already exists' },
           { status: 400 },

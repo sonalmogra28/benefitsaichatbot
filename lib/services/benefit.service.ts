@@ -1,9 +1,12 @@
-import { db } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getRepositories } from '@/lib/azure/cosmos';
+import { logger } from '@/lib/logging/logger';
 import type { BenefitPlan } from '@/lib/types/benefit-plan.type';
 
 class BenefitService {
-  private benefitPlansCollection = db.collection('benefitPlans');
+  private async getBenefitPlansRepository() {
+    const repositories = await getRepositories();
+    return repositories.benefits;
+  }
 
   /**
    * Creates a new benefit plan in the top-level collection.
@@ -14,17 +17,24 @@ class BenefitService {
     planData: Omit<BenefitPlan, 'id'>,
   ): Promise<BenefitPlan> {
     try {
-      const docRef = this.benefitPlansCollection.doc();
-      const newPlan = {
-        id: docRef.id,
+      const repository = await this.getBenefitPlansRepository();
+      const newPlan: BenefitPlan = {
+        id: `benefit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         ...planData,
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
-      await docRef.set(newPlan);
-      return newPlan as BenefitPlan;
+      
+      await repository.create(newPlan);
+      
+      logger.info('Benefit plan created successfully', {
+        planId: newPlan.id,
+        planName: newPlan.name
+      });
+      
+      return newPlan;
     } catch (error) {
-      console.error('Error creating benefit plan:', error);
+      logger.error('Error creating benefit plan', error, { planData });
       throw new Error('Failed to create benefit plan.');
     }
   }
@@ -36,13 +46,18 @@ class BenefitService {
    */
   async getBenefitPlan(planId: string): Promise<BenefitPlan | null> {
     try {
-      const doc = await this.benefitPlansCollection.doc(planId).get();
-      if (!doc.exists) {
-        return null;
+      const repository = await this.getBenefitPlansRepository();
+      const plan = await repository.getById(planId);
+      
+      if (plan) {
+        logger.info('Benefit plan retrieved successfully', { planId });
+      } else {
+        logger.warn('Benefit plan not found', { planId });
       }
-      return { id: doc.id, ...doc.data() } as BenefitPlan;
+      
+      return plan;
     } catch (error) {
-      console.error(`Error getting benefit plan ${planId}:`, error);
+      logger.error('Error getting benefit plan', error, { planId });
       throw new Error('Failed to retrieve benefit plan.');
     }
   }
@@ -53,12 +68,19 @@ class BenefitService {
    */
   async getAllBenefitPlans(): Promise<BenefitPlan[]> {
     try {
-      const snapshot = await this.benefitPlansCollection.orderBy('name').get();
-      return snapshot.docs.map(
-        (doc) => ({ id: doc.id, ...doc.data() }) as BenefitPlan,
-      );
+      const repository = await this.getBenefitPlansRepository();
+      const plans = await repository.list();
+      
+      // Sort by name
+      plans.sort((a, b) => a.name.localeCompare(b.name));
+      
+      logger.info('All benefit plans retrieved successfully', {
+        planCount: plans.length
+      });
+      
+      return plans;
     } catch (error) {
-      console.error('Error getting all benefit plans:', error);
+      logger.error('Error getting all benefit plans', error);
       throw new Error('Failed to retrieve benefit plans.');
     }
   }
@@ -74,15 +96,31 @@ class BenefitService {
     updates: Partial<Omit<BenefitPlan, 'id'>>,
   ): Promise<BenefitPlan> {
     try {
-      const docRef = this.benefitPlansCollection.doc(planId);
-      await docRef.update({
+      const repository = await this.getBenefitPlansRepository();
+      
+      // Get existing plan first
+      const existingPlan = await repository.getById(planId);
+      if (!existingPlan) {
+        throw new Error('Benefit plan not found');
+      }
+      
+      // Update with new data
+      const updatedPlan = {
+        ...existingPlan,
         ...updates,
-        updatedAt: FieldValue.serverTimestamp(),
+        updatedAt: new Date().toISOString(),
+      };
+      
+      await repository.update(planId, updatedPlan);
+      
+      logger.info('Benefit plan updated successfully', {
+        planId,
+        planName: updatedPlan.name
       });
-      const updatedDoc = await docRef.get();
-      return { id: updatedDoc.id, ...updatedDoc.data() } as BenefitPlan;
+      
+      return updatedPlan;
     } catch (error) {
-      console.error(`Error updating benefit plan ${planId}:`, error);
+      logger.error('Error updating benefit plan', error, { planId, updates });
       throw new Error('Failed to update benefit plan.');
     }
   }

@@ -5,79 +5,85 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/context/auth-context';
 
 export function DocumentUpload() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [embeddings, setEmbeddings] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { account } = useAuth();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setFile(file);
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
     }
   };
 
   const handleUpload = async () => {
-    if (file) {
-      setIsUploading(true);
-      setError(null);
+    if (!file || !account) return;
 
-      try {
-        // 1. Get a signed URL from our API
-        const response = await fetch('/api/super-admin/documents/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ fileName: file.name, contentType: file.type }),
-        });
-        const { url } = await response.json();
+    setIsUploading(true);
+    setError(null);
+    setProgress(0);
 
-        // 2. Upload the file to the signed URL
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', url, true);
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const progress = (event.loaded / event.total) * 100;
-            setProgress(progress);
-          }
-        };
-        xhr.onload = async () => {
-          if (xhr.status === 200) {
-            setIsUploading(false);
-            setIsProcessing(true);
-            const gcsUri = `gs://benefitschatbotac-383.appspot.com/documents/${file.name}`;
-            const processResponse = await fetch(
-              '/api/super-admin/documents/process',
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ gcsUri, contentType: file.type }),
-              },
-            );
-            const data = await processResponse.json();
-            setEmbeddings(data.embeddings);
-            setIsProcessing(false);
-          } else {
-            setError('Failed to upload file.');
-            setIsUploading(false);
-          }
-        };
-        xhr.onerror = () => {
-          setError('Failed to upload file.');
+    try {
+      // 1. Get SAS URL from our API
+      const sasResponse = await fetch('/api/admin/documents/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, fileType: file.type }),
+      });
+      if (!sasResponse.ok) throw new Error('Failed to get SAS URL.');
+      const { sasUrl, blobName } = await sasResponse.json();
+
+      // 2. Upload file to Azure Blob Storage
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', sasUrl, true);
+      xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob');
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          setProgress((event.loaded / event.total) * 100);
+        }
+      };
+
+      xhr.onload = async () => {
+        if (xhr.status === 201) {
           setIsUploading(false);
-        };
-        xhr.send(file);
-      } catch (error) {
-        setError('Failed to get signed URL.');
-        setIsUploading(false);
-      }
+          setIsProcessing(true);
+          
+          // 3. Notify backend to process the file
+          const processResponse = await fetch(
+            '/api/super-admin/documents/process',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                blobName,
+                fileName: file.name,
+                companyId: account.idTokenClaims.extension_companyId,
+              }),
+            },
+          );
+
+          if (!processResponse.ok) throw new Error('Processing failed.');
+          setIsProcessing(false);
+        } else {
+          throw new Error('Upload to Azure failed.');
+        }
+      };
+
+      xhr.onerror = () => {
+        throw new Error('Network error during upload.');
+      };
+
+      xhr.send(file);
+    } catch (err: any) {
+      setError(err.message);
+      setIsUploading(false);
+      setIsProcessing(false);
     }
   };
 
@@ -94,14 +100,13 @@ export function DocumentUpload() {
           disabled={!file || isUploading || isProcessing}
         >
           {isUploading
-            ? 'Uploading...'
+            ? `Uploading... ${Math.round(progress)}%`
             : isProcessing
               ? 'Processing...'
               : 'Upload and Process'}
         </Button>
         {isUploading && <Progress value={progress} />}
         {error && <p className="text-red-500">{error}</p>}
-        {embeddings && <p>Embeddings generated successfully!</p>}
       </div>
     </div>
   );

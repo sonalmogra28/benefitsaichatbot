@@ -1,5 +1,5 @@
-import { db } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getRepositories } from '@/lib/azure/cosmos';
+import { logger } from '@/lib/logging/logger';
 
 export interface Chat {
   id: string;
@@ -7,8 +7,8 @@ export interface Chat {
   companyId: string;
   title: string;
   visibility: 'private' | 'public';
-  createdAt: any;
-  updatedAt: any;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Message {
@@ -17,7 +17,7 @@ export interface Message {
   userId: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  createdAt: any;
+  createdAt: string;
 }
 
 /**
@@ -28,25 +28,33 @@ export async function createConversation(
   companyId: string,
   title?: string,
 ): Promise<Chat> {
-  const chatRef = db.collection('chats').doc();
+  try {
+    const repositories = await getRepositories();
+    const chatsRepository = repositories.chats;
 
-  const newChat = {
-    id: chatRef.id,
-    userId,
-    companyId,
-    title: title || `Chat ${new Date().toLocaleDateString()}`,
-    visibility: 'private' as const,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
-  };
+    const newChat: Chat = {
+      id: `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      userId,
+      companyId,
+      title: title || `Chat ${new Date().toLocaleDateString()}`,
+      visibility: 'private' as const,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-  await chatRef.set(newChat);
+    await chatsRepository.create(newChat);
 
-  return {
-    ...newChat,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+    logger.info('Conversation created successfully', {
+      chatId: newChat.id,
+      userId,
+      companyId
+    });
+
+    return newChat;
+  } catch (error) {
+    logger.error('Error creating conversation', error, { userId, companyId });
+    throw new Error('Failed to create conversation');
+  }
 }
 
 /**
@@ -56,23 +64,29 @@ export async function getConversation(
   chatId: string,
   userId: string,
 ): Promise<Chat | null> {
-  const chatDoc = await db.collection('chats').doc(chatId).get();
+  try {
+    const repositories = await getRepositories();
+    const chatsRepository = repositories.chats;
 
-  if (!chatDoc.exists) {
-    return null;
+    const chat = await chatsRepository.getById(chatId);
+
+    if (!chat) {
+      logger.warn('Conversation not found', { chatId });
+      return null;
+    }
+
+    // Verify the user owns this chat
+    if (chat.userId !== userId) {
+      logger.warn('User does not own this conversation', { chatId, userId });
+      return null;
+    }
+
+    logger.info('Conversation retrieved successfully', { chatId, userId });
+    return chat as Chat;
+  } catch (error) {
+    logger.error('Error getting conversation', error, { chatId, userId });
+    throw new Error('Failed to get conversation');
   }
-
-  const chat = chatDoc.data() as Chat;
-
-  // Verify the user owns this chat
-  if (chat.userId !== userId) {
-    return null;
-  }
-
-  return {
-    ...chat,
-    id: chatDoc.id,
-  };
 }
 
 /**
@@ -82,20 +96,29 @@ export async function getUserConversations(
   userId: string,
   limit = 50,
 ): Promise<Chat[]> {
-  const snapshot = await db
-    .collection('chats')
-    .where('userId', '==', userId)
-    .orderBy('updatedAt', 'desc')
-    .limit(limit)
-    .get();
+  try {
+    const repositories = await getRepositories();
+    const chatsRepository = repositories.chats;
 
-  return snapshot.docs.map(
-    (doc) =>
-      ({
-        id: doc.id,
-        ...doc.data(),
-      }) as Chat,
-  );
+    // Query conversations by userId
+    const conversations = await chatsRepository.query(
+      'SELECT * FROM c WHERE c.userId = @userId ORDER BY c.updatedAt DESC',
+      [{ name: 'userId', value: userId }]
+    );
+
+    // Apply limit
+    const limitedConversations = conversations.resources.slice(0, limit);
+
+    logger.info('User conversations retrieved successfully', {
+      userId,
+      count: limitedConversations.length
+    });
+
+    return limitedConversations as Chat[];
+  } catch (error) {
+    logger.error('Error getting user conversations', error, { userId });
+    throw new Error('Failed to get user conversations');
+  }
 }
 
 /**
@@ -107,32 +130,43 @@ export async function addMessage(
   role: 'user' | 'assistant' | 'system',
   content: string,
 ): Promise<Message> {
-  const messageRef = db
-    .collection('chats')
-    .doc(chatId)
-    .collection('messages')
-    .doc();
+  try {
+    const repositories = await getRepositories();
+    const messagesRepository = repositories.messages;
 
-  const newMessage = {
-    id: messageRef.id,
-    chatId,
-    userId,
-    role,
-    content,
-    createdAt: FieldValue.serverTimestamp(),
-  };
+    const newMessage: Message = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      chatId,
+      userId,
+      role,
+      content,
+      createdAt: new Date().toISOString(),
+    };
 
-  await messageRef.set(newMessage);
+    await messagesRepository.create(newMessage);
 
-  // Update chat's updatedAt timestamp
-  await db.collection('chats').doc(chatId).update({
-    updatedAt: FieldValue.serverTimestamp(),
-  });
+    // Update chat's updatedAt timestamp
+    const chatsRepository = repositories.chats;
+    const existingChat = await chatsRepository.getById(chatId);
+    if (existingChat) {
+      await chatsRepository.update(chatId, {
+        ...existingChat,
+        updatedAt: new Date().toISOString(),
+      });
+    }
 
-  return {
-    ...newMessage,
-    createdAt: new Date(),
-  };
+    logger.info('Message added successfully', {
+      messageId: newMessage.id,
+      chatId,
+      userId,
+      role
+    });
+
+    return newMessage;
+  } catch (error) {
+    logger.error('Error adding message', error, { chatId, userId, role });
+    throw new Error('Failed to add message');
+  }
 }
 
 /**
@@ -142,21 +176,29 @@ export async function getMessages(
   chatId: string,
   limit = 100,
 ): Promise<Message[]> {
-  const snapshot = await db
-    .collection('chats')
-    .doc(chatId)
-    .collection('messages')
-    .orderBy('createdAt', 'asc')
-    .limit(limit)
-    .get();
+  try {
+    const repositories = await getRepositories();
+    const messagesRepository = repositories.messages;
 
-  return snapshot.docs.map(
-    (doc) =>
-      ({
-        id: doc.id,
-        ...doc.data(),
-      }) as Message,
-  );
+    // Query messages by chatId
+    const messages = await messagesRepository.query(
+      'SELECT * FROM c WHERE c.chatId = @chatId ORDER BY c.createdAt ASC',
+      [{ name: 'chatId', value: chatId }]
+    );
+
+    // Apply limit
+    const limitedMessages = messages.resources.slice(0, limit);
+
+    logger.info('Messages retrieved successfully', {
+      chatId,
+      count: limitedMessages.length
+    });
+
+    return limitedMessages as Message[];
+  } catch (error) {
+    logger.error('Error getting messages', error, { chatId });
+    throw new Error('Failed to get messages');
+  }
 }
 
 /**
@@ -170,30 +212,37 @@ export async function deleteConversation(
     // Verify ownership
     const chat = await getConversation(chatId, userId);
     if (!chat) {
+      logger.warn('Conversation not found or user does not own it', { chatId, userId });
       return false;
     }
 
+    const repositories = await getRepositories();
+    const messagesRepository = repositories.messages;
+    const chatsRepository = repositories.chats;
+
     // Delete all messages first
-    const messagesSnapshot = await db
-      .collection('chats')
-      .doc(chatId)
-      .collection('messages')
-      .get();
+    const messages = await messagesRepository.query(
+      'SELECT * FROM c WHERE c.chatId = @chatId',
+      [{ name: 'chatId', value: chatId }]
+    );
 
-    const batch = db.batch();
-
-    messagesSnapshot.docs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
+    // Delete each message
+    for (const message of messages.resources) {
+      await messagesRepository.delete(message.id);
+    }
 
     // Delete the chat document
-    batch.delete(db.collection('chats').doc(chatId));
+    await chatsRepository.delete(chatId);
 
-    await batch.commit();
+    logger.info('Conversation deleted successfully', {
+      chatId,
+      userId,
+      messagesDeleted: messages.resources.length
+    });
 
     return true;
   } catch (error) {
-    console.error('Failed to delete conversation:', error);
+    logger.error('Failed to delete conversation', error, { chatId, userId });
     return false;
   }
 }
@@ -210,17 +259,28 @@ export async function updateConversationTitle(
     // Verify ownership
     const chat = await getConversation(chatId, userId);
     if (!chat) {
+      logger.warn('Conversation not found or user does not own it', { chatId, userId });
       return false;
     }
 
-    await db.collection('chats').doc(chatId).update({
+    const repositories = await getRepositories();
+    const chatsRepository = repositories.chats;
+
+    await chatsRepository.update(chatId, {
+      ...chat,
       title,
-      updatedAt: FieldValue.serverTimestamp(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    logger.info('Conversation title updated successfully', {
+      chatId,
+      userId,
+      title
     });
 
     return true;
   } catch (error) {
-    console.error('Failed to update conversation title:', error);
+    logger.error('Failed to update conversation title', error, { chatId, userId, title });
     return false;
   }
 }

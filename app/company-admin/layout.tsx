@@ -1,12 +1,8 @@
 'use client';
 
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
-import { useDocument } from 'react-firebase-hooks/firestore';
-import { doc } from 'firebase/firestore';
-import { db } from '@/lib/firestore';
 
 export default function CompanyAdminLayout({
   children,

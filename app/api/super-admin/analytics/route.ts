@@ -10,7 +10,7 @@ export const GET = requireSuperAdmin(async (request: NextRequest) => {
     const analytics = await superAdminService.getAnalytics();
     return NextResponse.json(analytics);
   } catch (error) {
-    console.error('Error fetching system analytics:', error);
+    logger.error('Error fetching system analytics:', error);
     return NextResponse.json(
       { error: 'Failed to fetch system analytics' },
       { status: 500 },

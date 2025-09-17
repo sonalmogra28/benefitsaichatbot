@@ -1,24 +1,18 @@
 // context/auth-context.tsx
 'use client';
 
-import { createContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useEffect, useState, type ReactNode, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  type User,
-  onIdTokenChanged,
-  signOut as firebaseSignOut,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase/client';
-import { useToast } from '@/hooks/use-toast';
+import { msalInstance, loginRequest } from '@/lib/azure/msal-client';
+import { useMsal } from '@azure/msal-react';
+import { InteractionStatus } from '@azure/msal-browser';
 
 interface AuthContextType {
-  user: User | null;
+  account: any | null;
   loading: boolean;
   isSigningIn: boolean;
-  signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -26,73 +20,49 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 );
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const { instance, accounts, inProgress } = useMsal();
+  const [account, setAccount] = useState<any | null>(null);
   const router = useRouter();
-  const { toast } = useToast();
 
   useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      setLoading(true);
-      if (user) {
-        setUser(user);
-        const idToken = await user.getIdToken();
-        const refreshToken = (user as any).refreshToken as string;
-        await fetch('/api/auth/session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idToken, refreshToken }),
-        });
-      } else {
-        setUser(null);
-        await fetch('/api/auth/session', { method: 'DELETE' });
-      }
-      setLoading(false);
-    });
+    if (accounts.length > 0) {
+      setAccount(accounts[0]);
+    }
+  }, [accounts]);
 
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(
-      async () => {
-        await fetch('/api/auth/refresh', { method: 'POST' });
-      },
-      10 * 60 * 1000,
-    ); // Refresh every 10 minutes
-    return () => clearInterval(interval);
-  }, [user]);
-
-  const signInWithGoogle = async () => {
-    setIsSigningIn(true);
-    const provider = new GoogleAuthProvider();
+  const login = async () => {
     try {
-      await signInWithPopup(auth, provider);
-      router.push('/');
-    } catch (error) {
-      console.error('Error signing in with Google: ', error);
-      toast({
-        title: 'Sign-in Failed',
-        description: 'Could not sign in with Google. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSigningIn(false);
+      await instance.loginRedirect(loginRequest);
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const signOut = async () => {
-    await firebaseSignOut(auth);
-    router.push('/login');
+  const logout = async () => {
+    try {
+      await instance.logoutRedirect({
+        postLogoutRedirectUri: '/',
+      });
+    } catch (e) {
+      console.error(e);
+    }
   };
+  
+  const loading = inProgress !== InteractionStatus.None;
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, isSigningIn, signInWithGoogle, signOut }}
+      value={{ account, loading, isSigningIn: loading, login, logout }}
     >
       {children}
     </AuthContext.Provider>
   );
 }
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

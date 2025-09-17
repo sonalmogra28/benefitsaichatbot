@@ -1,7 +1,8 @@
 import { Toaster } from 'sonner';
-import type { Metadata } from 'next';
+import { MsalProvider } from '@azure/msal-react';
+import { msalInstance } from '@/lib/azure/msal-client';
 import { ThemeProvider } from '@/components/theme-provider';
-import { FirebaseProvider } from '@/components/firebase-provider';
+import { AuthProvider } from '@/context/auth-context';
 import { TRPCProvider } from '@/components/trpc-provider';
 import { getConfig } from '@/config/environments';
 
@@ -9,7 +10,7 @@ import './globals.css';
 
 const { appUrl } = getConfig();
 
-export const metadata: Metadata = {
+export const metadata = {
   metadataBase: new URL(appUrl),
   title: 'Benefits AI Assistant',
   description: 'Your personal benefits advisor powered by AI',
@@ -39,7 +40,7 @@ const THEME_COLOR_SCRIPT = `\
   updateThemeColor();
 })();`;
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -55,17 +56,19 @@ export default async function RootLayout({
       </head>
       <body className="antialiased">
         <TRPCProvider>
-          <FirebaseProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <Toaster position="top-center" />
-              {children}
-            </ThemeProvider>
-          </FirebaseProvider>
+          <MsalProvider instance={msalInstance}>
+            <AuthProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                disableTransitionOnChange
+              >
+                <Toaster position="top-center" />
+                {children}
+              </ThemeProvider>
+            </AuthProvider>
+          </MsalProvider>
         </TRPCProvider>
       </body>
     </html>

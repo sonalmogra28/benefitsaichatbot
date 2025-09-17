@@ -1,5 +1,5 @@
 import { t } from '@/lib/trpc';
-import { adminAuth } from '@/lib/firebase/admin-sdk';
+import { validateToken } from '@/lib/azure/token-validation';
 import { TRPCError } from '@trpc/server';
 
 export const authProcedure = t.procedure.use(async ({ ctx, next }) => {

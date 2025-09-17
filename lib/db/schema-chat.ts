@@ -1,11 +1,11 @@
-import type { FieldValue, Timestamp } from 'firebase/firestore';
+import type { Date, Timestamp } from 'azure/firestore';
 
 // Base interface for chat messages, compatible with AI SDK
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system' | 'function' | 'tool';
   content: string;
-  createdAt: Timestamp | FieldValue;
+  createdAt: Timestamp | Date;
   // Add any other relevant message metadata like tool calls or function responses
   toolInvocations?: Array<{
     toolCallId: string;
@@ -21,8 +21,8 @@ export interface Conversation {
   userId: string;
   companyId: string;
   title: string;
-  createdAt: Timestamp | FieldValue;
-  updatedAt: Timestamp | FieldValue;
+  createdAt: Timestamp | Date;
+  updatedAt: Timestamp | Date;
   model: string; // e.g., 'gemini-pro', 'gpt-4'
   visibility: 'private' | 'company' | 'public';
   // Array of messages within the conversation (can be subcollection or embedded for smaller chats)
@@ -41,7 +41,7 @@ export interface Vote {
   messageId: string;
   userId: string;
   isUpvoted: boolean;
-  createdAt?: Timestamp | FieldValue;
+  createdAt?: Timestamp | Date;
 }
 
 // Suggestion interface for AI suggestions

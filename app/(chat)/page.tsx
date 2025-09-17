@@ -4,22 +4,21 @@ import { Chat } from '@/components/chat';
 import { DEFAULT_CHAT_MODEL } from '@/lib/ai/models';
 import { generateUUID } from '@/lib/utils';
 import { DataStreamHandler } from '@/components/data-stream-handler';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/firebase';
+import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function Page() {
-  const [user, loading] = useAuthState(auth);
+  const { account, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !account) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [account, loading, router]);
 
-  if (loading || !user) {
+  if (loading || !account) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

@@ -8,16 +8,16 @@ async function createPlatformAdmin() {
   const stackUserId = process.argv[3];
 
   if (!email || !stackUserId) {
-    console.log(
+    logger.info(
       'Usage: pnpm tsx scripts/create-platform-admin.ts <email> <stackUserId>',
     );
-    console.log(
+    logger.info(
       'Example: pnpm tsx scripts/create-platform-admin.ts admin@example.com user_abc123',
     );
-    console.log('\nTo get the stackUserId:');
-    console.log('1. Sign up normally through the app');
-    console.log('2. Check Stack Auth dashboard for the user ID');
-    console.log('3. Or check the Neon database neon_auth.users_sync table');
+    logger.info('\nTo get the stackUserId:');
+    logger.info('1. Sign up normally through the app');
+    logger.info('2. Check Stack Auth dashboard for the user ID');
+    logger.info('3. Or check the Neon database neon_auth.users_sync table');
     process.exit(1);
   }
 
@@ -26,8 +26,8 @@ async function createPlatformAdmin() {
     let platformCompany = await db
       .select()
       .from(companies)
-      .where(eq(companies.name, 'Platform'))
-      .limit(1);
+      .query(eq(companies.name, 'Platform'))
+      .query(1);
 
     if (platformCompany.length === 0) {
       const [newCompany] = await db
@@ -42,28 +42,28 @@ async function createPlatformAdmin() {
         .returning();
 
       platformCompany = [newCompany];
-      console.log('✅ Created platform company');
+      logger.info('✅ Created platform company');
     }
 
     // Check if user already exists
     const existingUser = await db
       .select()
       .from(users)
-      .where(eq(users.stackUserId, stackUserId))
-      .limit(1);
+      .query(eq(users.stackUserId, stackUserId))
+      .query(1);
 
     if (existingUser.length > 0) {
       // Update existing user to platform admin
       await db
         .update(users)
-        .set({
+        .create({
           role: 'platform_admin',
           companyId: platformCompany[0].id,
           updatedAt: new Date(),
         })
-        .where(eq(users.stackUserId, stackUserId));
+        .query(eq(users.stackUserId, stackUserId));
 
-      console.log('✅ Updated existing user to platform admin');
+      logger.info('✅ Updated existing user to platform admin');
     } else {
       // Create new platform admin user
       await db.insert(users).values({
@@ -76,15 +76,15 @@ async function createPlatformAdmin() {
         isActive: true,
       });
 
-      console.log('✅ Created new platform admin user');
+      logger.info('✅ Created new platform admin user');
     }
 
-    console.log(`\n🎉 Successfully set up ${email} as platform admin!`);
-    console.log(
+    logger.info(`\n🎉 Successfully set up ${email} as platform admin!`);
+    logger.info(
       'You can now log in and access the Super Admin dashboard at /super-admin',
     );
   } catch (error) {
-    console.error('❌ Error creating platform admin:', error);
+    logger.error('❌ Error creating platform admin:', error);
     process.exit(1);
   }
 

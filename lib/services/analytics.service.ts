@@ -1,13 +1,5 @@
-import { db } from '@/lib/firebase';
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  orderBy,
-  limit,
-  Timestamp,
-} from 'firebase/firestore';
+import { getRepositories } from '@/lib/azure/cosmos';
+import { logger } from '@/lib/logging/logger';
 
 export interface AnalyticsData {
   totalUsers: number;
@@ -18,6 +10,9 @@ export interface AnalyticsData {
   chatMessages: number;
   apiCalls: number;
   storageUsed: number;
+  averageResponseTime: number;
+  satisfactionRate: number;
+  costPerMonth: number;
 }
 
 export interface CompanyAnalytics {
@@ -29,6 +24,8 @@ export interface CompanyAnalytics {
   monthlyChats: number;
   enrollmentRate: number;
   averageCostPerEmployee: number;
+  averageResponseTime: number;
+  satisfactionRate: number;
 }
 
 export interface UserActivity {
@@ -38,6 +35,7 @@ export interface UserActivity {
   conversationCount: number;
   messageCount: number;
   documentsViewed: number;
+  averageSessionDuration: number;
 }
 
 export interface ChatAnalytics {
@@ -47,47 +45,138 @@ export interface ChatAnalytics {
   peakHours: { hour: number; count: number }[];
   averageResponseTime: number;
   satisfactionRate: number;
+  totalTokensUsed: number;
+  costPerChat: number;
+}
+
+export interface SystemMetrics {
+  cpuUsage: number;
+  memoryUsage: number;
+  diskUsage: number;
+  networkLatency: number;
+  errorRate: number;
+  uptime: number;
 }
 
 class AnalyticsService {
+  private async getActiveUsersCount(repositories: any, days: number = 30): Promise<number> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      
+      const users = await repositories.users.query(
+        'SELECT * FROM c WHERE c.lastActive >= @cutoffDate',
+        [{ name: 'cutoffDate', value: cutoffDate.toISOString() }]
+      );
+      
+      return users.resources.length;
+    } catch (error) {
+      logger.error('Error getting active users count', error);
+      return 0;
+    }
+  }
+
+  private async getTotalMessagesCount(repositories: any): Promise<number> {
+    try {
+      const messages = await repositories.messages.query(
+        'SELECT COUNT(1) as count FROM c'
+      );
+      
+      return messages.resources[0]?.count || 0;
+    } catch (error) {
+      logger.error('Error getting total messages count', error);
+      return 0;
+    }
+  }
+
+  private async getStorageUsed(repositories: any): Promise<number> {
+    try {
+      const documents = await repositories.documents.query(
+        'SELECT c.size FROM c WHERE c.size IS NOT NULL'
+      );
+      
+      return documents.resources.reduce((total: number, doc: any) => total + (doc.size || 0), 0);
+    } catch (error) {
+      logger.error('Error getting storage used', error);
+      return 0;
+    }
+  }
+
+  private async getAverageResponseTime(repositories: any): Promise<number> {
+    try {
+      const messages = await repositories.messages.query(
+        'SELECT c.responseTime FROM c WHERE c.responseTime IS NOT NULL AND c.role = "assistant"'
+      );
+      
+      if (messages.resources.length === 0) return 0;
+      
+      const totalTime = messages.resources.reduce((sum: number, msg: any) => sum + (msg.responseTime || 0), 0);
+      return Math.round(totalTime / messages.resources.length);
+    } catch (error) {
+      logger.error('Error getting average response time', error);
+      return 0;
+    }
+  }
+
+  private async getSatisfactionRate(repositories: any): Promise<number> {
+    try {
+      const feedback = await repositories.feedback?.query(
+        'SELECT c.rating FROM c WHERE c.rating IS NOT NULL'
+      ) || { resources: [] };
+      
+      if (feedback.resources.length === 0) return 0;
+      
+      const totalRating = feedback.resources.reduce((sum: number, fb: any) => sum + (fb.rating || 0), 0);
+      return Math.round((totalRating / feedback.resources.length) * 100) / 100;
+    } catch (error) {
+      logger.error('Error getting satisfaction rate', error);
+      return 0;
+    }
+  }
+
   async getPlatformAnalytics(): Promise<AnalyticsData> {
     try {
-      // Get total users
-      const usersQuery = query(collection(db, 'users'));
-      const usersSnapshot = await getDocs(usersQuery);
-      const totalUsers = usersSnapshot.size;
+      const repositories = await getRepositories();
+      
+      // Get basic counts
+      const [users, companies, conversations, documents] = await Promise.all([
+        repositories.users.list(),
+        repositories.companies.list(),
+        repositories.chats.list(),
+        repositories.documents.list()
+      ]);
 
-      // Get total companies
-      const companiesQuery = query(collection(db, 'companies'));
-      const companiesSnapshot = await getDocs(companiesQuery);
-      const totalCompanies = companiesSnapshot.size;
-
-      // Get total conversations
-      const conversationsQuery = query(collection(db, 'conversations'));
-      const conversationsSnapshot = await getDocs(conversationsQuery);
-      const totalConversations = conversationsSnapshot.size;
-
-      // Get total documents
-      const documentsQuery = query(collection(db, 'documents'));
-      const documentsSnapshot = await getDocs(documentsQuery);
-      const totalDocuments = documentsSnapshot.size;
+      const totalUsers = users.length;
+      const totalCompanies = companies.length;
+      const totalConversations = conversations.length;
+      const totalDocuments = documents.length;
 
       // Get active users (last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const activeUsers = await this.getActiveUsersCount(repositories, 30);
 
-      const activeUsersQuery = query(
-        collection(db, 'users'),
-        where('lastActive', '>=', Timestamp.fromDate(thirtyDaysAgo)),
-      );
-      const activeUsersSnapshot = await getDocs(activeUsersQuery);
-      const activeUsers = activeUsersSnapshot.size;
+      // Get total messages
+      const chatMessages = await this.getTotalMessagesCount(repositories);
 
-      // Calculate chat messages and other metrics
-      let chatMessages = 0;
-      conversationsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        chatMessages += data.messages?.length || 0;
+      // Get storage used
+      const storageUsed = await this.getStorageUsed(repositories);
+
+      // Get performance metrics
+      const averageResponseTime = await this.getAverageResponseTime(repositories);
+      const satisfactionRate = await this.getSatisfactionRate(repositories);
+
+      // Calculate API calls (placeholder - would need to track this)
+      const apiCalls = 0; // TODO: Implement API call tracking
+
+      // Calculate monthly cost (placeholder)
+      const costPerMonth = this.calculateMonthlyCost(totalUsers, chatMessages, storageUsed);
+
+      logger.info('Platform analytics retrieved successfully', {
+        totalUsers,
+        totalCompanies,
+        totalConversations,
+        totalDocuments,
+        activeUsers,
+        chatMessages
       });
 
       return {
@@ -97,71 +186,69 @@ class AnalyticsService {
         totalDocuments,
         activeUsers,
         chatMessages,
-        apiCalls: 0, // TODO: Implement API call tracking
-        storageUsed: 0, // TODO: Implement storage tracking
+        apiCalls,
+        storageUsed,
+        averageResponseTime,
+        satisfactionRate,
+        costPerMonth
       };
     } catch (error) {
-      console.error('Error fetching platform analytics:', error);
+      logger.error('Error fetching platform analytics', error);
       throw error;
     }
   }
 
   async getCompanyAnalytics(companyId: string): Promise<CompanyAnalytics> {
     try {
+      const repositories = await getRepositories();
+
       // Get company users
-      const usersQuery = query(
-        collection(db, 'users'),
-        where('companyId', '==', companyId),
+      const companyUsers = await repositories.users.query(
+        'SELECT * FROM c WHERE c.companyId = @companyId',
+        [{ name: 'companyId', value: companyId }]
       );
-      const usersSnapshot = await getDocs(usersQuery);
-      const employeeCount = usersSnapshot.size;
+
+      const employeeCount = companyUsers.resources.length;
 
       // Get active employees (last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      let activeEmployees = 0;
-      usersSnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.lastActive && data.lastActive.toDate() >= thirtyDaysAgo) {
-          activeEmployees++;
-        }
-      });
+      const activeEmployees = await this.getActiveUsersCount(repositories, 30);
 
       // Get company documents
-      const documentsQuery = query(
-        collection(db, 'documents'),
-        where('companyId', '==', companyId),
+      const companyDocuments = await repositories.documents.query(
+        'SELECT * FROM c WHERE c.companyId = @companyId',
+        [{ name: 'companyId', value: companyId }]
       );
-      const documentsSnapshot = await getDocs(documentsQuery);
-      const documentsCount = documentsSnapshot.size;
+
+      const documentsCount = companyDocuments.resources.length;
 
       // Get company conversations
-      const conversationsQuery = query(
-        collection(db, 'conversations'),
-        where('companyId', '==', companyId),
+      const companyConversations = await repositories.chats.query(
+        'SELECT * FROM c WHERE c.companyId = @companyId',
+        [{ name: 'companyId', value: companyId }]
       );
-      const conversationsSnapshot = await getDocs(conversationsQuery);
-      const conversationsCount = conversationsSnapshot.size;
+
+      const conversationsCount = companyConversations.resources.length;
 
       // Calculate monthly chats
-      const thisMonth = new Date();
-      thisMonth.setDate(1);
-      thisMonth.setHours(0, 0, 0, 0);
-
-      let monthlyChats = 0;
-      conversationsSnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.createdAt && data.createdAt.toDate() >= thisMonth) {
-          monthlyChats++;
-        }
-      });
+      const monthlyChats = await this.getMonthlyChats(repositories, companyId);
 
       // Calculate enrollment rate
-      const enrollmentRate =
-        employeeCount > 0
-          ? Math.round((activeEmployees / employeeCount) * 100)
-          : 0;
+      const enrollmentRate = employeeCount > 0 ? (activeEmployees / employeeCount) * 100 : 0;
+
+      // Calculate average cost per employee
+      const averageCostPerEmployee = this.calculateCostPerEmployee(employeeCount, monthlyChats);
+
+      // Get performance metrics
+      const averageResponseTime = await this.getAverageResponseTime(repositories);
+      const satisfactionRate = await this.getSatisfactionRate(repositories);
+
+      logger.info('Company analytics retrieved successfully', {
+        companyId,
+        employeeCount,
+        activeEmployees,
+        documentsCount,
+        conversationsCount
+      });
 
       return {
         companyId,
@@ -171,163 +258,248 @@ class AnalyticsService {
         conversationsCount,
         monthlyChats,
         enrollmentRate,
-        averageCostPerEmployee: 0, // TODO: Implement cost tracking
+        averageCostPerEmployee,
+        averageResponseTime,
+        satisfactionRate
       };
     } catch (error) {
-      console.error('Error fetching company analytics:', error);
+      logger.error('Error fetching company analytics', error, { companyId });
       throw error;
     }
   }
 
-  async getUserActivity(
-    userId?: string,
-    companyId?: string,
-  ): Promise<UserActivity[]> {
+  async getUserActivity(companyId?: string): Promise<UserActivity[]> {
     try {
-      let usersQuery: any;
-
-      if (userId) {
-        usersQuery = query(collection(db, 'users'), where('uid', '==', userId));
-      } else if (companyId) {
-        usersQuery = query(
-          collection(db, 'users'),
-          where('companyId', '==', companyId),
-          orderBy('lastActive', 'desc'),
-          limit(50),
-        );
-      } else {
-        usersQuery = query(
-          collection(db, 'users'),
-          orderBy('lastActive', 'desc'),
-          limit(100),
-        );
+      const repositories = await getRepositories();
+      
+      let usersQuery = 'SELECT * FROM c';
+      let parameters: any[] = [];
+      
+      if (companyId) {
+        usersQuery += ' WHERE c.companyId = @companyId';
+        parameters.push({ name: 'companyId', value: companyId });
       }
-
-      const usersSnapshot = await getDocs(usersQuery);
+      
+      const users = await repositories.users.query(usersQuery, parameters);
       const activities: UserActivity[] = [];
 
-      for (const userDoc of usersSnapshot.docs) {
-        const userData = userDoc.data() as Record<string, any>;
-        
-        // Get user's conversations
-        const conversationsQuery = query(
-          collection(db, 'conversations'),
-          where('userId', '==', userDoc.id),
+      for (const user of users.resources) {
+        // Get user conversations
+        const userConversations = await repositories.chats.query(
+          'SELECT * FROM c WHERE c.userId = @userId',
+          [{ name: 'userId', value: user.id }]
         );
-        const conversationsSnapshot = await getDocs(conversationsQuery);
 
-        let messageCount = 0;
-        conversationsSnapshot.forEach((doc) => {
-          const data = doc.data() as Record<string, any>;
-          messageCount += data.messages?.length || 0;
-        });
+        // Get user messages
+        const userMessages = await repositories.messages.query(
+          'SELECT * FROM c WHERE c.userId = @userId',
+          [{ name: 'userId', value: user.id }]
+        );
+
+        const messageCount = userMessages.resources.length;
+        const conversationCount = userConversations.resources.length;
+
+        // Calculate average session duration
+        const averageSessionDuration = this.calculateAverageSessionDuration(userConversations.resources);
 
         activities.push({
-          userId: userDoc.id,
-          userName: userData.displayName || userData.email || 'Unknown',
-          lastActive: userData.lastActive?.toDate() || new Date(),
-          conversationCount: conversationsSnapshot.size,
+          userId: user.id,
+          userName: user.displayName || user.email || 'Unknown',
+          lastActive: new Date(user.lastActive || user.createdAt),
+          conversationCount,
           messageCount,
-          documentsViewed: userData.documentsViewed || 0,
+          documentsViewed: user.documentsViewed || 0,
+          averageSessionDuration
         });
       }
+
+      logger.info('User activity retrieved successfully', {
+        companyId,
+        userCount: activities.length
+      });
 
       return activities;
     } catch (error) {
-      console.error('Error fetching user activity:', error);
+      logger.error('Error fetching user activity', error, { companyId });
       throw error;
     }
   }
 
   async getChatAnalytics(companyId?: string): Promise<ChatAnalytics> {
     try {
-      let conversationsQuery: any;
-
+      const repositories = await getRepositories();
+      
+      let conversationsQuery = 'SELECT * FROM c';
+      let parameters: any[] = [];
+      
       if (companyId) {
-        conversationsQuery = query(
-          collection(db, 'conversations'),
-          where('companyId', '==', companyId),
+        conversationsQuery += ' WHERE c.companyId = @companyId';
+        parameters.push({ name: 'companyId', value: companyId });
+      }
+      
+      const conversations = await repositories.chats.query(conversationsQuery, parameters);
+      const totalChats = conversations.resources.length;
+
+      // Get all messages for these conversations
+      const conversationIds = conversations.resources.map((c: any) => c.id);
+      let totalMessages = 0;
+      let totalTokensUsed = 0;
+      const topQuestions: string[] = [];
+      const peakHours: { [key: number]: number } = {};
+
+      for (const conversationId of conversationIds) {
+        const messages = await repositories.messages.query(
+          'SELECT * FROM c WHERE c.chatId = @chatId',
+          [{ name: 'chatId', value: conversationId }]
         );
-      } else {
-        conversationsQuery = query(collection(db, 'conversations'));
+
+        totalMessages += messages.resources.length;
+
+        // Process messages for analytics
+        for (const message of messages.resources) {
+          if (message.role === 'user') {
+            // Extract questions (simple heuristic)
+            if (message.content.includes('?')) {
+              topQuestions.push(message.content.substring(0, 100));
+            }
+          }
+
+          // Track peak hours
+          const hour = new Date(message.createdAt).getHours();
+          peakHours[hour] = (peakHours[hour] || 0) + 1;
+
+          // Track tokens used
+          totalTokensUsed += message.tokensUsed || 0;
+        }
       }
 
-      const conversationsSnapshot = await getDocs(conversationsQuery);
+      const averageMessagesPerChat = totalChats > 0 ? Math.round(totalMessages / totalChats) : 0;
+      const averageResponseTime = await this.getAverageResponseTime(repositories);
+      const satisfactionRate = await this.getSatisfactionRate(repositories);
+      const costPerChat = this.calculateCostPerChat(totalTokensUsed, totalChats);
 
-      let totalMessages = 0;
-      const topQuestions: { [key: string]: number } = {};
-      const hourlyActivity: { [key: number]: number } = {};
-      
-      conversationsSnapshot.forEach((doc) => {
-        const data = doc.data() as Record<string, any>;
-        const messages = data.messages || [];
-        totalMessages += messages.length;
+      // Sort and limit top questions
+      const sortedQuestions = topQuestions
+        .sort((a, b) => b.length - a.length)
+        .slice(0, 10);
 
-        // Analyze messages for top questions
-        messages.forEach((msg: any) => {
-          if (msg.role === 'user' && msg.content) {
-            const question = msg.content.substring(0, 100);
-            topQuestions[question] = (topQuestions[question] || 0) + 1;
-          }
+      // Convert peak hours to array
+      const peakHoursArray = Object.entries(peakHours)
+        .map(([hour, count]) => ({ hour: parseInt(hour), count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
 
-          // Track hourly activity
-          if (msg.createdAt) {
-            const hour = new Date(msg.createdAt).getHours();
-            hourlyActivity[hour] = (hourlyActivity[hour] || 0) + 1;
-          }
-        });
+      logger.info('Chat analytics retrieved successfully', {
+        companyId,
+        totalChats,
+        totalMessages,
+        averageMessagesPerChat
       });
 
-      // Get top 5 questions
-      const sortedQuestions = Object.entries(topQuestions)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 5)
-        .map(([question]) => question);
-
-      // Format peak hours
-      const peakHours = Object.entries(hourlyActivity)
-        .map(([hour, count]) => ({
-          hour: Number.parseInt(hour),
-          count,
-        }))
-        .sort((a, b) => a.hour - b.hour);
-
-      const averageMessagesPerChat =
-        conversationsSnapshot.size > 0
-          ? Math.round(totalMessages / conversationsSnapshot.size)
-          : 0;
-
       return {
-        totalChats: conversationsSnapshot.size,
+        totalChats,
         averageMessagesPerChat,
         topQuestions: sortedQuestions,
-        peakHours,
-        averageResponseTime: 0, // TODO: Implement response time tracking
-        satisfactionRate: 0, // TODO: Implement satisfaction tracking
+        peakHours: peakHoursArray,
+        averageResponseTime,
+        satisfactionRate,
+        totalTokensUsed,
+        costPerChat
       };
     } catch (error) {
-      console.error('Error fetching chat analytics:', error);
+      logger.error('Error fetching chat analytics', error, { companyId });
       throw error;
     }
   }
 
-  async getSystemMetrics() {
+  async getSystemMetrics(): Promise<SystemMetrics> {
     try {
-      // Get Firebase usage metrics
-      // This would typically come from Firebase Admin SDK or monitoring APIs
+      // These would typically come from monitoring systems
+      // For now, return placeholder values
       return {
-        firestoreReads: 0,
-        firestoreWrites: 0,
-        storageBytes: 0,
-        functionInvocations: 0,
-        authUsers: 0,
-        bandwidthBytes: 0,
+        cpuUsage: 0, // TODO: Implement CPU monitoring
+        memoryUsage: 0, // TODO: Implement memory monitoring
+        diskUsage: 0, // TODO: Implement disk monitoring
+        networkLatency: 0, // TODO: Implement network monitoring
+        errorRate: 0, // TODO: Implement error rate calculation
+        uptime: 0 // TODO: Implement uptime calculation
       };
     } catch (error) {
-      console.error('Error fetching system metrics:', error);
+      logger.error('Error fetching system metrics', error);
       throw error;
     }
+  }
+
+  private async getMonthlyChats(repositories: any, companyId: string): Promise<number> {
+    try {
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const chats = await repositories.chats.query(
+        'SELECT * FROM c WHERE c.companyId = @companyId AND c.createdAt >= @startOfMonth',
+        [
+          { name: 'companyId', value: companyId },
+          { name: 'startOfMonth', value: startOfMonth.toISOString() }
+        ]
+      );
+
+      return chats.resources.length;
+    } catch (error) {
+      logger.error('Error getting monthly chats', error, { companyId });
+      return 0;
+    }
+  }
+
+  private calculateMonthlyCost(users: number, messages: number, storage: number): number {
+    // Basic cost calculation
+    const baseCost = 50; // Base infrastructure cost
+    const userCost = users * 2; // $2 per user
+    const messageCost = messages * 0.01; // $0.01 per message
+    const storageCost = (storage / (1024 * 1024 * 1024)) * 0.1; // $0.10 per GB
+
+    return Math.round((baseCost + userCost + messageCost + storageCost) * 100) / 100;
+  }
+
+  private calculateCostPerEmployee(employees: number, monthlyChats: number): number {
+    if (employees === 0) return 0;
+    
+    const totalCost = this.calculateMonthlyCost(employees, monthlyChats, 0);
+    return Math.round((totalCost / employees) * 100) / 100;
+  }
+
+  private calculateCostPerChat(tokensUsed: number, totalChats: number): number {
+    if (totalChats === 0) return 0;
+    
+    // Rough estimate: $0.002 per 1K tokens
+    const costPerToken = 0.002 / 1000;
+    const totalCost = tokensUsed * costPerToken;
+    
+    return Math.round((totalCost / totalChats) * 100) / 100;
+  }
+
+  private calculateAverageSessionDuration(conversations: any[]): number {
+    if (conversations.length === 0) return 0;
+    
+    let totalDuration = 0;
+    let validSessions = 0;
+    
+    for (const conversation of conversations) {
+      if (conversation.createdAt && conversation.updatedAt) {
+        const start = new Date(conversation.createdAt);
+        const end = new Date(conversation.updatedAt);
+        const duration = end.getTime() - start.getTime();
+        
+        if (duration > 0) {
+          totalDuration += duration;
+          validSessions++;
+        }
+      }
+    }
+    
+    return validSessions > 0 ? Math.round(totalDuration / validSessions / 1000) : 0; // Return in seconds
   }
 }
 
 export const analyticsService = new AnalyticsService();
+export { AnalyticsService };

@@ -1,4 +1,4 @@
-import { adminDb, FieldValue } from '@/lib/firebase/admin';
+import { getContainer } from '@/lib/azure/cosmos-db';
 
 // Interfaces remain the same as they define the public contract of the service
 export interface EmailOptions {

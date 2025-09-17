@@ -5,12 +5,7 @@ import { useSession } from '@/hooks/use-session';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useState } from 'react';
-import {
-  getAuth,
-  RecaptchaVerifier,
-  PhoneAuthProvider,
-  PhoneMultiFactorGenerator,
-} from 'firebase/auth';
+// MFA enrollment - to be implemented with Azure AD B2C
 
 export function MfaEnrollment() {
   const { session } = useSession();

@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { superAdminService } from '@/lib/firebase/services/super-admin.service';
-import { adminAuth } from '@/lib/firebase/admin';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import type { SuperAdminStats } from '@/types/api';
 
 async function verifySuperAdmin(

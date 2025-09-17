@@ -1,36 +1,76 @@
 import { extractText } from 'unpdf';
-import { adminDb, FieldValue as AdminFieldValue } from '@/lib/firebase/admin';
-import { vectorSearchService, upsertDocumentChunks } from '@/lib/ai/vector-search';
-import { generateEmbeddings } from '@/lib/ai/embeddings';
+import { getRepositories } from '@/lib/azure/cosmos';
+import { getStorageServices } from '@/lib/azure/storage';
+import { azureOpenAIService } from '@/lib/azure/openai';
 import { notificationService } from '@/lib/services/notification.service';
+import { logger } from '@/lib/logging/logger';
 
+export interface DocumentChunk {
+  id: string;
+  documentId: string;
+  content: string;
+  embedding: number[];
+  metadata: {
+    chunkIndex: number;
+    totalChunks: number;
+    startChar: number;
+    endChar: number;
+    fileType: string;
+    fileName: string;
+    companyId: string;
+    userId: string;
+  };
+  createdAt: string;
+}
+
+export interface ProcessedDocument {
+  id: string;
+  status: 'processing' | 'completed' | 'failed';
+  extractedText: string;
+  chunks: DocumentChunk[];
+  processingTime: number;
+  error?: string;
+  metadata: {
+    fileType: string;
+    fileName: string;
+    fileSize: number;
+    companyId: string;
+    userId: string;
+  };
+}
 
 /**
- * Process a document: extract text, chunk it, generate embeddings, and store in Vertex AI Vector Search
+ * Process a document: extract text, chunk it, generate embeddings, and store in Azure AI Search
  */
-export async function processDocument(documentId: string) {
+export async function processDocument(documentId: string): Promise<ProcessedDocument> {
+  const startTime = Date.now();
   let document: any;
-  try {
-    // Fetch document from Firestore
-    const docRef = await adminDb.collection('documents').doc(documentId).get();
 
-    if (!docRef.exists) {
+  try {
+    logger.info('Starting document processing', { documentId });
+
+    // Fetch document from Cosmos DB
+    const repositories = await getRepositories();
+    document = await repositories.documents.getById(documentId);
+
+    if (!document) {
       throw new Error('Document not found');
     }
-
-    document = { id: docRef.id, ...docRef.data() } as any;
 
     if (!document.fileUrl) {
       throw new Error('Document has no file URL');
     }
 
-    // Download file from blob storage
-    const response = await fetch(document.fileUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to download file: ${response.statusText}`);
-    }
+    // Update document status to processing
+    await repositories.documents.update(documentId, {
+      ...document,
+      status: 'processing',
+      processingStartedAt: new Date().toISOString()
+    });
 
-    const fileBuffer = await response.arrayBuffer();
+    // Download file from Azure Blob Storage
+    const storageServices = await getStorageServices();
+    const fileBuffer = await storageServices.downloadFile(document.fileUrl);
 
     // Extract text based on file type
     let extractedText = '';
@@ -40,8 +80,11 @@ export async function processDocument(documentId: string) {
       extractedText = Array.isArray(text) ? text.join('\n') : text;
     } else if (document.fileType === 'text/plain') {
       extractedText = new TextDecoder().decode(fileBuffer);
+    } else if (document.fileType?.includes('word') || document.fileType?.includes('document')) {
+      // For Word documents, we'll need a different approach
+      // For now, throw an error
+      throw new Error(`Word document processing not yet implemented: ${document.fileType}`);
     } else {
-      // For now, we'll skip other file types
       throw new Error(`Unsupported file type: ${document.fileType}`);
     }
 
@@ -49,95 +92,119 @@ export async function processDocument(documentId: string) {
       throw new Error('No text content extracted from document');
     }
 
-    // Update document content in database
-    await adminDb.collection('documents').doc(documentId).update({
-      content: extractedText,
-      processedAt: AdminFieldValue.serverTimestamp(),
-      status: 'processing',
+    logger.info('Text extracted successfully', {
+      documentId,
+      textLength: extractedText.length,
+      fileType: document.fileType
     });
 
     // Chunk the text
-    const chunks = chunkText(extractedText, {
-      maxChunkSize: 1000,
-      overlapSize: 200,
+    const chunks = await chunkText(extractedText, {
+      documentId,
+      fileType: document.fileType,
+      fileName: document.fileName,
+      companyId: document.companyId,
+      userId: document.userId
     });
 
-    const embeddings = await generateEmbeddings(chunks);
-    const documentChunks = chunks.map((chunk, i) => ({
-      id: `${documentId}-chunk-${i}`,
-      text: chunk,
-      embedding: embeddings[i],
+    logger.info('Text chunked successfully', {
+      documentId,
+      chunkCount: chunks.length
+    });
+
+    // Generate embeddings for each chunk
+    const chunksWithEmbeddings = await generateChunkEmbeddings(chunks);
+
+    logger.info('Embeddings generated successfully', {
+      documentId,
+      chunkCount: chunksWithEmbeddings.length
+    });
+
+    // Store chunks in Cosmos DB
+    for (const chunk of chunksWithEmbeddings) {
+      await repositories.documentChunks.create(chunk);
+    }
+
+    // Update document status to completed
+    const processingTime = Date.now() - startTime;
+    const processedDocument: ProcessedDocument = {
+      id: documentId,
+      status: 'completed',
+      extractedText,
+      chunks: chunksWithEmbeddings,
+      processingTime,
       metadata: {
-        documentId,
+        fileType: document.fileType,
+        fileName: document.fileName,
+        fileSize: document.fileSize || 0,
         companyId: document.companyId,
-        documentTitle: document.title,
-        chunkIndex: i,
-        category: document.category || undefined,
-        tags: (document.tags as string[]) || [],
-      },
-    }));
+        userId: document.userId
+      }
+    };
 
-    // Store in Vertex AI
-
-    const { status: upsertStatus, vectorsUpserted } = await upsertDocumentChunks(
-      document.companyId,
-      documentChunks,
-    );
-
-    console.log(
-      `Generated and stored ${vectorsUpserted} embedding vectors for document ${documentId}`,
-    );
-
-
-    // Update document status to processed
-    await adminDb.collection('documents').doc(documentId).update({
-      status: 'processed',
-      processedAt: AdminFieldValue.serverTimestamp(),
-      chunksCount: chunks.length,
+    await repositories.documents.update(documentId, {
+      ...document,
+      status: 'completed',
+      processingCompletedAt: new Date().toISOString(),
+      processingTime,
+      chunkCount: chunksWithEmbeddings.length,
+      extractedTextLength: extractedText.length
     });
 
-    // Send success notification if the document has an associated user
-    if (document.createdBy) {
-      await notificationService.sendDocumentProcessedNotification({
-        userId: document.createdBy,
-        documentName: document.title,
-        status: 'processed',
-      });
-    }
-
-    return {
-      success: upsertStatus === 'success',
-      chunksProcessed: chunks.length,
-      vectorsStored: vectorsUpserted,
-    };
-  } catch (error) {
-    console.error(`❌ Error processing document ${documentId}:`, error);
-
-    // Update document with error status
+    // Send notification to user
     try {
-      await adminDb
-        .collection('documents')
-        .doc(documentId)
-        .update({
-          status: 'failed',
-          processedAt: AdminFieldValue.serverTimestamp(),
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-    } catch (updateError) {
-      console.error('Failed to update document status:', updateError);
+      await notificationService.sendInApp(
+        document.userId,
+        'Document Processing Complete',
+        `Your document "${document.fileName}" has been processed successfully and is now searchable.`
+      );
+    } catch (notificationError) {
+      logger.warn('Failed to send notification', { error: notificationError, documentId });
     }
 
-    // Notify user of failure if we have creator information
-    if (document?.createdBy) {
+    logger.info('Document processing completed successfully', {
+      documentId,
+      processingTime,
+      chunkCount: chunksWithEmbeddings.length
+    });
+
+    return processedDocument;
+
+  } catch (error) {
+    const processingTime = Date.now() - startTime;
+    
+    logger.error('Document processing failed', error, {
+      documentId,
+      processingTime,
+      fileName: document?.fileName
+    });
+
+    // Update document status to failed
+    if (document) {
       try {
-        await notificationService.sendDocumentProcessedNotification({
-          userId: document.createdBy,
-          documentName: document.title,
+        const repositories = await getRepositories();
+        await repositories.documents.update(documentId, {
+          ...document,
           status: 'failed',
-          errorMessage: error instanceof Error ? error.message : undefined,
+          processingFailedAt: new Date().toISOString(),
+          processingTime,
+          error: error instanceof Error ? error.message : 'Unknown error'
         });
-      } catch (notifyError) {
-        console.error('Failed to send failure notification:', notifyError);
+      } catch (updateError) {
+        logger.error('Failed to update document status to failed', updateError, { documentId });
+      }
+    }
+
+    // Send error notification to user
+    if (document?.userId) {
+      try {
+        await notificationService.sendInApp(
+          document.userId,
+          'Document Processing Failed',
+          `Failed to process your document "${document.fileName}". Please try again or contact support.`
+        );
+      } catch (notificationError) {
+        logger.warn('Failed to send error notification', { error: notificationError, documentId });
       }
     }
 
@@ -146,89 +213,240 @@ export async function processDocument(documentId: string) {
 }
 
 /**
- * Chunk text into smaller pieces with overlap
+ * Chunk text into smaller pieces for embedding
  */
-export function chunkText(
+async function chunkText(
   text: string,
-  options: {
-    maxChunkSize: number;
-    overlapSize: number;
-  },
-): string[] {
-  const { maxChunkSize, overlapSize } = options;
-  const chunks: string[] = [];
+  metadata: {
+    documentId: string;
+    fileType: string;
+    fileName: string;
+    companyId: string;
+    userId: string;
+  }
+): Promise<Omit<DocumentChunk, 'embedding'>[]> {
+  const chunks: Omit<DocumentChunk, 'embedding'>[] = [];
+  const chunkSize = 1000; // Characters per chunk
+  const overlap = 200; // Overlap between chunks
 
-  // Clean up the text
-  const cleanText = text
-    .replace(/\n\s*\n/g, '\n\n') // Normalize multiple newlines
-    .replace(/\s+/g, ' ') // Normalize whitespace
-    .trim();
+  let startChar = 0;
+  let chunkIndex = 0;
 
-  // Split into sentences (simple approach)
-  const sentences = cleanText.split(/(?<=[.!?])\s+/);
+  while (startChar < text.length) {
+    const endChar = Math.min(startChar + chunkSize, text.length);
+    let chunkText = text.slice(startChar, endChar);
 
-  let currentChunk = '';
-  let currentSize = 0;
-
-  for (const sentence of sentences) {
-    const sentenceSize = sentence.length;
-
-    if (currentSize + sentenceSize > maxChunkSize && currentChunk) {
-      // Save current chunk
-      chunks.push(currentChunk.trim());
-
-      // Start new chunk with overlap
-      const overlap = currentChunk
-        .split(' ')
-        .slice(-Math.floor(overlapSize / 10)) // Approximate word count for overlap
-        .join(' ');
-
-      currentChunk = `${overlap} ${sentence}`;
-      currentSize = currentChunk.length;
-    } else {
-      currentChunk += (currentChunk ? ' ' : '') + sentence;
-      currentSize += sentenceSize;
+    // Try to break at sentence boundaries
+    if (endChar < text.length) {
+      const lastSentenceEnd = chunkText.lastIndexOf('.');
+      const lastQuestionEnd = chunkText.lastIndexOf('?');
+      const lastExclamationEnd = chunkText.lastIndexOf('!');
+      
+      const lastBreak = Math.max(lastSentenceEnd, lastQuestionEnd, lastExclamationEnd);
+      
+      if (lastBreak > chunkSize * 0.5) { // Only break if we're not losing too much content
+        chunkText = chunkText.slice(0, lastBreak + 1);
+        endChar = startChar + lastBreak + 1;
+      }
     }
+
+    // Clean up the chunk text
+    chunkText = chunkText.trim();
+
+    if (chunkText.length > 0) {
+      chunks.push({
+        id: `chunk_${metadata.documentId}_${chunkIndex}`,
+        documentId: metadata.documentId,
+        content: chunkText,
+        metadata: {
+          chunkIndex,
+          totalChunks: 0, // Will be updated after all chunks are created
+          startChar,
+          endChar: endChar - 1,
+          fileType: metadata.fileType,
+          fileName: metadata.fileName,
+          companyId: metadata.companyId,
+          userId: metadata.userId
+        },
+        createdAt: new Date().toISOString()
+      });
+
+      chunkIndex++;
+    }
+
+    // Move start position with overlap
+    startChar = endChar - overlap;
+    if (startChar >= text.length) break;
   }
 
-  // Don't forget the last chunk
-  if (currentChunk.trim()) {
-    chunks.push(currentChunk.trim());
-  }
+  // Update total chunks count
+  chunks.forEach(chunk => {
+    chunk.metadata.totalChunks = chunks.length;
+  });
 
   return chunks;
 }
 
 /**
- * Process all pending documents for a company
+ * Generate embeddings for document chunks
  */
-export async function processCompanyDocuments(companyId: string) {
-  // Query pending documents for the company
-  const snapshot = await adminDb
-    .collection('documents')
-    .where('companyId', '==', companyId)
-    .where('status', 'in', ['pending', 'uploaded', 'failed'])
-    .get();
+async function generateChunkEmbeddings(
+  chunks: Omit<DocumentChunk, 'embedding'>[]
+): Promise<DocumentChunk[]> {
+  const chunksWithEmbeddings: DocumentChunk[] = [];
 
-  const pendingDocuments = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-
-  const results = [];
-
-  for (const doc of pendingDocuments) {
+  // Process chunks in batches to avoid rate limits
+  const batchSize = 10;
+  for (let i = 0; i < chunks.length; i += batchSize) {
+    const batch = chunks.slice(i, i + batchSize);
+    
     try {
-      const result = await processDocument(doc.id);
-      results.push({ documentId: doc.id, ...result });
-    } catch (error) {
-      results.push({
-        documentId: doc.id,
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+      // Generate embeddings for the batch
+      const embeddings = await azureOpenAIService.generateEmbeddings(
+        batch.map(chunk => chunk.content)
+      );
+
+      // Combine chunks with their embeddings
+      for (let j = 0; j < batch.length; j++) {
+        chunksWithEmbeddings.push({
+          ...batch[j],
+          embedding: embeddings[j] || []
+        });
+      }
+
+      logger.info('Generated embeddings for batch', {
+        batchStart: i,
+        batchSize: batch.length,
+        totalChunks: chunks.length
       });
+
+    } catch (error) {
+      logger.error('Failed to generate embeddings for batch', error, {
+        batchStart: i,
+        batchSize: batch.length
+      });
+      
+      // Add chunks without embeddings (they can be processed later)
+      for (const chunk of batch) {
+        chunksWithEmbeddings.push({
+          ...chunk,
+          embedding: []
+        });
+      }
     }
   }
 
-  return results;
+  return chunksWithEmbeddings;
+}
+
+/**
+ * Search documents using vector similarity
+ */
+export async function searchDocuments(
+  query: string,
+  companyId: string,
+  limit: number = 10
+): Promise<DocumentChunk[]> {
+  try {
+    logger.info('Starting document search', { query, companyId, limit });
+
+    // Generate embedding for the search query
+    const queryEmbedding = await azureOpenAIService.generateEmbeddings([query]);
+    
+    if (!queryEmbedding[0]) {
+      throw new Error('Failed to generate query embedding');
+    }
+
+    // Search for similar chunks in Cosmos DB
+    const repositories = await getRepositories();
+    const chunks = await repositories.documentChunks.query(
+      'SELECT * FROM c WHERE c.metadata.companyId = @companyId',
+      [{ name: 'companyId', value: companyId }]
+    );
+
+    // Calculate cosine similarity for each chunk
+    const chunksWithSimilarity = chunks.resources.map((chunk: any) => {
+      const similarity = calculateCosineSimilarity(queryEmbedding[0], chunk.embedding);
+      return {
+        ...chunk,
+        similarity
+      };
+    });
+
+    // Sort by similarity and return top results
+    const sortedChunks = chunksWithSimilarity
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, limit)
+      .map(({ similarity, ...chunk }) => chunk); // Remove similarity score from result
+
+    logger.info('Document search completed', {
+      query,
+      companyId,
+      resultsCount: sortedChunks.length
+    });
+
+    return sortedChunks;
+
+  } catch (error) {
+    logger.error('Document search failed', error, { query, companyId });
+    throw error;
+  }
+}
+
+/**
+ * Calculate cosine similarity between two vectors
+ */
+function calculateCosineSimilarity(vectorA: number[], vectorB: number[]): number {
+  if (vectorA.length !== vectorB.length) {
+    return 0;
+  }
+
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (let i = 0; i < vectorA.length; i++) {
+    dotProduct += vectorA[i] * vectorB[i];
+    normA += vectorA[i] * vectorA[i];
+    normB += vectorB[i] * vectorB[i];
+  }
+
+  if (normA === 0 || normB === 0) {
+    return 0;
+  }
+
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+/**
+ * Delete a document and all its chunks
+ */
+export async function deleteDocument(documentId: string): Promise<void> {
+  try {
+    logger.info('Starting document deletion', { documentId });
+
+    const repositories = await getRepositories();
+
+    // Delete all chunks for this document
+    const chunks = await repositories.documentChunks.query(
+      'SELECT * FROM c WHERE c.documentId = @documentId',
+      [{ name: 'documentId', value: documentId }]
+    );
+
+    for (const chunk of chunks.resources) {
+      await repositories.documentChunks.delete(chunk.id);
+    }
+
+    // Delete the document
+    await repositories.documents.delete(documentId);
+
+    logger.info('Document deletion completed', {
+      documentId,
+      deletedChunks: chunks.resources.length
+    });
+
+  } catch (error) {
+    logger.error('Document deletion failed', error, { documentId });
+    throw error;
+  }
 }

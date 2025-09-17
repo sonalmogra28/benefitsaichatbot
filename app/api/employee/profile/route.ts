@@ -1,10 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/admin-middleware';
 import { USER_ROLES } from '@/lib/constants/roles';
-import {
-  userService,
-  userMetadataSchema,
-} from '@/lib/firebase/services/user.service';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import { z } from 'zod';
 
 const updateProfileSchema = userMetadataSchema.pick({

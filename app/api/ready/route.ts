@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import { logger } from '@/lib/services/logger.service';
 
 /**
@@ -10,39 +10,40 @@ import { logger } from '@/lib/services/logger.service';
  */
 export async function GET(req: NextRequest) {
   const checks = {
-    firebase: false,
-    firestore: false,
+    cosmos: false,
+    azureAuth: false,
     environment: false,
   };
 
   try {
-    // Check Firebase Auth is initialized
+    // Check Azure Cosmos DB is accessible
     try {
-      await adminAuth.listUsers(1);
-      checks.firebase = true;
+      const container = await getContainer('system');
+      await container.items.query('SELECT TOP 1 * FROM c').fetchAll();
+      checks.cosmos = true;
     } catch (error) {
-      logger.warn('Firebase Auth not ready', {
+      logger.warn('Cosmos DB not ready', {
         metadata: { error: (error as Error).message },
       });
     }
 
-    // Check Firestore is accessible
+    // Check Azure AD B2C configuration
     try {
-      await adminDb.collection('system').doc('ready').get();
-      checks.firestore = true;
+      checks.azureAuth = !!(
+        process.env.AZURE_AD_CLIENT_ID &&
+        process.env.AZURE_AD_TENANT_ID
+      );
     } catch (error) {
-      logger.warn('Firestore not ready', {
+      logger.warn('Azure AD B2C not ready', {
         metadata: { error: (error as Error).message },
       });
     }
 
     // Check required environment variables
     checks.environment = !!(
-      process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
-      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
-      (process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-        process.env.OPENAI_API_KEY ||
-        process.env.ANTHROPIC_API_KEY)
+      process.env.AZURE_AD_CLIENT_ID &&
+      process.env.COSMOS_DB_ENDPOINT &&
+      (process.env.OPENAI_API_KEY || process.env.AZURE_OPENAI_API_KEY)
     );
 
     // All checks must pass for readiness

@@ -1,8 +1,6 @@
 'use client';
 
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection } from 'firebase/firestore';
-import { db } from '@/lib/firestore';
+import { useAuth } from '@/context/auth-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function AnalyticsDashboard() {

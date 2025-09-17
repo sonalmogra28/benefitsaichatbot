@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { requireCompanyAdmin } from '@/lib/auth/admin-middleware';
-import { userService } from '@/lib/firebase/services/user.service';
-import { adminAuth } from '@/lib/firebase/admin';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import { EmailService } from '@/lib/services/email.service.server';
 import { createUserSchema } from '@/lib/validation/schemas';
 import type { UserRole } from '@/lib/constants/roles';

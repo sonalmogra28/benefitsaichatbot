@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getContainer } from '@/lib/azure/cosmos-db';
+import { validateToken } from '@/lib/azure/token-validation';
 import { USER_ROLES } from '@/lib/constants/roles';
 
 // GET /api/companies - List companies (super admin only)
@@ -14,7 +14,10 @@ export async function GET(request: NextRequest) {
     const token = authHeader.split('Bearer ')[1];
 
     try {
-      const decodedToken = await adminAuth.verifyIdToken(token);
+      const decodedToken = await validateToken(token);
+      if (!decodedToken) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
 
       // Check if user has super admin or platform admin role
       if (
@@ -32,41 +35,31 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = Number.parseInt(searchParams.get('limit') || '20', 10);
     const startAfter = searchParams.get('startAfter');
-    const status = searchParams.get('status'); // active, suspended, inactive
+    const status = searchParams.get('status');
 
-    // Build query
-    let query = adminDb.collection('companies').orderBy('createdAt', 'desc');
+    // Query companies from Cosmos DB
+    const companiesContainer = await getContainer('Companies');
+    let query = 'SELECT * FROM c';
+    const parameters: any[] = [];
 
+    // Apply filters
     if (status) {
-      query = query.where('status', '==', status);
+      query += ' WHERE c.status = @status';
+      parameters.push({ name: '@status', value: status });
     }
 
-    if (startAfter) {
-      const startDoc = await adminDb
-        .collection('companies')
-        .doc(startAfter)
-        .get();
-      if (startDoc.exists) {
-        query = query.startAfter(startDoc);
-      }
-    }
+    // Add ordering and pagination
+    query += ' ORDER BY c.createdAt DESC';
+    query += ` OFFSET ${startAfter ? 1 : 0} LIMIT ${limit}`;
 
-    query = query.limit(limit);
-
-    // Execute query
-    const snapshot = await query.get();
-
-    const companies = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate?.() || null,
-      updatedAt: doc.data().updatedAt?.toDate?.() || null,
-    }));
+    const { resources: companies } = await companiesContainer.items
+      .query({ query, parameters })
+      .fetchAll();
 
     return NextResponse.json({
       companies,
-      hasMore: snapshot.size === limit,
-      lastDoc: snapshot.docs[snapshot.docs.length - 1]?.id || null,
+      hasMore: companies.length === limit,
+      lastDoc: companies[companies.length - 1]?.id || null,
     });
   } catch (error) {
     console.error('Error fetching companies:', error);
@@ -88,9 +81,12 @@ export async function POST(request: NextRequest) {
     const token = authHeader.split('Bearer ')[1];
 
     try {
-      const decodedToken = await adminAuth.verifyIdToken(token);
+      const decodedToken = await validateToken(token);
+      if (!decodedToken) {
+        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      }
 
-      // Check if user has super admin role
+      // Check if user has super admin or platform admin role
       if (
         decodedToken.role !== USER_ROLES.SUPER_ADMIN &&
         decodedToken.role !== USER_ROLES.PLATFORM_ADMIN
@@ -104,75 +100,73 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { name, domain, adminEmail, employeeLimit, settings } = body;
+    const {
+      name,
+      domain,
+      industry,
+      size,
+      contactEmail,
+      contactName,
+      settings,
+    } = body;
 
     // Validate required fields
-    if (!name || !adminEmail) {
+    if (!name || !domain || !contactEmail) {
       return NextResponse.json(
-        { error: 'Name and admin email are required' },
+        { error: 'Name, domain, and contact email are required' },
         { status: 400 },
       );
     }
 
-    // Check if company with same domain already exists
-    if (domain) {
-      const existingCompany = await adminDb
-        .collection('companies')
-        .where('domain', '==', domain)
-        .limit(1)
-        .get();
+    try {
+      // Create company document in Cosmos DB
+      const companiesContainer = await getContainer('Companies');
+      const companyId = `company_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const companyData = {
+        id: companyId,
+        name,
+        domain,
+        industry: industry || null,
+        size: size || null,
+        contactEmail,
+        contactName: contactName || null,
+        settings: settings || {},
+        status: 'active',
+        employeeCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: decodedToken.oid,
+      };
 
-      if (!existingCompany.empty) {
+      await companiesContainer.items.create(companyData);
+
+      // Log activity
+      const activityContainer = await getContainer('ActivityLogs');
+      await activityContainer.items.create({
+        id: `activity_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type: 'company_created',
+        message: `New company "${name}" created`,
+        metadata: {
+          companyId: companyId,
+          createdBy: decodedToken.oid,
+        },
+        timestamp: new Date().toISOString(),
+      });
+
+      return NextResponse.json(companyData, { status: 201 });
+    } catch (error: any) {
+      console.error('Error creating company:', error);
+      if (error.code === 'CONFLICT') {
         return NextResponse.json(
           { error: 'A company with this domain already exists' },
           { status: 400 },
         );
       }
+      throw error;
     }
-
-    // Create company document
-    const companyRef = adminDb.collection('companies').doc();
-    const companyData = {
-      id: companyRef.id,
-      name,
-      domain: domain || null,
-      adminEmail,
-      employeeLimit: employeeLimit || 1000,
-      status: 'active',
-      employeeCount: 0,
-      planCount: 0,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      settings: {
-        allowSelfRegistration: settings?.allowSelfRegistration || false,
-        requireEmailVerification: settings?.requireEmailVerification !== false,
-        defaultRole: settings?.defaultRole || 'employee',
-        ...settings,
-      },
-    };
-
-    await companyRef.set(companyData);
-
-    // Log activity
-    const activityRef = adminDb.collection('activity_logs').doc();
-    await activityRef.set({
-      id: activityRef.id,
-      type: 'company_added',
-      message: `New company \"${name}\" created`,
-      metadata: { companyId: companyRef.id },
-      timestamp: FieldValue.serverTimestamp(),
-    });
-
-    return NextResponse.json(
-      {
-        ...companyData,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      { status: 201 },
-    );
   } catch (error) {
-    console.error('Error creating company:', error);
+    console.error('Error in company creation:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

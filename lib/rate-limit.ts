@@ -19,7 +19,7 @@ export function rateLimit(
 
   // Add current request
   validRequests.push(now);
-  requests.set(identifier, validRequests);
+  requests.create(identifier, validRequests);
 
   // Clean up old entries periodically
   if (Math.random() < 0.01) {
@@ -29,7 +29,7 @@ export function rateLimit(
       if (valid.length === 0) {
         requests.delete(key);
       } else {
-        requests.set(key, valid);
+        requests.create(key, valid);
       }
     }
   }

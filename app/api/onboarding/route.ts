@@ -18,7 +18,7 @@ export const POST = withAuth(
         message: 'Onboarding completed successfully',
       });
     } catch (error) {
-      console.error('Onboarding error:', error);
+      logger.error('Onboarding error:', error);
       return NextResponse.json(
         { error: 'Failed to complete onboarding' },
         { status: 500 },
@@ -36,7 +36,7 @@ export const GET = withAuth(
 
       return NextResponse.json(status);
     } catch (error) {
-      console.error('Get onboarding status error:', error);
+      logger.error('Get onboarding status error:', error);
       return NextResponse.json(
         { error: 'Failed to get onboarding status' },
         { status: 500 },
@@ -60,7 +60,7 @@ export const PATCH = withAuth(
         message: 'Onboarding progress updated',
       });
     } catch (error) {
-      console.error('Update onboarding progress error:', error);
+      logger.error('Update onboarding progress error:', error);
       return NextResponse.json(
         { error: 'Failed to update onboarding progress' },
         { status: 500 },

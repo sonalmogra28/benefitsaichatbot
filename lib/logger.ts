@@ -17,7 +17,7 @@ const hasProject = !!process.env.GOOGLE_CLOUD_PROJECT || !!process.env.GCLOUD_PR
 async function write(severity: Severity, message: string, data?: Record<string, unknown>) {
   const payload = { message, ...data };
   if (!hasProject) {
-    console.log(JSON.stringify({ severity, ...payload }));
+    logger.info(JSON.stringify({ severity, ...payload }));
     return;
   }
   const metadata = { resource: { type: 'global' }, severity } as const;
@@ -26,8 +26,8 @@ async function write(severity: Severity, message: string, data?: Record<string, 
     await log.write(entry);
   } catch (err) {
     // Fallback to console if logging fails
-    console.error('Cloud Logging write failed', err);
-    console.log(JSON.stringify({ severity, ...payload }));
+    logger.error('Cloud Logging write failed', err);
+    logger.info(JSON.stringify({ severity, ...payload }));
   }
 }
 

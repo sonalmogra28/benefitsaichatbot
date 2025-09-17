@@ -43,7 +43,7 @@ export const GET = requireSuperAdmin(async (request: NextRequest) => {
     const settings = await superAdminService.getSystemSettings();
     return NextResponse.json(settings);
   } catch (error) {
-    console.error('Error fetching settings:', error);
+    logger.error('Error fetching settings:', error);
     return NextResponse.json(
       { error: 'Failed to fetch settings' },
       { status: 500 },
@@ -71,7 +71,7 @@ export const PATCH = requireSuperAdmin(async (request: NextRequest) => {
       );
     }
 
-    console.error('Error updating settings:', error);
+    logger.error('Error updating settings:', error);
     return NextResponse.json(
       { error: 'Failed to update settings' },
       { status: 500 },

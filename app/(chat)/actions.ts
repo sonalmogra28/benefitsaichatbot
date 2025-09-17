@@ -4,6 +4,7 @@ import { generateText, type UIMessage } from 'ai';
 import { cookies } from 'next/headers';
 import type { VisibilityType } from '@/components/visibility-selector';
 import { myProvider } from '@/lib/ai/providers';
+import { logger } from '@/lib/logging/logger';
 
 export async function saveChatModelAsCookie(model: string) {
   const cookieStore = await cookies();
@@ -29,7 +30,7 @@ export async function generateTitleFromUserMessage({
 }
 
 export async function deleteTrailingMessages({ id }: { id: string }) {
-  console.warn('deleteTrailingMessages is not implemented');
+  logger.warn('deleteTrailingMessages is not implemented');
 }
 
 export async function updateChatVisibility({
@@ -39,5 +40,5 @@ export async function updateChatVisibility({
   chatId: string;
   visibility: VisibilityType;
 }) {
-  console.warn('updateChatVisibility is not implemented');
+  logger.warn('updateChatVisibility is not implemented');
 }

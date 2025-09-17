@@ -53,11 +53,11 @@ export function SuperAdminDashboard() {
   const fetchDashboardStats = async () => {
     try {
       // Get the user's auth token
-      const auth = (await import('firebase/auth')).getAuth();
+      const auth = (await import('azure/auth')).getAuth();
       const user = auth.currentUser;
 
       if (!user) {
-        console.error('No authenticated user');
+        logger.error('No authenticated user');
         return;
       }
 
@@ -74,7 +74,7 @@ export function SuperAdminDashboard() {
         const statsData = (await statsResponse.json()) as SuperAdminStats;
         setStats((prev) => ({ ...prev, ...statsData }));
       } else {
-        console.error('Failed to fetch stats:', statsResponse.statusText);
+        logger.error('Failed to fetch stats:', statsResponse.statusText);
         // Set default values on error
         setStats({
           totalUsers: 0,
@@ -108,11 +108,11 @@ export function SuperAdminDashboard() {
           })),
         );
       } else {
-        console.error('Failed to fetch activity:', activityResponse.statusText);
+        logger.error('Failed to fetch activity:', activityResponse.statusText);
         setRecentActivity([]);
       }
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      logger.error('Error fetching dashboard stats:', error);
       // Set default values on error
       setStats({
         totalUsers: 0,

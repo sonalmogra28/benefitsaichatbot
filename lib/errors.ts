@@ -59,7 +59,7 @@ export class ChatSDKError extends Error {
     if (visibility === 'log') {
       // Error logged to proper logging service instead of console
       // This would typically be handled by the logger service
-      // For now, we skip console.error as it would be redundant
+      // For now, we skip logger.error as it would be redundant
 
       return Response.json(
         { code: '', message: 'Something went wrong. Please try again later.' },

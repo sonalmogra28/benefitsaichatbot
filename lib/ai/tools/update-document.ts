@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import type { UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb } from '@/lib/azure/admin';
 import { documentHandlersByArtifactKind } from '@/lib/artifacts/server';
 
 interface UpdateDocumentProps {
@@ -12,7 +12,7 @@ interface UpdateDocumentProps {
 // Helper function to get document by ID
 async function getDocumentById(id: string) {
   try {
-    const doc = await adminDb.collection('documents').doc(id).get();
+    const doc = await adminDb.collection('documents').getById(id).get();
     if (!doc.exists) {
       return null;
     }
@@ -21,7 +21,7 @@ async function getDocumentById(id: string) {
       ...doc.data(),
     };
   } catch (error) {
-    console.error('Failed to get document:', error);
+    logger.error('Failed to get document:', error);
     return null;
   }
 }

@@ -33,8 +33,6 @@
     "node_modules",
     "tests",
     "scripts",
-    "functions",
-    "app",
-    "components"
+    "functions"
   ]
 }

@@ -1,9 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { requireCompanyAdmin } from '@/lib/auth/admin-middleware';
-import {
-  userService,
-  userMetadataSchema,
-} from '@/lib/firebase/services/user.service';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import { z } from 'zod';
 
 // GET /api/company-admin/employees/[id] - Get specific employee

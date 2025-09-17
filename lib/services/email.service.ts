@@ -1,5 +1,4 @@
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase'; // Assuming your firebase init is in lib/firebase.ts
+import { getContainer } from '@/lib/azure/cosmos-db';
 
 // Interfaces remain the same as they define the public contract of the service
 export interface EmailOptions {

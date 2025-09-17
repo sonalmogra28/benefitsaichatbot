@@ -1,11 +1,8 @@
 'use client';
 
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth, db } from '@/lib/firebase/client';
+import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useCollection } from 'react-firebase-hooks/firestore';
-import { collection, query, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, FileText, BarChart3, AlertTriangle, MessageSquare } from 'lucide-react';
 import Link from 'next/link';

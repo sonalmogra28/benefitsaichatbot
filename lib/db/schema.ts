@@ -1,11 +1,11 @@
-import type { FieldValue, Timestamp } from 'firebase/firestore';
+import type { Date, Timestamp } from 'azure/firestore';
 import type { UserRole } from '../constants/roles';
 
 // Base interfaces for Firestore documents
 export interface DocumentBase {
   id: string;
-  createdAt: Timestamp | FieldValue;
-  updatedAt: Timestamp | FieldValue;
+  createdAt: Timestamp | Date;
+  updatedAt: Timestamp | Date;
 }
 
 export interface Company extends DocumentBase {
@@ -23,14 +23,14 @@ export interface User extends DocumentBase {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
-  lastLoginAt?: Timestamp | FieldValue;
+  lastLoginAt?: Timestamp | Date;
   onboardingCompleted?: boolean;
   onboardingProgress?: number; // e.g., 0-100
   lastOnboardingStep?: string;
   benefitsInterests?: string[]; // e.g., ['health', 'dental', '401k']
   benefitsSelections?: Record<string, any>; // Store selected benefits data
   department?: string;
-  hireDate?: Timestamp | FieldValue;
+  hireDate?: Timestamp | Date;
   location?: string;
 }
 
@@ -79,8 +79,8 @@ export interface Document extends DocumentBase {
   status: 'uploaded' | 'processing' | 'processed' | 'failed';
   companyId?: string;
   processing?: {
-    startedAt?: Timestamp | FieldValue;
-    completedAt?: Timestamp | FieldValue;
+    startedAt?: Timestamp | Date;
+    completedAt?: Timestamp | Date;
     error?: string;
     chunks?: DocumentChunk[]; // For RAG system
   };

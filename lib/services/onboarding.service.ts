@@ -1,4 +1,4 @@
-import { userService } from '@/lib/firebase/services/user.service';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import { emailService } from './email.service';
 
 export interface OnboardingData {

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { RATE_LIMITS } from '@/lib/config/index';
 import { FirestoreRateLimiter, InMemoryRateLimiter } from './firestore-limiter';
-import { adminAuth } from '../firebase/admin';
+import { adminAuth } from '../azure/admin';
 
 /**
  * Rate limiter interface
@@ -129,7 +129,7 @@ export async function rateLimit(
     // Add rate limit headers to the response
     return result;
   } catch (error) {
-    console.error('Rate limiting error:', error);
+    logger.error('Rate limiting error:', error);
 
     // In case of error, allow the request but log it
     return {
@@ -148,9 +148,9 @@ export function applyRateLimitHeaders(
   result: RateLimitResult,
   limit: number,
 ): NextResponse {
-  response.headers.set('X-RateLimit-Limit', limit.toString());
-  response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
-  response.headers.set('X-RateLimit-Reset', result.resetAt.toISOString());
+  response.headers.create('X-RateLimit-Limit', limit.toString());
+  response.headers.create('X-RateLimit-Remaining', result.remaining.toString());
+  response.headers.create('X-RateLimit-Reset', result.resetAt.toISOString());
 
   return response;
 }
@@ -211,12 +211,12 @@ export function withRateLimit(
 
     // Add rate limit headers to successful responses
     if (response instanceof NextResponse) {
-      response.headers.set('X-RateLimit-Limit', config.max.toString());
-      response.headers.set(
+      response.headers.create('X-RateLimit-Limit', config.max.toString());
+      response.headers.create(
         'X-RateLimit-Remaining',
         result.remaining.toString(),
       );
-      response.headers.set('X-RateLimit-Reset', result.resetAt.toISOString());
+      response.headers.create('X-RateLimit-Reset', result.resetAt.toISOString());
     }
 
     return response;

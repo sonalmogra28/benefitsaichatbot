@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
-import { useUploadFile } from 'react-firebase-hooks/storage';
-import { storage, db } from '@/lib/firebase';
-import { ref } from 'firebase/storage';
-import { doc, updateDoc } from 'firebase/firestore';
+import { useUploadFile } from 'react-azure-hooks/storage';
+import { storage, db } from '@/lib/azure';
+import { ref } from 'azure/storage';
+import { doc, updateDoc } from 'azure/firestore';
 import { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
 
@@ -34,8 +34,8 @@ export function CompanyBrandingForm({ companyId }: { companyId: string }) {
         const uploadResult = await uploadFile(storageRef, file);
         if (uploadResult?.ref) {
           const companyRef = doc(db, 'companies', companyId);
-          // Get download URL using getDownloadURL from firebase/storage
-          const { getDownloadURL } = await import('firebase/storage');
+          // Get download URL using getDownloadURL from azure/storage
+          const { getDownloadURL } = await import('azure/storage');
           const downloadURL = await getDownloadURL(uploadResult.ref);
           await updateDoc(companyRef, {
             logoUrl: downloadURL,
@@ -52,7 +52,7 @@ export function CompanyBrandingForm({ companyId }: { companyId: string }) {
 
       router.push(`/super-admin/companies`);
     } catch (error) {
-      console.error('Error updating company branding:', error);
+      logger.error('Error updating company branding:', error);
     }
   };
 

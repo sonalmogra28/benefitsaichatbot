@@ -1,10 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/admin-middleware';
 import { USER_ROLES } from '@/lib/constants/roles';
-import {
-  benefitService,
-  benefitEnrollmentSchema,
-} from '@/lib/firebase/services/benefit.service';
+import { getContainer } from '@/lib/azure/cosmos-db';
 import { z } from 'zod';
 
 // POST /api/employee/benefits/enroll - Enroll in a benefit plan

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { getContainer } from '@/lib/azure/cosmos-db';
+import { validateToken } from '@/lib/azure/token-validation';
 
 export async function GET(req: NextRequest) {
   try {

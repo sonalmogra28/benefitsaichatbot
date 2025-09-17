@@ -1,7 +1,13 @@
 import { google } from 'googleapis';
+import { getRepositories } from '@/lib/azure/cosmos';
+import { logger } from '@/lib/logging/logger';
+import { azureOpenAIService } from '@/lib/azure/openai';
+import { azureAuthService } from '@/lib/azure/auth';
+import { getStorageServices } from '@/lib/azure/storage';
+import { redisService } from '@/lib/azure/redis';
 import type { OAuth2Client } from 'google-auth-library';
-import { db } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+
+
 
 export interface GoogleWorkspaceUser {
   id: string;
@@ -77,7 +83,7 @@ class GoogleWorkspaceService {
       for (const user of users) {
         if (!user.id || !user.primaryEmail) continue;
 
-        const userRef = db.collection('google_workspace_users').doc(user.id);
+        const userRef = repository.'google_workspace_users').getById(user.id);
 
         const userData: GoogleWorkspaceUser = {
           id: user.id,
@@ -89,15 +95,15 @@ class GoogleWorkspaceService {
             ?.value,
           photoUrl: user.thumbnailPhotoUrl || undefined,
           isAdmin: user.isAdmin || false,
-          createdAt: FieldValue.serverTimestamp(),
-          lastSyncedAt: FieldValue.serverTimestamp(),
+          createdAt: new Date().toISOString(),
+          lastSyncedAt: new Date().toISOString(),
         };
 
-        batch.set(userRef, userData, { merge: true });
+        batch.create(userRef, userData, { merge: true });
 
         // Also create/update in main users collection
-        const mainUserRef = db.collection('users').doc(user.id);
-        batch.set(
+        const mainUserRef = repository.'users').getById(user.id);
+        batch.create(
           mainUserRef,
           {
             email: user.primaryEmail,
@@ -105,7 +111,7 @@ class GoogleWorkspaceService {
             companyId,
             role: user.isAdmin ? 'company-admin' : 'employee',
             googleWorkspaceId: user.id,
-            updatedAt: FieldValue.serverTimestamp(),
+            updatedAt: new Date().toISOString(),
           },
           { merge: true },
         );
@@ -116,25 +122,25 @@ class GoogleWorkspaceService {
       await batch.commit();
 
       // Log sync event
-      await db.collection('sync_logs').add({
+      await repository.'sync_logs').create({
         companyId,
         type: 'google_workspace',
         usersSync: syncedCount,
         status: 'success',
-        syncedAt: FieldValue.serverTimestamp(),
+        syncedAt: new Date().toISOString(),
       });
 
       return syncedCount;
     } catch (error) {
-      console.error('Google Workspace sync failed:', error);
+      logger.error('Google Workspace sync failed:', error);
 
       // Log failed sync
-      await db.collection('sync_logs').add({
+      await repository.'sync_logs').create({
         companyId,
         type: 'google_workspace',
         status: 'failed',
         error: (error as Error).message,
-        failedAt: FieldValue.serverTimestamp(),
+        failedAt: new Date().toISOString(),
       });
 
       throw error;
@@ -148,8 +154,8 @@ class GoogleWorkspaceService {
     try {
       const snapshot = await db
         .collection('users')
-        .where('companyId', '==', companyId)
-        .where('googleWorkspaceId', '!=', null)
+        .query('companyId', '==', companyId)
+        .query('googleWorkspaceId', '!=', null)
         .get();
 
       return snapshot.docs.map(
@@ -160,7 +166,7 @@ class GoogleWorkspaceService {
           }) as GoogleWorkspaceUser,
       );
     } catch (error) {
-      console.error('Failed to get synced users:', error);
+      logger.error('Failed to get synced users:', error);
       return [];
     }
   }
@@ -170,7 +176,7 @@ class GoogleWorkspaceService {
    */
   async hasIntegration(companyId: string): Promise<boolean> {
     try {
-      const companyDoc = await db.collection('companies').doc(companyId).get();
+      const companyDoc = await repository.'companies').getById(companyId).get();
 
       if (!companyDoc.exists) {
         return false;
@@ -179,7 +185,7 @@ class GoogleWorkspaceService {
       const data = companyDoc.data();
       return !!data?.integrations?.googleWorkspace?.enabled;
     } catch (error) {
-      console.error('Failed to check Google Workspace integration:', error);
+      logger.error('Failed to check Google Workspace integration:', error);
       return false;
     }
   }
@@ -195,20 +201,20 @@ class GoogleWorkspaceService {
     try {
       await db
         .collection('companies')
-        .doc(companyId)
+        .getById(companyId)
         .update({
           'integrations.googleWorkspace': {
             enabled: true,
             accessToken,
             refreshToken,
-            enabledAt: FieldValue.serverTimestamp(),
+            enabledAt: new Date().toISOString(),
           },
-          updatedAt: FieldValue.serverTimestamp(),
+          updatedAt: new Date().toISOString(),
         });
 
       return true;
     } catch (error) {
-      console.error('Failed to enable Google Workspace integration:', error);
+      logger.error('Failed to enable Google Workspace integration:', error);
       return false;
     }
   }
@@ -220,18 +226,18 @@ class GoogleWorkspaceService {
     try {
       await db
         .collection('companies')
-        .doc(companyId)
+        .getById(companyId)
         .update({
           'integrations.googleWorkspace': {
             enabled: false,
-            disabledAt: FieldValue.serverTimestamp(),
+            disabledAt: new Date().toISOString(),
           },
-          updatedAt: FieldValue.serverTimestamp(),
+          updatedAt: new Date().toISOString(),
         });
 
       return true;
     } catch (error) {
-      console.error('Failed to disable Google Workspace integration:', error);
+      logger.error('Failed to disable Google Workspace integration:', error);
       return false;
     }
   }
@@ -243,10 +249,10 @@ class GoogleWorkspaceService {
     try {
       const snapshot = await db
         .collection('sync_logs')
-        .where('companyId', '==', companyId)
-        .where('type', '==', 'google_workspace')
-        .orderBy('syncedAt', 'desc')
-        .limit(limit)
+        .query('companyId', '==', companyId)
+        .query('type', '==', 'google_workspace')
+        .query('syncedAt', 'desc')
+        .query(limit)
         .get();
 
       return snapshot.docs.map((doc) => ({
@@ -254,7 +260,7 @@ class GoogleWorkspaceService {
         ...doc.data(),
       }));
     } catch (error) {
-      console.error('Failed to get sync history:', error);
+      logger.error('Failed to get sync history:', error);
       return [];
     }
   }
