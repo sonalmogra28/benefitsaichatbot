@@ -4,6 +4,7 @@ import {
   type PlatformStats,
   type AuditLog,
 } from '@/lib/types/super-admin';
+import { logger } from '@/lib/logging/logger';
 
 // Base URL for the new API route
 const API_URL = '/api/super-admin/service';
@@ -82,6 +83,93 @@ class SuperAdminService {
       }
     } catch (error) {
       logger.error('Error updating system settings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Updates a company's information
+   */
+  async updateCompany(companyId: string, updates: Partial<{
+    name: string;
+    domain: string;
+    status: 'active' | 'inactive' | 'suspended';
+    settings: any;
+    metadata: any;
+  }>): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}?action=updateCompany`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ companyId, updates }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update company');
+      }
+    } catch (error) {
+      logger.error('Error updating company:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Deletes a company and all associated data
+   */
+  async deleteCompany(companyId: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_URL}?action=deleteCompany`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ companyId }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete company');
+      }
+    } catch (error) {
+      logger.error('Error deleting company:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets a company by ID
+   */
+  async getCompany(companyId: string): Promise<any> {
+    try {
+      const response = await fetch(`${API_URL}?action=getCompany&companyId=${companyId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch company');
+      }
+      return await response.json();
+    } catch (error) {
+      logger.error('Error fetching company:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lists all companies with pagination
+   */
+  async listCompanies(page: number = 1, limit: number = 10): Promise<{
+    companies: any[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    try {
+      const response = await fetch(
+        `${API_URL}?action=listCompanies&page=${page}&limit=${limit}`
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch companies');
+      }
+      return await response.json();
+    } catch (error) {
+      logger.error('Error fetching companies:', error);
       throw error;
     }
   }

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { protectAdminEndpoint } from '@/lib/middleware/auth';
 import { rateLimiters } from '@/lib/middleware/rate-limit';
 import { logger } from '@/lib/logging/logger';
+import { faqService } from '@/lib/services/faq.service';
 import { z } from 'zod';
 
 const createFaqSchema = z.object({
@@ -44,20 +45,30 @@ export async function GET(request: NextRequest) {
       companyId
     });
 
-    // TODO: Implement FAQ repository
-    logger.warn('FAQ functionality not yet implemented', {
-      userId: user.id,
-      companyId
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category') || undefined;
+    const isPublic = searchParams.get('isPublic') ? searchParams.get('isPublic') === 'true' : undefined;
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : undefined;
+    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!, 10) : undefined;
+
+    const { faqs, total } = await faqService.getFAQsByCompany(companyId, {
+      category,
+      isPublic,
+      limit,
+      offset
     });
 
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'FAQ functionality not yet implemented',
-        data: []
-      },
-      { status: 501 }
-    );
+    return NextResponse.json({
+      success: true,
+      data: faqs,
+      pagination: {
+        total,
+        limit: limit || 50,
+        offset: offset || 0,
+        hasMore: (offset || 0) + (limit || 50) < total
+      }
+    });
   } catch (error) {
     const duration = Date.now() - startTime;
     
@@ -112,19 +123,16 @@ export async function POST(request: NextRequest) {
       question: validatedData.question
     });
 
-    // TODO: Implement FAQ repository
-    logger.warn('FAQ functionality not yet implemented', {
-      userId: user.id,
-      companyId
+    const faq = await faqService.createFAQ({
+      ...validatedData,
+      companyId,
+      createdBy: user.id
     });
 
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'FAQ functionality not yet implemented' 
-      },
-      { status: 501 }
-    );
+    return NextResponse.json({
+      success: true,
+      data: faq
+    });
   } catch (error) {
     const duration = Date.now() - startTime;
     

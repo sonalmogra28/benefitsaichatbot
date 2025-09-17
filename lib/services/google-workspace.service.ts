@@ -59,7 +59,7 @@ class GoogleWorkspaceService {
   }
 
   /**
-   * Sync users from Google Workspace to Firestore
+   * Sync users from Google Workspace to Cosmos DB
    */
   async syncUsers(companyId: string, accessToken: string): Promise<number> {
     try {
@@ -77,13 +77,11 @@ class GoogleWorkspaceService {
       });
 
       const users = response.data.users || [];
-      const batch = db.batch();
+      const repositories = await getRepositories();
       let syncedCount = 0;
 
       for (const user of users) {
         if (!user.id || !user.primaryEmail) continue;
-
-        const userRef = repository.'google_workspace_users').getById(user.id);
 
         const userData: GoogleWorkspaceUser = {
           id: user.id,
@@ -95,39 +93,62 @@ class GoogleWorkspaceService {
             ?.value,
           photoUrl: user.thumbnailPhotoUrl || undefined,
           isAdmin: user.isAdmin || false,
-          createdAt: new Date().toISOString(),
-          lastSyncedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          lastSyncedAt: new Date(),
         };
 
-        batch.create(userRef, userData, { merge: true });
+        // Store Google Workspace user data
+        await repositories.documents.create({
+          ...userData,
+          type: 'google_workspace_user',
+          companyId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
 
         // Also create/update in main users collection
-        const mainUserRef = repository.'users').getById(user.id);
-        batch.create(
-          mainUserRef,
-          {
+        const existingUser = await repositories.users.getById(user.id, companyId);
+        if (existingUser) {
+          await repositories.users.update(user.id, {
             email: user.primaryEmail,
             displayName: user.name?.fullName || '',
             companyId,
             role: user.isAdmin ? 'company-admin' : 'employee',
             googleWorkspaceId: user.id,
-            updatedAt: new Date().toISOString(),
-          },
-          { merge: true },
-        );
+            updatedAt: new Date(),
+          }, companyId);
+        } else {
+          await repositories.users.create({
+            id: user.id,
+            email: user.primaryEmail,
+            displayName: user.name?.fullName || '',
+            companyId,
+            role: user.isAdmin ? 'company-admin' : 'employee',
+            googleWorkspaceId: user.id,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+        }
 
         syncedCount++;
       }
 
-      await batch.commit();
-
       // Log sync event
-      await repository.'sync_logs').create({
+      await repositories.documents.create({
+        id: `sync_${Date.now()}`,
+        type: 'sync_log',
         companyId,
-        type: 'google_workspace',
-        usersSync: syncedCount,
+        syncType: 'google_workspace',
+        usersSynced: syncedCount,
         status: 'success',
-        syncedAt: new Date().toISOString(),
+        syncedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+
+      logger.info('Google Workspace sync completed successfully', {
+        companyId,
+        usersSynced: syncedCount
       });
 
       return syncedCount;
@@ -135,13 +156,22 @@ class GoogleWorkspaceService {
       logger.error('Google Workspace sync failed:', error);
 
       // Log failed sync
-      await repository.'sync_logs').create({
-        companyId,
-        type: 'google_workspace',
-        status: 'failed',
-        error: (error as Error).message,
-        failedAt: new Date().toISOString(),
-      });
+      try {
+        const repositories = await getRepositories();
+        await repositories.documents.create({
+          id: `sync_error_${Date.now()}`,
+          type: 'sync_log',
+          companyId,
+          syncType: 'google_workspace',
+          status: 'failed',
+          error: (error as Error).message,
+          failedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      } catch (logError) {
+        logger.error('Failed to log sync error:', logError);
+      }
 
       throw error;
     }
@@ -176,14 +206,14 @@ class GoogleWorkspaceService {
    */
   async hasIntegration(companyId: string): Promise<boolean> {
     try {
-      const companyDoc = await repository.'companies').getById(companyId).get();
+      const repositories = await getRepositories();
+      const companyDoc = await repositories.companies.getById(companyId);
 
-      if (!companyDoc.exists) {
+      if (!companyDoc) {
         return false;
       }
 
-      const data = companyDoc.data();
-      return !!data?.integrations?.googleWorkspace?.enabled;
+      return !!companyDoc?.integrations?.googleWorkspace?.enabled;
     } catch (error) {
       logger.error('Failed to check Google Workspace integration:', error);
       return false;

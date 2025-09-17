@@ -74,9 +74,25 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await repositories.documents.delete(documentId);
     logger.info('Document record deleted from database', { documentId, companyId });
 
-    // 4. Delete all document chunks (TODO: Add documentChunks repository)
-    // For now, chunks will be cleaned up by a background process
-    logger.info('Document chunks cleanup scheduled', { documentId });
+    // 4. Delete all document chunks
+    try {
+      const chunksQuery = `SELECT * FROM c WHERE c.documentId = @documentId AND c.companyId = @companyId`;
+      const chunksParameters = [
+        { name: '@documentId', value: documentId },
+        { name: '@companyId', value: companyId }
+      ];
+      
+      const { resources: chunks } = await repositories.documentChunks.query(chunksQuery, chunksParameters);
+      
+      for (const chunk of chunks) {
+        await repositories.documentChunks.delete(chunk.id, companyId);
+      }
+      
+      logger.info('Document chunks deleted', { documentId, companyId, chunksCount: chunks.length });
+    } catch (error) {
+      logger.warn('Failed to delete document chunks', { documentId, companyId, error });
+      // Continue even if chunk deletion fails
+    }
 
     const duration = Date.now() - startTime;
     

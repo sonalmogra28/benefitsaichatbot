@@ -58,25 +58,66 @@ export default function AiConfigPage() {
     },
   });
 
-  // TODO: Fetch existing settings and populate the form
+  // Load existing AI configuration
   useEffect(() => {
-    // API call to get current settings
-    // form.reset(fetchedSettings);
+    loadAIConfig();
   }, [form]);
+
+  const loadAIConfig = async () => {
+    try {
+      const response = await fetch('/api/super-admin/ai-config');
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        const config = result.data;
+        form.reset({
+          personality: config.personality,
+          tone: config.tone,
+          responseLength: config.responseLength,
+          model: config.model,
+          temperature: config.temperature,
+          maxTokens: config.maxTokens,
+          systemPrompt: config.systemPrompt,
+          enabledFeatures: config.enabledFeatures
+        });
+        logger.info('AI config loaded successfully');
+      } else {
+        logger.warn('Failed to load AI config:', result.error);
+      }
+    } catch (error) {
+      logger.error('Error loading AI config:', error);
+    }
+  };
 
   const onSubmit = async (data: AiConfigFormValues) => {
     setIsLoading(true);
     setIsSuccess(false);
     logger.info('Submitting AI config:', data);
 
-    // TODO: Implement API call in the next task
-    // await fetch('/api/super-admin/ai-config', { method: 'POST', body: JSON.stringify(data) });
+    try {
+      const response = await fetch('/api/super-admin/ai-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-    setTimeout(() => {
-      // Simulate API latency
+      const result = await response.json();
+
+      if (result.success) {
+        setIsSuccess(true);
+        logger.info('AI config saved successfully');
+      } else {
+        logger.error('Failed to save AI config:', result.error);
+        // You could add error state handling here
+      }
+    } catch (error) {
+      logger.error('Error saving AI config:', error);
+      // You could add error state handling here
+    } finally {
       setIsLoading(false);
-      setIsSuccess(true);
-    }, 1000);
+    }
   };
 
   return (

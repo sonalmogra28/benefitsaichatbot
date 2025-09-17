@@ -52,7 +52,7 @@ export async function createConversation(
 
     return newChat;
   } catch (error) {
-    logger.error('Error creating conversation', error, { userId, companyId });
+    logger.error('Error creating conversation', error as Error, { userId, companyId });
     throw new Error('Failed to create conversation');
   }
 }
@@ -84,7 +84,7 @@ export async function getConversation(
     logger.info('Conversation retrieved successfully', { chatId, userId });
     return chat as Chat;
   } catch (error) {
-    logger.error('Error getting conversation', error, { chatId, userId });
+    logger.error('Error getting conversation', error as Error, { chatId, userId });
     throw new Error('Failed to get conversation');
   }
 }
@@ -116,7 +116,7 @@ export async function getUserConversations(
 
     return limitedConversations as Chat[];
   } catch (error) {
-    logger.error('Error getting user conversations', error, { userId });
+    logger.error('Error getting user conversations', error as Error, { userId });
     throw new Error('Failed to get user conversations');
   }
 }
@@ -164,7 +164,7 @@ export async function addMessage(
 
     return newMessage;
   } catch (error) {
-    logger.error('Error adding message', error, { chatId, userId, role });
+    logger.error('Error adding message', error as Error, { chatId, userId, role });
     throw new Error('Failed to add message');
   }
 }
@@ -196,7 +196,7 @@ export async function getMessages(
 
     return limitedMessages as Message[];
   } catch (error) {
-    logger.error('Error getting messages', error, { chatId });
+    logger.error('Error getting messages', error as Error, { chatId });
     throw new Error('Failed to get messages');
   }
 }
@@ -242,7 +242,7 @@ export async function deleteConversation(
 
     return true;
   } catch (error) {
-    logger.error('Failed to delete conversation', error, { chatId, userId });
+    logger.error('Failed to delete conversation', error as Error, { chatId, userId });
     return false;
   }
 }
@@ -280,7 +280,7 @@ export async function updateConversationTitle(
 
     return true;
   } catch (error) {
-    logger.error('Failed to update conversation title', error, { chatId, userId, title });
+    logger.error('Failed to update conversation title', error as Error, { chatId, userId, title });
     return false;
   }
 }
@@ -290,14 +290,13 @@ export async function updateConversationTitle(
  */
 export async function getConversationAnalytics(companyId: string) {
   try {
-    const snapshot = await db
-      .collection('chats')
-      .where('companyId', '==', companyId)
-      .get();
-
-    const totalChats = snapshot.size;
-    const uniqueUsers = new Set(snapshot.docs.map((doc) => doc.data().userId))
-      .size;
+    const repositories = await getRepositories();
+    const query = `SELECT * FROM c WHERE c.companyId = @companyId`;
+    const parameters = [{ name: '@companyId', value: companyId }];
+    
+    const { resources: chats } = await repositories.chats.query(query, parameters);
+    const totalChats = chats.length;
+    const uniqueUsers = new Set(chats.map((chat: any) => chat.userId)).size;
 
     // Get message counts
     let totalMessages = 0;
@@ -325,5 +324,94 @@ export async function getConversationAnalytics(companyId: string) {
       totalMessages: 0,
       averageMessagesPerChat: 0,
     };
+  }
+}
+
+/**
+ * Get conversation suggestions based on user's chat history
+ */
+export async function getSuggestions(
+  userId: string,
+  companyId: string,
+  limit: number = 5
+): Promise<string[]> {
+  try {
+    const repositories = await getRepositories();
+    const chatsRepository = repositories.chats;
+
+    // Get user's recent conversations
+    const query = `SELECT * FROM c WHERE c.userId = @userId AND c.companyId = @companyId ORDER BY c.updatedAt DESC`;
+    const parameters = [
+      { name: '@userId', value: userId },
+      { name: '@companyId', value: companyId }
+    ];
+    
+    const { resources: chats } = await chatsRepository.query(query, parameters);
+
+    // Generate suggestions based on common patterns
+    const suggestions: string[] = [];
+
+    // Common benefits questions
+    const commonQuestions = [
+      "What health insurance plans are available?",
+      "How do I enroll in dental coverage?",
+      "What is the 401k matching policy?",
+      "When is open enrollment?",
+      "How do I add a dependent?",
+      "What is the HSA contribution limit?",
+      "How do I change my benefits?",
+      "What is covered under vision insurance?",
+      "How do I find a doctor in my network?",
+      "What is the deductible for my plan?"
+    ];
+
+    // Add some common questions
+    suggestions.push(...commonQuestions.slice(0, limit));
+
+    // If user has chat history, add personalized suggestions
+    if (chats.length > 0) {
+      // Add suggestions based on recent chat titles
+      const recentTitles = chats.slice(0, 3).map(chat => chat.title);
+      const personalizedSuggestions = recentTitles.map(title => 
+        `Tell me more about ${title.toLowerCase()}`
+      );
+      suggestions.push(...personalizedSuggestions);
+    }
+
+    // Add company-specific suggestions
+    const companySuggestions = [
+      "What are the company's wellness programs?",
+      "How do I access my benefits portal?",
+      "What is the employee assistance program?",
+      "How do I submit a benefits claim?",
+      "What is the company's retirement plan?"
+    ];
+
+    suggestions.push(...companySuggestions);
+
+    // Remove duplicates and limit results
+    const uniqueSuggestions = [...new Set(suggestions)].slice(0, limit);
+
+    logger.info('Conversation suggestions generated', {
+      userId,
+      companyId,
+      suggestionCount: uniqueSuggestions.length
+    });
+
+    return uniqueSuggestions;
+  } catch (error) {
+    logger.error('Error generating conversation suggestions', error as Error, {
+      userId,
+      companyId
+    });
+    
+    // Return fallback suggestions
+    return [
+      "What health insurance plans are available?",
+      "How do I enroll in dental coverage?",
+      "What is the 401k matching policy?",
+      "When is open enrollment?",
+      "How do I add a dependent?"
+    ].slice(0, limit);
   }
 }

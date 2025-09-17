@@ -1,6 +1,8 @@
 import { amerivetBenefits2024_2025, getPlansByRegion, getPlanById, calculatePremium, isEligibleForPlan } from '@/lib/data/amerivet-benefits-2024-2025';
 import { BenefitPlan, OpenEnrollment, EligibilityRules } from '@/lib/data/amerivet-benefits-2024-2025';
+import { getRepositories } from '@/lib/azure/cosmos';
 import { logger } from '@/lib/logging/logger';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface BenefitsQuery {
   region?: string;
@@ -33,6 +35,139 @@ export interface PremiumCalculation {
 }
 
 export class BenefitsService {
+  private benefitsRepository: any;
+
+  constructor() {
+    this.initializeRepository();
+  }
+
+  private async initializeRepository() {
+    const repositories = await getRepositories();
+    this.benefitsRepository = repositories.benefits;
+  }
+
+  /**
+   * Create a new benefit plan
+   */
+  async createBenefitPlan(planData: Omit<BenefitPlan, 'id'>, companyId: string): Promise<BenefitPlan> {
+    try {
+      await this.initializeRepository();
+      
+      const plan: BenefitPlan = {
+        id: uuidv4(),
+        ...planData,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      await this.benefitsRepository.create({
+        ...plan,
+        companyId,
+        type: 'benefit_plan'
+      });
+
+      logger.info('Benefit plan created successfully', {
+        planId: plan.id,
+        companyId,
+        planName: plan.name
+      });
+
+      return plan;
+    } catch (error) {
+      logger.error('Failed to create benefit plan', error, {
+        companyId,
+        planName: planData.name
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing benefit plan
+   */
+  async updateBenefitPlan(planId: string, companyId: string, updates: Partial<BenefitPlan>): Promise<BenefitPlan> {
+    try {
+      await this.initializeRepository();
+      
+      const existingPlan = await this.benefitsRepository.getById(planId, companyId);
+      if (!existingPlan) {
+        throw new Error('Benefit plan not found');
+      }
+
+      const updatedPlan = {
+        ...existingPlan,
+        ...updates,
+        id: planId, // Ensure ID doesn't change
+        updatedAt: new Date()
+      };
+
+      await this.benefitsRepository.update(planId, updatedPlan, companyId);
+
+      logger.info('Benefit plan updated successfully', {
+        planId,
+        companyId,
+        updateFields: Object.keys(updates)
+      });
+
+      return updatedPlan;
+    } catch (error) {
+      logger.error('Failed to update benefit plan', error, {
+        planId,
+        companyId,
+        updates
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a benefit plan
+   */
+  async deleteBenefitPlan(planId: string, companyId: string): Promise<void> {
+    try {
+      await this.initializeRepository();
+      
+      await this.benefitsRepository.delete(planId, companyId);
+
+      logger.info('Benefit plan deleted successfully', {
+        planId,
+        companyId
+      });
+    } catch (error) {
+      logger.error('Failed to delete benefit plan', error, {
+        planId,
+        companyId
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get benefit plans for a company
+   */
+  async getCompanyBenefitPlans(companyId: string): Promise<BenefitPlan[]> {
+    try {
+      await this.initializeRepository();
+      
+      const query = `SELECT * FROM c WHERE c.companyId = @companyId AND c.type = 'benefit_plan' ORDER BY c.createdAt DESC`;
+      const parameters = [{ name: '@companyId', value: companyId }];
+      
+      const { resources } = await this.benefitsRepository.query(query, parameters);
+
+      logger.info('Company benefit plans retrieved', {
+        companyId,
+        planCount: resources.length
+      });
+
+      return resources;
+    } catch (error) {
+      logger.error('Failed to get company benefit plans', error, {
+        companyId
+      });
+      throw error;
+    }
+  }
+
   /**
    * Get all available plans based on query criteria
    */

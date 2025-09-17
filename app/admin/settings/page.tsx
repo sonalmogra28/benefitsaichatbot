@@ -69,14 +69,56 @@ export default function AdminSettingsPage() {
           !idTokenResult.claims.super_admin
         ) {
           router.push('/');
+        } else {
+          // Load settings when user is authenticated
+          loadSettings();
         }
       });
     }
   }, [account, loading, router]);
 
+  const loadSettings = async () => {
+    try {
+      const response = await fetch('/api/admin/settings');
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        setSettings(result.data);
+        logger.info('Settings loaded successfully');
+      } else {
+        logger.warn('No settings found, using defaults');
+      }
+    } catch (error) {
+      logger.error('Failed to load settings:', error);
+    }
+  };
+
   const handleSave = async (section: string) => {
-    logger.info(`Saving ${section} settings:`, settings);
-    // TODO: Implement save functionality
+    try {
+      logger.info(`Saving ${section} settings:`, settings);
+      
+      const response = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        logger.info(`${section} settings saved successfully`);
+        // You could add a toast notification here
+        alert(`${section} settings saved successfully!`);
+      } else {
+        logger.error(`Failed to save ${section} settings:`, result.error);
+        alert(`Failed to save ${section} settings: ${result.error}`);
+      }
+    } catch (error) {
+      logger.error(`Error saving ${section} settings:`, error);
+      alert(`Error saving ${section} settings: ${error.message}`);
+    }
   };
 
   if (loading) {

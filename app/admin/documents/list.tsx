@@ -37,10 +37,35 @@ export default function AdminDocumentListPage() {
     if (!loading && !account) {
       router.push('/login');
     } else if (account) {
-      // TODO: Check user roles for admin access
-      fetchDocuments();
+      checkAdminAccess();
     }
   }, [account, loading, router]);
+
+  const checkAdminAccess = async () => {
+    try {
+      const idTokenResult = await account?.getIdTokenResult();
+      const claims = idTokenResult?.claims;
+      
+      if (!claims?.platform_admin && !claims?.super_admin) {
+        logger.warn('Unauthorized access attempt to admin documents', {
+          userId: account?.uid,
+          claims
+        });
+        router.push('/');
+        return;
+      }
+      
+      logger.info('Admin access verified for documents list', {
+        userId: account?.uid,
+        role: claims?.platform_admin ? 'platform_admin' : 'super_admin'
+      });
+      
+      fetchDocuments();
+    } catch (error) {
+      logger.error('Error checking admin access', { error });
+      router.push('/');
+    }
+  };
 
   const fetchDocuments = async () => {
     try {

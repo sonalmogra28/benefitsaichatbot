@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useScrollToBottom } from './use-scroll-to-bottom';
 
-// TODO: Fix these type errors
+export interface UseMessagesProps {
+  chatId: string;
+  status: 'idle' | 'submitted' | 'loading' | 'error';
+}
 
 export function useMessages({
   chatId,
   status,
-}: {
-  chatId: string;
-  status: any;
-}) {
+}: UseMessagesProps) {
   const {
     containerRef,
     endRef,

@@ -4,6 +4,7 @@ import { rateLimiters } from '@/lib/middleware/rate-limit';
 import { logger } from '@/lib/logging/logger';
 import { getRepositories } from '@/lib/azure/cosmos';
 import { getStorageServices } from '@/lib/azure/storage';
+import { documentProcessingService } from '@/lib/services/document-processing.service';
 import { z } from 'zod';
 
 // Schema for upload metadata
@@ -135,7 +136,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Trigger document processing (async)
     try {
-      // TODO: Implement document processing trigger
+      await documentProcessingService.triggerDocumentProcessing(documentId, companyId);
       logger.info('Document processing triggered', { documentId, companyId });
     } catch (error) {
       logger.warn('Failed to trigger document processing', { documentId, error });

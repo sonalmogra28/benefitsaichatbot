@@ -46,9 +46,22 @@ export function SuperAdminDashboard() {
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
   useEffect(() => {
-    // TODO: Fetch actual stats from Firebase
     fetchDashboardStats();
   }, []);
+
+  const setDefaultStats = () => {
+    setStats({
+      totalUsers: 0,
+      totalDocuments: 0,
+      totalBenefitPlans: 0,
+      activeEnrollments: 0,
+      activeChats: 0,
+      monthlyGrowth: 0,
+      systemHealth: 'degraded',
+      apiUsage: 0,
+      storageUsed: 0,
+    });
+  };
 
   const fetchDashboardStats = async () => {
     try {
@@ -71,22 +84,16 @@ export function SuperAdminDashboard() {
       });
 
       if (statsResponse.ok) {
-        const statsData = (await statsResponse.json()) as SuperAdminStats;
-        setStats((prev) => ({ ...prev, ...statsData }));
+        const response = await statsResponse.json();
+        if (response.success && response.data) {
+          setStats((prev) => ({ ...prev, ...response.data }));
+        } else {
+          logger.error('Invalid stats response format:', response);
+          setDefaultStats();
+        }
       } else {
         logger.error('Failed to fetch stats:', statsResponse.statusText);
-        // Set default values on error
-        setStats({
-          totalUsers: 0,
-          totalDocuments: 0,
-          totalBenefitPlans: 0,
-          activeEnrollments: 0,
-          activeChats: 0,
-          monthlyGrowth: 0,
-          systemHealth: 'degraded',
-          apiUsage: 0,
-          storageUsed: 0,
-        });
+        setDefaultStats();
       }
 
       // Fetch recent activity

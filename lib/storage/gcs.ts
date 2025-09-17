@@ -1,5 +1,6 @@
 // lib/storage/gcs.ts
 import { Storage } from '@google-cloud/storage';
+import { logger } from '@/lib/logging/logger';
 
 // Prioritize GCS_BUCKET_NAME for explicit override, but fall back to the public Firebase one.
 const bucketName =

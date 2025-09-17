@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { protectAdminEndpoint } from '@/lib/middleware/auth';
 import { rateLimiters } from '@/lib/middleware/rate-limit';
 import { logger } from '@/lib/logging/logger';
-import { getRepositories } from '@/lib/azure/cosmos';
+import { faqService } from '@/lib/services/faq.service';
 import { z } from 'zod';
 
 const updateFaqSchema = z.object({
@@ -53,18 +53,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       faqId
     });
 
-    // TODO: Implement FAQ repository
-    // For now, return a placeholder response
-    logger.warn('FAQ functionality not yet implemented', {
-      userId: user.id,
-      companyId,
-      faqId
-    });
+    const faq = await faqService.getFAQById(faqId, companyId);
+    
+    if (!faq) {
+      return NextResponse.json(
+        { success: false, error: 'FAQ not found' },
+        { status: 404 }
+      );
+    }
 
-    return NextResponse.json(
-      { success: false, error: 'FAQ functionality not yet implemented' },
-      { status: 501 }
-    );
+    return NextResponse.json({
+      success: true,
+      data: faq
+    });
   } catch (error) {
     const duration = Date.now() - startTime;
     
@@ -122,17 +123,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       updateFields: Object.keys(validatedData)
     });
 
-    // TODO: Implement FAQ repository
-    logger.warn('FAQ functionality not yet implemented', {
-      userId: user.id,
-      companyId,
-      faqId
-    });
+    const updatedFAQ = await faqService.updateFAQ(faqId, companyId, validatedData);
 
-    return NextResponse.json(
-      { success: false, error: 'FAQ functionality not yet implemented' },
-      { status: 501 }
-    );
+    return NextResponse.json({
+      success: true,
+      data: updatedFAQ
+    });
   } catch (error) {
     const duration = Date.now() - startTime;
     
@@ -197,17 +193,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       faqId
     });
 
-    // TODO: Implement FAQ repository
-    logger.warn('FAQ functionality not yet implemented', {
-      userId: user.id,
-      companyId,
-      faqId
-    });
+    await faqService.deleteFAQ(faqId, companyId);
 
-    return NextResponse.json(
-      { success: false, error: 'FAQ functionality not yet implemented' },
-      { status: 501 }
-    );
+    return NextResponse.json({
+      success: true,
+      message: 'FAQ deleted successfully'
+    });
   } catch (error) {
     const duration = Date.now() - startTime;
     

@@ -3,6 +3,8 @@ import { protectAdminEndpoint, extractUserContext } from '@/lib/middleware/auth'
 import { analyticsService } from '@/lib/services/analytics.service';
 import { rateLimiters } from '@/lib/middleware/rate-limit';
 import { logger } from '@/lib/logging/logger';
+import { CSVExporter } from '@/lib/utils/csv-export';
+import { ExcelExporter } from '@/lib/utils/excel-export';
 import { z } from 'zod';
 
 // Schema for query parameters
@@ -246,16 +248,31 @@ export async function POST(request: NextRequest) {
       format
     });
 
-    // For now, just return JSON. In the future, could support CSV, PDF, etc.
+    // Handle CSV export
     if (format === 'csv') {
-      // TODO: Implement CSV export
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'CSV export not yet implemented',
-        },
-        { status: 501 }
-      );
+      const csvContent = CSVExporter.analyticsToCSV(exportData);
+      const filename = `analytics-export-${companyId}-${new Date().toISOString().split('T')[0]}.csv`;
+      const { headers } = CSVExporter.createDownloadableCSV(csvContent, filename);
+      
+      return new NextResponse(csvContent, {
+        status: 200,
+        headers: {
+          ...headers,
+          'Content-Length': Buffer.byteLength(csvContent, 'utf8').toString()
+        }
+      });
+    }
+
+    // Handle Excel export
+    if (format === 'excel') {
+      const excelBuffer = ExcelExporter.analyticsToExcel(exportData);
+      const filename = `analytics-export-${companyId}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      const { headers } = ExcelExporter.createDownloadableExcel(excelBuffer, filename);
+      
+      return new NextResponse(excelBuffer, {
+        status: 200,
+        headers
+      });
     }
 
     return NextResponse.json({

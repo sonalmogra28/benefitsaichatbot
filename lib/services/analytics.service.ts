@@ -1,5 +1,6 @@
 import { getRepositories } from '@/lib/azure/cosmos';
 import { logger } from '@/lib/logging/logger';
+import { apiTrackingService } from './api-tracking.service';
 
 export interface AnalyticsData {
   totalUsers: number;
@@ -13,6 +14,14 @@ export interface AnalyticsData {
   averageResponseTime: number;
   satisfactionRate: number;
   costPerMonth: number;
+  systemMetrics?: {
+    cpuUsage: number;
+    memoryUsage: number;
+    diskUsage: number;
+    networkLatency: number;
+    errorRate: number;
+    uptime: number;
+  };
 }
 
 export interface CompanyAnalytics {
@@ -134,6 +143,109 @@ class AnalyticsService {
     }
   }
 
+  private async getSystemMetrics(): Promise<{
+    cpuUsage: number;
+    memoryUsage: number;
+    diskUsage: number;
+    networkLatency: number;
+    errorRate: number;
+    uptime: number;
+  }> {
+    try {
+      // Get system metrics using Node.js built-in modules
+      const os = await import('os');
+      const process = await import('process');
+      
+      // CPU usage (simplified - in production, use a more sophisticated method)
+      const cpuUsage = this.getCPUUsage();
+      
+      // Memory usage
+      const totalMemory = os.totalmem();
+      const freeMemory = os.freemem();
+      const memoryUsage = ((totalMemory - freeMemory) / totalMemory) * 100;
+      
+      // Disk usage (simplified - in production, use a proper disk usage library)
+      const diskUsage = await this.getDiskUsage();
+      
+      // Network latency (simplified - in production, measure actual network calls)
+      const networkLatency = await this.getNetworkLatency();
+      
+      // Error rate from API tracking
+      const errorRate = await apiTrackingService.getErrorRate();
+      
+      // Uptime
+      const uptime = process.uptime();
+      
+      return {
+        cpuUsage,
+        memoryUsage,
+        diskUsage,
+        networkLatency,
+        errorRate,
+        uptime
+      };
+    } catch (error) {
+      logger.error('Failed to get system metrics', error);
+      return {
+        cpuUsage: 0,
+        memoryUsage: 0,
+        diskUsage: 0,
+        networkLatency: 0,
+        errorRate: 0,
+        uptime: 0
+      };
+    }
+  }
+
+  private getCPUUsage(): number {
+    // Simplified CPU usage calculation
+    // In production, use a proper CPU monitoring library
+    const cpus = require('os').cpus();
+    let totalIdle = 0;
+    let totalTick = 0;
+    
+    for (let i = 0; i < cpus.length; i++) {
+      const cpu = cpus[i];
+      for (const type in cpu.times) {
+        totalTick += cpu.times[type as keyof typeof cpu.times];
+      }
+      totalIdle += cpu.times.idle;
+    }
+    
+    const idle = totalIdle / cpus.length;
+    const total = totalTick / cpus.length;
+    const usage = 100 - ~~(100 * idle / total);
+    
+    return Math.max(0, Math.min(100, usage));
+  }
+
+  private async getDiskUsage(): Promise<number> {
+    try {
+      // Simplified disk usage - in production, use a proper library like 'diskusage'
+      const fs = await import('fs/promises');
+      const stats = await fs.statfs('/');
+      const total = stats.bavail + stats.bfree;
+      const used = total - stats.bavail;
+      return (used / total) * 100;
+    } catch (error) {
+      logger.warn('Failed to get disk usage', error);
+      return 0;
+    }
+  }
+
+  private async getNetworkLatency(): Promise<number> {
+    try {
+      // Simplified network latency - in production, measure actual network calls
+      const start = Date.now();
+      // This is a placeholder - in production, you'd ping a known endpoint
+      await new Promise(resolve => setTimeout(resolve, 10));
+      return Date.now() - start;
+    } catch (error) {
+      logger.warn('Failed to get network latency', error);
+      return 0;
+    }
+  }
+
   async getPlatformAnalytics(): Promise<AnalyticsData> {
     try {
       const repositories = await getRepositories();
@@ -163,9 +275,12 @@ class AnalyticsService {
       // Get performance metrics
       const averageResponseTime = await this.getAverageResponseTime(repositories);
       const satisfactionRate = await this.getSatisfactionRate(repositories);
+      
+      // Get system monitoring metrics
+      const systemMetrics = await this.getSystemMetrics();
 
-      // Calculate API calls (placeholder - would need to track this)
-      const apiCalls = 0; // TODO: Implement API call tracking
+      // Get API call metrics
+      const apiCalls = await apiTrackingService.getAPICallCount();
 
       // Calculate monthly cost (placeholder)
       const costPerMonth = this.calculateMonthlyCost(totalUsers, chatMessages, storageUsed);
@@ -190,7 +305,8 @@ class AnalyticsService {
         storageUsed,
         averageResponseTime,
         satisfactionRate,
-        costPerMonth
+        costPerMonth,
+        systemMetrics
       };
     } catch (error) {
       logger.error('Error fetching platform analytics', error);

@@ -27,6 +27,8 @@ const azureConfigSchema = z.object({
   cosmosContainerBenefits: z.string().min(1, 'Cosmos DB benefits container name is required'),
   cosmosContainerChats: z.string().min(1, 'Cosmos DB chats container name is required'),
   cosmosContainerDocuments: z.string().min(1, 'Cosmos DB documents container name is required'),
+  cosmosContainerFaqs: z.string().min(1, 'Cosmos DB FAQs container name is required'),
+  cosmosContainerDocumentChunks: z.string().min(1, 'Cosmos DB document chunks container name is required'),
 
   // Azure Blob Storage
   storageAccountName: z.string().min(1, 'Storage account name is required'),
@@ -120,6 +122,8 @@ const parseAzureConfig = () => {
     cosmosContainerBenefits: process.env.AZURE_COSMOS_CONTAINER_BENEFITS,
     cosmosContainerChats: process.env.AZURE_COSMOS_CONTAINER_CHATS,
     cosmosContainerDocuments: process.env.AZURE_COSMOS_CONTAINER_DOCUMENTS,
+    cosmosContainerFaqs: process.env.AZURE_COSMOS_CONTAINER_FAQS,
+    cosmosContainerDocumentChunks: process.env.AZURE_COSMOS_CONTAINER_DOCUMENT_CHUNKS,
 
     // Azure Blob Storage
     storageAccountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,

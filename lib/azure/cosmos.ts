@@ -16,6 +16,10 @@ let containers: {
   benefits: Container;
   chats: Container;
   documents: Container;
+  faqs: Container;
+  documentChunks: Container;
+  messages: Container;
+  notifications: Container;
 };
 
 // Initialize database and containers
@@ -80,6 +84,58 @@ export const initializeCosmosDb = async () => {
       documents: await database.containers.createIfNotExists({
         id: azureConfig.cosmosContainerDocuments,
         partitionKey: '/companyId',
+        indexingPolicy: {
+          includedPaths: [
+            { path: '/*' }
+          ],
+          excludedPaths: [
+            { path: '/"_etag"/?' }
+          ]
+        }
+      }).then(result => result.container),
+      
+      faqs: await database.containers.createIfNotExists({
+        id: azureConfig.cosmosContainerFaqs,
+        partitionKey: '/companyId',
+        indexingPolicy: {
+          includedPaths: [
+            { path: '/*' }
+          ],
+          excludedPaths: [
+            { path: '/"_etag"/?' }
+          ]
+        }
+      }).then(result => result.container),
+      
+      documentChunks: await database.containers.createIfNotExists({
+        id: azureConfig.cosmosContainerDocumentChunks,
+        partitionKey: '/companyId',
+        indexingPolicy: {
+          includedPaths: [
+            { path: '/*' }
+          ],
+          excludedPaths: [
+            { path: '/"_etag"/?' }
+          ]
+        }
+      }).then(result => result.container),
+      
+      messages: await database.containers.createIfNotExists({
+        id: 'messages',
+        partitionKey: '/chatId',
+        indexingPolicy: {
+          includedPaths: [
+            { path: '/*' }
+          ],
+          excludedPaths: [
+            { path: '/"_etag"/?' }
+          ]
+        }
+      }).then(result => result.container),
+      
+      notifications: await database.containers.createIfNotExists({
+        id: 'notifications',
+        partitionKey: '/userId',
         indexingPolicy: {
           includedPaths: [
             { path: '/*' }
@@ -262,6 +318,10 @@ let repositories: {
   benefits: CosmosRepository<any>;
   chats: CosmosRepository<any>;
   documents: CosmosRepository<any>;
+  faqs: CosmosRepository<any>;
+  documentChunks: CosmosRepository<any>;
+  messages: CosmosRepository<any>;
+  notifications: CosmosRepository<any>;
 };
 
 export const getRepositories = async () => {
@@ -273,6 +333,10 @@ export const getRepositories = async () => {
       benefits: new CosmosRepository(containers.benefits),
       chats: new CosmosRepository(containers.chats),
       documents: new CosmosRepository(containers.documents),
+      faqs: new CosmosRepository(containers.faqs),
+      documentChunks: new CosmosRepository(containers.documentChunks),
+      messages: new CosmosRepository(containers.messages),
+      notifications: new CosmosRepository(containers.notifications),
     };
   }
   return repositories;

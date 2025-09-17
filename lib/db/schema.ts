@@ -32,6 +32,9 @@ export interface User extends DocumentBase {
   department?: string;
   hireDate?: Timestamp | Date;
   location?: string;
+  isActive?: boolean; // Whether the user account is active
+  enrollmentStatus?: 'not_enrolled' | 'enrolled' | 'pending' | 'cancelled'; // Benefits enrollment status
+  companyId?: string; // Company the user belongs to
 }
 
 // Benefit Plan Schema
@@ -102,4 +105,33 @@ export interface SearchResult {
   chunkId: string;
   content: string;
   score: number;
+}
+
+// FAQ Schema
+export interface FAQ extends DocumentBase {
+  question: string;
+  answer: string;
+  category?: string;
+  tags?: string[];
+  isPublic: boolean;
+  priority: 'low' | 'medium' | 'high';
+  companyId: string;
+  createdBy: string; // User ID who created the FAQ
+  viewCount?: number;
+  helpfulCount?: number;
+  notHelpfulCount?: number;
+}
+
+// Document Chunk Schema for RAG
+export interface DocumentChunk extends DocumentBase {
+  content: string;
+  documentId: string;
+  chunkIndex: number;
+  embedding?: number[];
+  metadata?: {
+    startIndex: number;
+    endIndex: number;
+    [key: string]: any;
+  };
+  companyId: string;
 }

@@ -1,8 +1,5 @@
-
-
-
-// This service was for Stack Auth integration, now replaced with Firebase Auth
-// Keeping minimal functionality for migration compatibility
+import { getRepositories } from '@/lib/azure/cosmos';
+import { logger } from '@/lib/logging/logger';
 
 export interface Organization {
   id: string;
@@ -10,13 +7,13 @@ export interface Organization {
   domain?: string;
   slug?: string;
   metadata?: Record<string, any>;
-  createdAt: any;
-  updatedAt: any;
+  createdAt: string;
+  updatedAt: string;
 }
 
-class StackOrgService {
+export class StackOrgService {
   /**
-   * Create an organization (company)
+   * Create a new organization
    */
   async createOrganization(data: {
     name: string;
@@ -25,20 +22,24 @@ class StackOrgService {
     metadata?: Record<string, any>;
   }): Promise<Organization> {
     try {
-      const orgRef = repository.'organizations').getById();
+      const repositories = await getRepositories();
+      const orgId = `org_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
       const organization = {
-        id: orgRef.id,
+        id: orgId,
         ...data,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
-      await orgRef.create(organization);
+      await repositories.documents.create({
+        ...organization,
+        type: 'organization'
+      });
 
       // Also create in companies collection for compatibility
-      await repository.'companies').getById(orgRef.id).create({
-        id: orgRef.id,
+      await repositories.companies.create({
+        id: orgId,
         name: data.name,
         domain: data.domain,
         slug: data.slug,
@@ -47,11 +48,12 @@ class StackOrgService {
         updatedAt: new Date().toISOString(),
       });
 
-      return {
-        ...organization,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      logger.info('Organization created successfully', {
+        orgId,
+        name: data.name
+      });
+
+      return organization;
     } catch (error) {
       logger.error('Failed to create organization:', error);
       throw error;
@@ -63,22 +65,21 @@ class StackOrgService {
    */
   async getOrganization(orgId: string): Promise<Organization | null> {
     try {
+      const repositories = await getRepositories();
+      
       // Try organizations collection first
-      let doc = await repository.'organizations').getById(orgId).get();
+      let doc = await repositories.documents.getById(orgId, 'organizations');
 
-      if (!doc.exists) {
+      if (!doc) {
         // Fall back to companies collection
-        doc = await repository.'companies').getById(orgId).get();
+        doc = await repositories.companies.getById(orgId, 'organizations');
       }
 
-      if (!doc.exists) {
+      if (!doc) {
         return null;
       }
 
-      return {
-        id: doc.id,
-        ...doc.data(),
-      } as Organization;
+      return doc as Organization;
     } catch (error) {
       logger.error('Failed to get organization:', error);
       return null;
@@ -90,77 +91,76 @@ class StackOrgService {
    */
   async updateOrganization(
     orgId: string,
-    updates: Partial<Organization>,
-  ): Promise<boolean> {
+    updateData: Partial<Organization>
+  ): Promise<Organization | null> {
     try {
-      const updateData = {
-        ...updates,
+      const repositories = await getRepositories();
+      
+      const existingOrg = await this.getOrganization(orgId);
+      if (!existingOrg) {
+        return null;
+      }
+
+      const updatedOrg = {
+        ...existingOrg,
+        ...updateData,
+        id: orgId, // Ensure ID doesn't change
         updatedAt: new Date().toISOString(),
       };
 
-      // Update both collections for compatibility
-      const batch = db.batch();
+      // Update in both collections
+      await repositories.documents.update(orgId, updatedOrg, 'organizations');
+      await repositories.companies.update(orgId, {
+        name: updatedOrg.name,
+        domain: updatedOrg.domain,
+        slug: updatedOrg.slug,
+        metadata: updatedOrg.metadata,
+        updatedAt: updatedOrg.updatedAt,
+      }, 'organizations');
 
-      batch.update(repository.'organizations').getById(orgId), updateData);
-      batch.update(repository.'companies').getById(orgId), updateData);
+      logger.info('Organization updated successfully', {
+        orgId,
+        updateFields: Object.keys(updateData)
+      });
 
-      await batch.commit();
-
-      return true;
+      return updatedOrg;
     } catch (error) {
       logger.error('Failed to update organization:', error);
-      return false;
+      throw error;
     }
   }
 
   /**
    * Delete organization
    */
-  async deleteOrganization(orgId: string): Promise<boolean> {
+  async deleteOrganization(orgId: string): Promise<void> {
     try {
-      const batch = db.batch();
-
+      const repositories = await getRepositories();
+      
       // Delete from both collections
-      batch.delete(repository.'organizations').getById(orgId));
-      batch.delete(repository.'companies').getById(orgId));
+      await repositories.documents.delete(orgId, 'organizations');
+      await repositories.companies.delete(orgId, 'organizations');
 
-      // Also delete associated users
-      const usersSnapshot = await db
-        .collection('users')
-        .query('companyId', '==', orgId)
-        .get();
-
-      usersSnapshot.docs.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
-
-      await batch.commit();
-
-      return true;
+      logger.info('Organization deleted successfully', { orgId });
     } catch (error) {
       logger.error('Failed to delete organization:', error);
-      return false;
+      throw error;
     }
   }
 
   /**
-   * List organizations
+   * List all organizations
    */
-  async listOrganizations(limit = 100): Promise<Organization[]> {
+  async listOrganizations(limit: number = 50): Promise<Organization[]> {
     try {
-      const snapshot = await db
-        .collection('companies')
-        .query('createdAt', 'desc')
-        .query(limit)
-        .get();
+      const repositories = await getRepositories();
+      
+      const query = `SELECT * FROM c WHERE c.type = 'organization' ORDER BY c.createdAt DESC`;
+      const parameters = [];
+      
+      const { resources } = await repositories.documents.query(query, parameters);
 
-      return snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-          }) as Organization,
-      );
+      return resources.slice(0, limit);
     } catch (error) {
       logger.error('Failed to list organizations:', error);
       return [];
@@ -172,21 +172,14 @@ class StackOrgService {
    */
   async getOrganizationByDomain(domain: string): Promise<Organization | null> {
     try {
-      const snapshot = await db
-        .collection('companies')
-        .query('domain', '==', domain)
-        .query(1)
-        .get();
+      const repositories = await getRepositories();
+      
+      const query = `SELECT * FROM c WHERE c.domain = @domain AND c.type = 'organization'`;
+      const parameters = [{ name: '@domain', value: domain }];
+      
+      const { resources } = await repositories.documents.query(query, parameters);
 
-      if (snapshot.empty) {
-        return null;
-      }
-
-      const doc = snapshot.docs[0];
-      return {
-        id: doc.id,
-        ...doc.data(),
-      } as Organization;
+      return resources[0] || null;
     } catch (error) {
       logger.error('Failed to get organization by domain:', error);
       return null;
@@ -194,92 +187,24 @@ class StackOrgService {
   }
 
   /**
-   * Get organization users
+   * Get organization by slug
    */
-  async getOrganizationUsers(orgId: string) {
+  async getOrganizationBySlug(slug: string): Promise<Organization | null> {
     try {
-      const snapshot = await db
-        .collection('users')
-        .query('companyId', '==', orgId)
-        .get();
+      const repositories = await getRepositories();
+      
+      const query = `SELECT * FROM c WHERE c.slug = @slug AND c.type = 'organization'`;
+      const parameters = [{ name: '@slug', value: slug }];
+      
+      const { resources } = await repositories.documents.query(query, parameters);
 
-      return snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      return resources[0] || null;
     } catch (error) {
-      logger.error('Failed to get organization users:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Add user to organization
-   */
-  async addUserToOrganization(
-    userId: string,
-    orgId: string,
-    role = 'employee',
-  ): Promise<boolean> {
-    try {
-      await repository.'users').getById(userId).update({
-        companyId: orgId,
-        organizationId: orgId, // For backward compatibility
-        role,
-        updatedAt: new Date().toISOString(),
-      });
-
-      return true;
-    } catch (error) {
-      logger.error('Failed to add user to organization:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Remove user from organization
-   */
-  async removeUserFromOrganization(userId: string): Promise<boolean> {
-    try {
-      await repository.'users').getById(userId).update({
-        companyId: null,
-        organizationId: null,
-        role: 'employee',
-        updatedAt: new Date().toISOString(),
-      });
-
-      return true;
-    } catch (error) {
-      logger.error('Failed to remove user from organization:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Get organization statistics
-   */
-  async getOrganizationStats(orgId: string) {
-    try {
-      const [usersSnapshot, docsSnapshot, chatsSnapshot] = await Promise.all([
-        repository.'users').query('companyId', '==', orgId).get(),
-        repository.'documents').query('companyId', '==', orgId).get(),
-        repository.'chats').query('companyId', '==', orgId).get(),
-      ]);
-
-      return {
-        totalUsers: usersSnapshot.size,
-        totalDocuments: docsSnapshot.size,
-        totalChats: chatsSnapshot.size,
-      };
-    } catch (error) {
-      logger.error('Failed to get organization stats:', error);
-      return {
-        totalUsers: 0,
-        totalDocuments: 0,
-        totalChats: 0,
-      };
+      logger.error('Failed to get organization by slug:', error);
+      return null;
     }
   }
 }
 
+// Export singleton instance
 export const stackOrgService = new StackOrgService();

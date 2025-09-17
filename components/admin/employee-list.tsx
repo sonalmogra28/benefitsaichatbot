@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { emailService } from '@/lib/services/email.service';
 import {
   Search,
   MoreHorizontal,
@@ -180,11 +181,34 @@ export function EmployeeList({
           `/api/company-admin/employees?companyId=${companyId}&search=${searchQuery}&role=${filterRole}&status=${filterStatus}`,
         );
       } else if (action === 'send-email') {
-        // TODO: Implement email sending
-        toast({
-          title: 'Feature Coming Soon',
-          description: 'Email functionality will be available soon',
-        });
+        try {
+          const response = await fetch('/api/admin/send-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              employeeId: employeeId,
+              type: 'welcome',
+              companyId
+            }),
+          });
+
+          if (response.ok) {
+            toast({
+              title: 'Email Sent',
+              description: 'Welcome email has been sent to the employee',
+            });
+          } else {
+            throw new Error('Failed to send email');
+          }
+        } catch (error) {
+          toast({
+            title: 'Error',
+            description: 'Failed to send email to employee',
+            variant: 'destructive',
+          });
+        }
       }
     } catch (error) {
       toast({
@@ -206,11 +230,34 @@ export function EmployeeList({
     }
 
     try {
-      // TODO: Implement bulk actions via API
-      toast({
-        title: 'Feature Coming Soon',
-        description: `Bulk ${action} will be available soon`,
+      const response = await fetch('/api/admin/bulk-actions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action,
+          employeeIds: selectedEmployees,
+          companyId
+        }),
       });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: 'Bulk Action Completed',
+          description: `${result.results.success} employees processed successfully. ${result.results.failed} failed.`,
+        });
+        
+        // Refresh the data
+        mutate(
+          `/api/company-admin/employees?companyId=${companyId}&search=${searchQuery}&role=${filterRole}&status=${filterStatus}`
+        );
+      } else {
+        throw new Error(result.error || 'Bulk action failed');
+      }
+      
       setSelectedEmployees([]);
     } catch (error) {
       toast({

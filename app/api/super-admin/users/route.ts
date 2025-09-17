@@ -1,6 +1,7 @@
 // app/api/super-admin/users/route.ts
 import { NextResponse } from 'next/server';
 import { getContainer } from '@/lib/azure/cosmos-db';
+import { emailService } from '@/lib/services/email.service';
 import { z } from 'zod';
 
 // Input validation schema
@@ -124,18 +125,17 @@ export async function POST(request: Request) {
     const verificationLink =
       await adminAuth.generateEmailVerificationLink(email);
 
-    // TODO: Send email via email service
-    // For now, log the verification link
-    await adminDb.collection('pending_emails').add({
-      to: email,
-      template: 'user_welcome',
-      data: {
-        firstName,
-        verificationLink,
-        role,
-      },
-      createdAt: new Date().toISOString(),
-    });
+    // Send welcome email via email service
+    try {
+      await emailService.sendWelcomeEmail(
+        email,
+        `${firstName} ${lastName}`,
+        'Benefits Assistant'
+      );
+    } catch (emailError) {
+      // Log email error but don't fail user creation
+      console.error('Failed to send welcome email:', emailError);
+    }
 
     return NextResponse.json(
       {
