@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { useWorkday } from './workday-provider';
+import { logger } from '@/lib/logger';
 
 interface WorkdayHeaderProps {
   tenantId: string;

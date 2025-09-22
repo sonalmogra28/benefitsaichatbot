@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { getRepositories } from '@/lib/azure/cosmos';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '@/lib/logger';
 import { azureOpenAIService } from '@/lib/azure/openai';
 import { azureAuthService } from '@/lib/azure/auth';
 import { getStorageServices } from '@/lib/azure/storage';
 import { redisService } from '@/lib/azure/redis';
 import { streamObject, tool } from 'ai';
 import type { UIMessageStreamWriter } from 'ai';
-import { adminDb } from '@/lib/azure/admin';
+// import { adminDb } from '@/lib/azure/admin';
 
 import { generateUUID } from '@/lib/utils';
 import { myProvider } from '../providers';

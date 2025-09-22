@@ -1,7 +1,7 @@
 import { PublicClientApplication, Configuration, AccountInfo, AuthenticationResult } from '@azure/msal-browser';
 import { ConfidentialClientApplication, ClientCredentialRequest } from '@azure/msal-node';
 import { azureConfig, getAdB2CConfig } from './config';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '@/lib/logger';
 
 // MSAL configuration
 const adB2CConfig = getAdB2CConfig();
@@ -26,7 +26,7 @@ const msalConfig: Configuration = {
         }
         switch (level) {
           case 0: // LogLevel.Error
-            logger.error('MSAL Error', new Error(message));
+            logger.error('MSAL Error', { message });
             break;
           case 1: // LogLevel.Warning
             logger.warn('MSAL Warning', { message });
@@ -89,7 +89,7 @@ export class AzureAuthService {
 
       return response;
     } catch (error) {
-      logger.error('Login failed', error);
+      logger.error('Login failed', { error: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }
@@ -103,7 +103,7 @@ export class AzureAuthService {
 
       await this.msal.loginRedirect(loginRequest);
     } catch (error) {
-      logger.error('Login redirect failed', error);
+      logger.error('Login redirect failed', { error: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }
@@ -119,7 +119,7 @@ export class AzureAuthService {
       
       logger.info('User logged out successfully');
     } catch (error) {
-      logger.error('Logout failed', error);
+      logger.error('Logout failed', { error: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }
@@ -129,7 +129,7 @@ export class AzureAuthService {
       const account = this.msal.getActiveAccount();
       return account;
     } catch (error) {
-      logger.error('Failed to get current user', error);
+      logger.error('Failed to get current user', { error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
     }
   }
@@ -149,7 +149,7 @@ export class AzureAuthService {
       const response = await this.msal.acquireTokenSilent(tokenRequest);
       return response.accessToken;
     } catch (error) {
-      logger.error('Failed to get access token', error);
+      logger.error('Failed to get access token', { error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
     }
   }
@@ -169,7 +169,7 @@ export class AzureAuthService {
       const response = await this.msal.acquireTokenSilent(tokenRequest);
       return response;
     } catch (error) {
-      logger.error('Failed to acquire token silently', error);
+      logger.error('Failed to acquire token silently', { error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
     }
   }
@@ -183,7 +183,7 @@ export class AzureAuthService {
       const response = await this.msal.acquireTokenPopup(tokenRequest);
       return response;
     } catch (error) {
-      logger.error('Failed to acquire token with popup', error);
+      logger.error('Failed to acquire token with popup', { error: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }
@@ -193,7 +193,7 @@ export class AzureAuthService {
       const response = await this.msal.handleRedirectPromise();
       return response;
     } catch (error) {
-      logger.error('Failed to handle redirect promise', error);
+      logger.error('Failed to handle redirect promise', { error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
     }
   }
@@ -242,7 +242,7 @@ export class AzureAuthService {
         }
       };
     } catch (error) {
-      logger.error('Token validation failed', error);
+      logger.error('Token validation failed', { error: error instanceof Error ? error.message : 'Unknown error' });
       return {
         valid: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -262,7 +262,7 @@ export class AzureAuthService {
 
       return ['user'];
     } catch (error) {
-      logger.error('Failed to get user roles', error);
+      logger.error('Failed to get user roles', { error: error instanceof Error ? error.message : 'Unknown error' });
       return [];
     }
   }
@@ -273,7 +273,7 @@ export class AzureAuthService {
       const roles = await this.getUserRoles(token);
       return roles.includes(role);
     } catch (error) {
-      logger.error('Failed to check user role', error, { role });
+      logger.error('Failed to check user role', { role, error: error instanceof Error ? error.message : 'Unknown error' });
       return false;
     }
   }
@@ -300,7 +300,7 @@ export class AzureAuthService {
         roles: validation.user.roles
       };
     } catch (error) {
-      logger.error('Failed to get user profile', error);
+      logger.error('Failed to get user profile', { error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
     }
   }

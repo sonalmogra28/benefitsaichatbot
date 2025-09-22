@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { logger } from '@/lib/logger';
 
 const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT || '';
 const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY || '';
@@ -36,7 +37,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     });
     return result.data?.[0]?.embedding || [];
   } catch (error) {
-    logger.error('Azure OpenAI embedding error:', error);
+    logger.error('Azure OpenAI embedding error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     throw new Error('Failed to generate embedding');
   }
 }
@@ -53,7 +54,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
     });
     return result.data?.map((d) => d.embedding) || [];
   } catch (error) {
-    logger.error('Azure OpenAI batch embedding error:', error);
+    logger.error('Azure OpenAI batch embedding error:', { error: error instanceof Error ? error.message : 'Unknown error' });
     throw new Error('Failed to generate embeddings');
   }
 }

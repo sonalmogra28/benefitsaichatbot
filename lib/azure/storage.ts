@@ -22,11 +22,11 @@ export const initializeBlobStorage = async () => {
 
     // Create containers if they don't exist
     await containers.documents.createIfNotExists({
-      access: 'private'
+      access: 'private' as any
     });
     
     await containers.images.createIfNotExists({
-      access: 'private'
+      access: 'private' as any
     });
 
     logger.info('Blob Storage initialized successfully', {
@@ -36,7 +36,7 @@ export const initializeBlobStorage = async () => {
 
     return containers;
   } catch (error) {
-    logger.error('Failed to initialize Blob Storage', error);
+    logger.error('Failed to initialize Blob Storage', {}, error as Error);
     throw error;
   }
 };
@@ -66,7 +66,7 @@ export class BlobStorageService {
       const url = blockBlobClient.url;
       
       logger.info('File uploaded to Blob Storage', {
-        container: this.container.name,
+        container: (this.container as any).name,
         fileName,
         contentType,
         url,
@@ -75,11 +75,11 @@ export class BlobStorageService {
 
       return url;
     } catch (error) {
-      logger.error('Failed to upload file to Blob Storage', error, {
-        container: this.container.name,
+      logger.error('Failed to upload file to Blob Storage', {
+        container: (this.container as any).name,
         fileName,
         contentType
-      });
+      }, error as Error);
       throw error;
     }
   }
@@ -95,23 +95,23 @@ export class BlobStorageService {
 
       const chunks: Buffer[] = [];
       for await (const chunk of downloadResponse.readableStreamBody) {
-        chunks.push(chunk);
+        chunks.push(chunk as Buffer);
       }
       
       const fileBuffer = Buffer.concat(chunks);
       
       logger.info('File downloaded from Blob Storage', {
-        container: this.container.name,
+        container: (this.container as any).name,
         fileName,
         size: fileBuffer.length
       });
 
       return fileBuffer;
     } catch (error) {
-      logger.error('Failed to download file from Blob Storage', error, {
-        container: this.container.name,
+      logger.error('Failed to download file from Blob Storage', {
+        container: (this.container as any).name,
         fileName
-      });
+      }, error as Error);
       throw error;
     }
   }
@@ -122,14 +122,14 @@ export class BlobStorageService {
       await blobClient.delete();
       
       logger.info('File deleted from Blob Storage', {
-        container: this.container.name,
+        container: (this.container as any).name,
         fileName
       });
     } catch (error) {
-      logger.error('Failed to delete file from Blob Storage', error, {
-        container: this.container.name,
+      logger.error('Failed to delete file from Blob Storage', {
+        container: (this.container as any).name,
         fileName
-      });
+      }, error as Error);
       throw error;
     }
   }
@@ -144,22 +144,22 @@ export class BlobStorageService {
       const expiresOn = new Date(Date.now() + expiresInMinutes * 60 * 1000);
       
       const url = await blobClient.generateSasUrl({
-        permissions: 'r',
+        permissions: 'r' as any,
         expiresOn
       });
       
       logger.info('SAS URL generated for file', {
-        container: this.container.name,
+        container: (this.container as any).name,
         fileName,
         expiresInMinutes
       });
 
       return url;
     } catch (error) {
-      logger.error('Failed to generate SAS URL for file', error, {
-        container: this.container.name,
+      logger.error('Failed to generate SAS URL for file', {
+        container: (this.container as any).name,
         fileName
-      });
+      }, error as Error);
       throw error;
     }
   }
@@ -177,17 +177,17 @@ export class BlobStorageService {
       }
       
       logger.info('Files listed from Blob Storage', {
-        container: this.container.name,
+        container: (this.container as any).name,
         prefix,
         count: files.length
       });
 
       return files;
     } catch (error) {
-      logger.error('Failed to list files from Blob Storage', error, {
-        container: this.container.name,
+      logger.error('Failed to list files from Blob Storage', {
+        container: (this.container as any).name,
         prefix
-      });
+      }, error as Error);
       throw error;
     }
   }
@@ -209,13 +209,13 @@ export class BlobStorageService {
         metadata: properties.metadata || {}
       };
     } catch (error) {
-      if (error.statusCode === 404) {
+      if ((error as any).statusCode === 404) {
         return null;
       }
-      logger.error('Failed to get file metadata from Blob Storage', error, {
-        container: this.container.name,
+      logger.error('Failed to get file metadata from Blob Storage', {
+        container: (this.container as any).name,
         fileName
-      });
+      }, error as Error);
       throw error;
     }
   }
@@ -228,16 +228,16 @@ export class BlobStorageService {
       await destBlobClient.syncCopyFromURL(sourceBlobClient.url);
       
       logger.info('File copied in Blob Storage', {
-        container: this.container.name,
+        container: (this.container as any).name,
         sourceFileName,
         destFileName
       });
     } catch (error) {
-      logger.error('Failed to copy file in Blob Storage', error, {
-        container: this.container.name,
+      logger.error('Failed to copy file in Blob Storage', {
+        container: (this.container as any).name,
         sourceFileName,
         destFileName
-      });
+      }, error as Error);
       throw error;
     }
   }

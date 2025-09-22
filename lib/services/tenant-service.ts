@@ -36,24 +36,26 @@ export class TenantService {
     };
 
     try {
-      const result = await this.tenantsContainer.items.create(newTenant);
+      const container = await this.tenantsContainer;
+      const result = await container.items.create(newTenant);
       logger.info('Tenant created', { tenantId: tenant.id, name: tenant.name });
-      return result.resource;
+      return result.resource!;
     } catch (error) {
-      logger.error('Failed to create tenant', { tenantId: tenant.id, error });
+      logger.error('Failed to create tenant', { tenantId: tenant.id, error: error as Error });
       throw error;
     }
   }
 
   async getTenant(tenantId: string): Promise<Tenant | null> {
     try {
-      const result = await this.tenantsContainer.item(tenantId, tenantId).read();
-      return result.resource;
+      const container = await this.tenantsContainer;
+      const result = await container.item(tenantId, tenantId).read();
+      return result.resource!;
     } catch (error) {
-      if (error.code === 404) {
+      if ((error as any).code === 404) {
         return null;
       }
-      logger.error('Failed to get tenant', { tenantId, error });
+      logger.error('Failed to get tenant', { tenantId, error: error as Error });
       throw error;
     }
   }
@@ -71,9 +73,10 @@ export class TenantService {
         updatedAt: new Date().toISOString(),
       };
 
-      const result = await this.tenantsContainer.item(tenantId, tenantId).replace(updated);
+      const container = await this.tenantsContainer;
+      const result = await container.item(tenantId, tenantId).replace(updated);
       logger.info('Tenant updated', { tenantId, updates: Object.keys(updates) });
-      return result.resource;
+      return result.resource!;
     } catch (error) {
       logger.error('Failed to update tenant', { tenantId, error });
       throw error;
@@ -105,9 +108,10 @@ export class TenantService {
     };
 
     try {
-      const result = await this.usersContainer.items.create(newUser);
+      const container = await this.usersContainer;
+      const result = await container.items.create(newUser);
       logger.info('User created', { userId: user.id, tenantId: user.tenantId });
-      return result.resource;
+      return result.resource!;
     } catch (error) {
       logger.error('Failed to create user', { userId: user.id, error });
       throw error;
@@ -116,10 +120,11 @@ export class TenantService {
 
   async getUser(tenantId: string, userId: string): Promise<User | null> {
     try {
-      const result = await this.usersContainer.item(userId, tenantId).read();
-      return result.resource;
+      const container = await this.usersContainer;
+      const result = await container.item(userId, tenantId).read();
+      return result.resource!;
     } catch (error) {
-      if (error.code === 404) {
+      if ((error as any).code === 404) {
         return null;
       }
       logger.error('Failed to get user', { userId, tenantId, error });
@@ -137,7 +142,8 @@ export class TenantService {
         ],
       };
 
-      const result = await this.usersContainer.items.query(query).fetchAll();
+      const container = await this.usersContainer;
+      const result = await container.items.query(query).fetchAll();
       return result.resources[0] || null;
     } catch (error) {
       logger.error('Failed to get user by email', { email, tenantId, error });
@@ -158,9 +164,10 @@ export class TenantService {
         updatedAt: new Date().toISOString(),
       };
 
-      const result = await this.usersContainer.item(userId, tenantId).replace(updated);
+      const container = await this.usersContainer;
+      const result = await container.item(userId, tenantId).replace(updated);
       logger.info('User updated', { userId, tenantId, updates: Object.keys(updates) });
-      return result.resource;
+      return result.resource!;
     } catch (error) {
       logger.error('Failed to update user', { userId, tenantId, error });
       throw error;
@@ -186,7 +193,8 @@ export class TenantService {
         };
       }
 
-      const result = await this.conversationsContainer.items.query(query).fetchAll();
+      const container = await this.conversationsContainer;
+      const result = await container.items.query(query).fetchAll();
       return result.resources.slice(0, limit);
     } catch (error) {
       logger.error('Failed to get tenant conversations', { tenantId, userId, error });
@@ -204,7 +212,8 @@ export class TenantService {
         ],
       };
 
-      const result = await this.messagesContainer.items.query(query).fetchAll();
+      const container = await this.messagesContainer;
+      const result = await container.items.query(query).fetchAll();
       return result.resources.slice(0, limit);
     } catch (error) {
       logger.error('Failed to get tenant messages', { tenantId, conversationId, error });
@@ -230,7 +239,8 @@ export class TenantService {
         };
       }
 
-      const result = await this.documentsContainer.items.query(query).fetchAll();
+      const container = await this.documentsContainer;
+      const result = await container.items.query(query).fetchAll();
       return result.resources.slice(0, limit);
     } catch (error) {
       logger.error('Failed to get tenant documents', { tenantId, uploadedBy, error });
@@ -248,7 +258,8 @@ export class TenantService {
         timestamp: new Date().toISOString(),
       };
 
-      await this.analyticsContainer.items.create(analyticsEvent);
+      const container = await this.analyticsContainer;
+      await container.items.create(analyticsEvent);
     } catch (error) {
       logger.error('Failed to track event', { tenantId, eventType: event.eventType, error });
       // Don't throw - analytics failures shouldn't break the main flow
@@ -265,7 +276,8 @@ export class TenantService {
         ],
       };
 
-      const result = await this.usageContainer.items.query(query).fetchAll();
+      const container = await this.usageContainer;
+      const result = await container.items.query(query).fetchAll();
       return result.resources[0] || null;
     } catch (error) {
       logger.error('Failed to get tenant usage', { tenantId, period, error });
@@ -284,8 +296,9 @@ export class TenantService {
           ...usage,
           updatedAt: now,
         };
-        const result = await this.usageContainer.item(existing.id, tenantId).replace(updated);
-        return result.resource;
+        const container = await this.usageContainer;
+        const result = await container.item(existing.id || '', tenantId).replace(updated as any);
+        return result.resource!;
       } else {
         const newUsage: TenantUsage = {
           tenantId,
@@ -300,8 +313,9 @@ export class TenantService {
           updatedAt: now,
           ...usage,
         };
-        const result = await this.usageContainer.items.create(newUsage);
-        return result.resource;
+        const container = await this.usageContainer;
+        const result = await container.items.create(newUsage);
+        return result.resource!;
       }
     } catch (error) {
       logger.error('Failed to update tenant usage', { tenantId, period, error });

@@ -110,7 +110,7 @@ export class AdvancedRateLimiter {
 
     // Increment counter
     entry.count++;
-    this.store.create(key, entry);
+    this.store.set(key, entry);
 
     // Check if limit exceeded
     if (entry.count > rule.config.maxRequests) {
@@ -148,7 +148,7 @@ export class AdvancedRateLimiter {
     if (realIP) return realIP;
     if (forwarded) return forwarded.split(',')[0].trim();
     
-    return req.ip || 'unknown';
+    return (req as any).ip || req.headers.get('x-forwarded-for') || 'unknown';
   }
 
   /**
@@ -200,7 +200,7 @@ export const defaultRateLimitRules: RateLimitRule[] = [
     config: {
       windowMs: 15 * 60 * 1000, // 15 minutes
       maxRequests: 1000,
-      keyGenerator: (req) => `api:${req.headers.get('x-user-id') || req.ip}`,
+      keyGenerator: (req) => `api:${req.headers.get('x-user-id') || (req as any).ip}`,
     },
   },
   
@@ -210,7 +210,7 @@ export const defaultRateLimitRules: RateLimitRule[] = [
     config: {
       windowMs: 60 * 1000, // 1 minute
       maxRequests: 30,
-      keyGenerator: (req) => `chat:${req.headers.get('x-user-id') || req.ip}`,
+      keyGenerator: (req) => `chat:${req.headers.get('x-user-id') || (req as any).ip}`,
     },
     conditions: (req) => req.nextUrl.pathname.startsWith('/api/chat'),
   },
@@ -221,7 +221,7 @@ export const defaultRateLimitRules: RateLimitRule[] = [
     config: {
       windowMs: 60 * 1000, // 1 minute
       maxRequests: 5,
-      keyGenerator: (req) => `upload:${req.headers.get('x-user-id') || req.ip}`,
+      keyGenerator: (req) => `upload:${req.headers.get('x-user-id') || (req as any).ip}`,
     },
     conditions: (req) => req.nextUrl.pathname.startsWith('/api/documents/upload'),
   },
@@ -232,7 +232,7 @@ export const defaultRateLimitRules: RateLimitRule[] = [
     config: {
       windowMs: 60 * 1000, // 1 minute
       maxRequests: 20,
-      keyGenerator: (req) => `search:${req.headers.get('x-user-id') || req.ip}`,
+      keyGenerator: (req) => `search:${req.headers.get('x-user-id') || (req as any).ip}`,
     },
     conditions: (req) => req.nextUrl.pathname.startsWith('/api/documents/search'),
   },
@@ -243,7 +243,7 @@ export const defaultRateLimitRules: RateLimitRule[] = [
     config: {
       windowMs: 60 * 1000, // 1 minute
       maxRequests: 100,
-      keyGenerator: (req) => `admin:${req.headers.get('x-user-id') || req.ip}`,
+      keyGenerator: (req) => `admin:${req.headers.get('x-user-id') || (req as any).ip}`,
     },
     conditions: (req) => req.nextUrl.pathname.startsWith('/api/admin'),
   },
@@ -254,7 +254,7 @@ export const defaultRateLimitRules: RateLimitRule[] = [
     config: {
       windowMs: 15 * 60 * 1000, // 15 minutes
       maxRequests: 10,
-      keyGenerator: (req) => `auth:${req.ip}`,
+      keyGenerator: (req) => `auth:${(req as any).ip}`,
     },
     conditions: (req) => req.nextUrl.pathname.startsWith('/api/auth'),
   },
@@ -265,7 +265,7 @@ export const defaultRateLimitRules: RateLimitRule[] = [
     config: {
       windowMs: 60 * 1000, // 1 minute
       maxRequests: 100,
-      keyGenerator: (req) => `ip:${req.ip}`,
+      keyGenerator: (req) => `ip:${(req as any).ip}`,
     },
   },
 ];

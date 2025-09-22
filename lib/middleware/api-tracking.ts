@@ -78,7 +78,7 @@ export function withAPITracking(
           errorMessage: error instanceof Error ? error.message : 'Unknown error'
         });
       } catch (trackingError) {
-        logger.error('Failed to track API call error', trackingError);
+        logger.error('Failed to track API call', {}, trackingError as Error);
       }
       
       throw error;
@@ -162,7 +162,7 @@ async function getResponseSize(response: NextResponse): Promise<number | undefin
     // without consuming the response body
     return undefined;
   } catch (error) {
-    logger.error('Failed to get response size', error);
+    logger.error('Failed to get response size', {}, error as Error);
     return undefined;
   }
 }

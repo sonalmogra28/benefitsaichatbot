@@ -4,7 +4,7 @@ import {
   type PlatformStats,
   type AuditLog,
 } from '@/lib/types/super-admin';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 
 // Base URL for the new API route
 const API_URL = '/api/super-admin/service';

@@ -110,11 +110,11 @@ export class DocumentProcessingService {
       logger.error('Document processing failed', {
         documentId,
         companyId,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
 
       // Update document status to failed
-      await this.updateDocumentStatus(documentId, companyId, 'failed', error.message);
+      await this.updateDocumentStatus(documentId, companyId, 'failed', error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -161,7 +161,7 @@ export class DocumentProcessingService {
       logger.error('Failed to store document chunks', {
         chunksCount: chunks.length,
         companyId,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
       throw error;
     }
@@ -262,7 +262,7 @@ export class DocumentProcessingService {
           logger.error('Background document processing failed', {
             documentId,
             companyId,
-            error: error.message
+            error: error instanceof Error ? error.message : String(error)
           });
         }
       });
@@ -272,7 +272,7 @@ export class DocumentProcessingService {
       logger.error('Failed to trigger document processing', {
         documentId,
         companyId,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
       throw error;
     }
@@ -297,7 +297,7 @@ export class DocumentProcessingService {
       logger.error('Failed to get processing status', {
         documentId,
         companyId,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
       throw error;
     }

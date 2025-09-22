@@ -1,0 +1,41 @@
+{
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "AZURE_COSMOS_CONNECTION_STRING": "@azure_cosmos_connection",
+    "AZURE_STORAGE_CONNECTION_STRING": "@azure_storage_connection",
+    "OPENAI_API_KEY": "@openai_api_key",
+    "AZURE_AD_CLIENT_ID": "@azure_ad_client_id",
+    "AZURE_AD_CLIENT_SECRET": "@azure_ad_client_secret",
+    "AZURE_AD_TENANT_ID": "@azure_ad_tenant_id",
+    "NEXTAUTH_SECRET": "@nextauth_secret",
+    "NEXTAUTH_URL": "@nextauth_url"
+  },
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
+}

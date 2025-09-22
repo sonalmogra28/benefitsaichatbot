@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { azureAuthService } from '@/lib/azure/auth';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '@/lib/logger';
 
 export interface AuthenticatedUser {
   id: string;
@@ -42,7 +42,7 @@ export async function authenticateRequest(request: NextRequest): Promise<{
     const token = authHeader.split('Bearer ')[1];
     
     // Verify token with Azure AD B2C
-    const user = await azureAuthService.verifyToken(token);
+    const user = await azureAuthService.validateToken(token);
     
     if (!user) {
       return {
@@ -55,17 +55,18 @@ export async function authenticateRequest(request: NextRequest): Promise<{
     }
 
     logger.info('User authenticated successfully', {
-      userId: user.id,
-      email: user.email,
-      roles: user.roles
+      userId: user.user?.id,
+      email: user.user?.email,
+      roles: user.user?.roles
     });
 
-    return { user, error: null };
+    return { user: user.user || null, error: null };
 
   } catch (error) {
-    logger.error('Authentication failed', error, {
+    logger.error('Authentication failed', {
       path: request.nextUrl.pathname,
-      method: request.method
+      method: request.method,
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
 
     return {

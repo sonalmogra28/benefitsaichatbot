@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 
 export interface EmailMessage {
   to: string | string[];

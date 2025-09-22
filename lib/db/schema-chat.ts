@@ -1,4 +1,5 @@
-import type { Date, Timestamp } from 'azure/firestore';
+// import type { Date, Timestamp } from 'azure/firestore';
+type Timestamp = Date;
 
 // Base interface for chat messages, compatible with AI SDK
 export interface ChatMessage {

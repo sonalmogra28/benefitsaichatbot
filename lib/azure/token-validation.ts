@@ -24,7 +24,7 @@ export async function validateToken(token: string): Promise<any | null> {
     });
     return payload;
   } catch (error) {
-    logger.error('Token validation error:', error);
+    console.error('Token validation error:', error);
     return null;
   }
 }

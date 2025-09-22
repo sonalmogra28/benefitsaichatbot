@@ -4,7 +4,6 @@
  */
 
 import { getLoggingConfig, getEnvironment } from '@/config/environments';
-import { getContainer } from '@/lib/azure/cosmos-db';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -101,11 +100,9 @@ class Logger {
     if (!this.config.enableCloudLogging) return;
 
     try {
-      // Store logs in Firestore for cloud logging
-      await adminDb.collection('logs').add({
-        ...entry,
-        timestamp: AdminFieldValue.serverTimestamp(),
-      });
+      // For now, just log to console in production
+      // In a real implementation, this would send to Azure Application Insights
+      console.log(`[CLOUD] ${JSON.stringify(entry)}`);
     } catch (error) {
       // Fallback: cloud logging failed, but we can't use console here as it would create a cycle
       // Log to stderr directly only in development

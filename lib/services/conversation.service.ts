@@ -52,7 +52,7 @@ export async function createConversation(
 
     return newChat;
   } catch (error) {
-    logger.error('Error creating conversation', error as Error, { userId, companyId });
+    logger.error('Error creating conversation', { userId, companyId, error: error as Error });
     throw new Error('Failed to create conversation');
   }
 }
@@ -84,7 +84,7 @@ export async function getConversation(
     logger.info('Conversation retrieved successfully', { chatId, userId });
     return chat as Chat;
   } catch (error) {
-    logger.error('Error getting conversation', error as Error, { chatId, userId });
+    logger.error('Error getting conversation', { chatId, userId, error: error as Error });
     throw new Error('Failed to get conversation');
   }
 }
@@ -116,7 +116,7 @@ export async function getUserConversations(
 
     return limitedConversations as Chat[];
   } catch (error) {
-    logger.error('Error getting user conversations', error as Error, { userId });
+    logger.error('Error getting user conversations', { userId, error: error as Error });
     throw new Error('Failed to get user conversations');
   }
 }
@@ -164,7 +164,7 @@ export async function addMessage(
 
     return newMessage;
   } catch (error) {
-    logger.error('Error adding message', error as Error, { chatId, userId, role });
+    logger.error('Error adding message', { chatId, userId, role, error: error as Error });
     throw new Error('Failed to add message');
   }
 }
@@ -196,7 +196,7 @@ export async function getMessages(
 
     return limitedMessages as Message[];
   } catch (error) {
-    logger.error('Error getting messages', error as Error, { chatId });
+    logger.error('Error getting messages', { chatId, error: error as Error });
     throw new Error('Failed to get messages');
   }
 }
@@ -242,7 +242,7 @@ export async function deleteConversation(
 
     return true;
   } catch (error) {
-    logger.error('Failed to delete conversation', error as Error, { chatId, userId });
+    logger.error('Failed to delete conversation', { chatId, userId, error: error as Error });
     return false;
   }
 }
@@ -280,7 +280,7 @@ export async function updateConversationTitle(
 
     return true;
   } catch (error) {
-    logger.error('Failed to update conversation title', error as Error, { chatId, userId, title });
+    logger.error('Failed to update conversation title', { chatId, userId, title, error: error as Error });
     return false;
   }
 }
@@ -300,13 +300,11 @@ export async function getConversationAnalytics(companyId: string) {
 
     // Get message counts
     let totalMessages = 0;
-    for (const chatDoc of snapshot.docs) {
-      const messagesSnapshot = await db
-        .collection('chats')
-        .doc(chatDoc.id)
-        .collection('messages')
-        .get();
-      totalMessages += messagesSnapshot.size;
+    for (const chat of chats) {
+      const messageQuery = `SELECT * FROM c WHERE c.chatId = @chatId`;
+      const messageParams = [{ name: '@chatId', value: chat.id }];
+      const { resources: messages } = await repositories.messages.query(messageQuery, messageParams);
+      totalMessages += messages.length;
     }
 
     return {
@@ -400,9 +398,10 @@ export async function getSuggestions(
 
     return uniqueSuggestions;
   } catch (error) {
-    logger.error('Error generating conversation suggestions', error as Error, {
+    logger.error('Error generating conversation suggestions', {
       userId,
-      companyId
+      companyId,
+      error: error as Error
     });
     
     // Return fallback suggestions

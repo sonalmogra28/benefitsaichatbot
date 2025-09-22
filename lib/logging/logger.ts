@@ -104,7 +104,7 @@ class Logger {
       case 'error':
         logger.error(logMessage, logData);
         if (error) {
-          logger.error(error.stack);
+          logger.error(error.stack || 'Unknown error');
         }
         break;
     }

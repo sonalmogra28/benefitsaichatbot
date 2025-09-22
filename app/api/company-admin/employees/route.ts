@@ -3,6 +3,8 @@ import { requireCompanyAdmin } from '@/lib/auth/admin-middleware';
 import { getContainer } from '@/lib/azure/cosmos-db';
 import { EmailService } from '@/lib/services/email.service.server';
 import { createUserSchema } from '@/lib/validation/schemas';
+import { userService } from '@/lib/services/user.service';
+import { adminAuth } from '@/lib/auth/admin-auth';
 import type { UserRole } from '@/lib/constants/roles';
 import { z } from 'zod';
 
@@ -10,7 +12,7 @@ const emailService = new EmailService();
 
 // GET /api/company-admin/employees - List employees for a company
 export const GET = requireCompanyAdmin(
-  async (request: NextRequest, context, user) => {
+  async (request: NextRequest, context: any, user: any) => {
     try {
       const { searchParams } = new URL(request.url);
       const search = searchParams.get('search') || '';
@@ -25,7 +27,7 @@ export const GET = requireCompanyAdmin(
         limit,
       });
 
-      const transformedEmployees = employees.map((emp) => ({
+      const transformedEmployees = employees.map((emp: any) => ({
         id: emp.uid,
         name: `${emp.displayName || ''}`.trim() || emp.email,
         email: emp.email,
@@ -56,7 +58,7 @@ export const GET = requireCompanyAdmin(
 
 // POST /api/company-admin/employees - Invite new employee
 export const POST = requireCompanyAdmin(
-  async (request: NextRequest, context, user) => {
+  async (request: NextRequest, context: any, user: any) => {
     try {
       const body = await request.json();
       const validated = createUserSchema.parse(body);
@@ -89,7 +91,7 @@ export const POST = requireCompanyAdmin(
           success: true,
           user: {
             id: newUser.uid,
-            email: newUser.email,
+            email: validated.email,
             role: validated.role,
             status: 'pending',
           },

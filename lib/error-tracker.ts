@@ -1,4 +1,5 @@
 // Simple error tracking for production
+import { logger } from './utils/logger-fix';
 
 export const ErrorTracker = {
   log(error: any, context?: any) {

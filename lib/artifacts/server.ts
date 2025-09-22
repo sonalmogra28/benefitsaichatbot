@@ -1,6 +1,6 @@
 import { codeDocumentHandler } from '@/artifacts/code/server';
 import { getRepositories } from '@/lib/azure/cosmos';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '@/lib/logger';
 import { azureOpenAIService } from '@/lib/azure/openai';
 import { azureAuthService } from '@/lib/azure/auth';
 import { getStorageServices } from '@/lib/azure/storage';
@@ -9,7 +9,7 @@ import { imageDocumentHandler } from '@/artifacts/image/server';
 import { sheetDocumentHandler } from '@/artifacts/sheet/server';
 import { textDocumentHandler } from '@/artifacts/text/server';
 import type { ArtifactKind } from '@/components/artifact';
-import { adminDb } from '@/lib/azure/admin';
+// import { adminDb } from '@/lib/azure/admin';
 
 import type { UIMessageStreamWriter } from 'ai';
 
@@ -116,24 +116,27 @@ export const artifactKinds = ['text', 'code', 'image', 'sheet'] as const;
 // Helper function to save document to Firestore
 async function saveDocument(props: SaveDocumentProps) {
   try {
-    const documentRef = adminDb.collection('documents').getById(props.id);
+    // TODO: Implement document retrieval from Azure Cosmos DB
+    // const documentRef = adminDb.collection('documents').getById(props.id);
+    const documentRef = null;
 
-    await documentRef.create(
-      {
-        id: props.id,
-        title: props.title,
-        kind: props.kind,
-        content: props.content,
-        userId: props.userId,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      { merge: true },
-    );
+    // TODO: Implement document creation in Azure Cosmos DB
+    // await documentRef.create(
+    //   {
+    //     id: props.id,
+    //     title: props.title,
+    //     kind: props.kind,
+    //     content: props.content,
+    //     userId: props.userId,
+    //     createdAt: new Date().toISOString(),
+    //     updatedAt: new Date().toISOString(),
+    //   },
+    //   { merge: true },
+    // );
 
     return true;
   } catch (error) {
-    logger.error('Failed to save document:', error);
+    logger.error('Failed to save document:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return false;
   }
 }

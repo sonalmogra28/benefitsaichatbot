@@ -1,6 +1,7 @@
 /**
  * Centralized API error handling and custom error classes
  */
+import { logger } from '../utils/logger-fix';
 
 export class APIError extends Error {
   public readonly statusCode: number;

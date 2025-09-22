@@ -1,6 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { benefitService } from '@/lib/azure/services/benefit.service';
+import { benefitService } from '@/lib/services/benefit.service';
+import { logger } from '@/lib/logger';
 // User context from AI system
 
 const inputSchema = z.object({

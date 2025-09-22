@@ -1,5 +1,5 @@
 import { getRepositories } from '@/lib/azure/cosmos';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 import type { BenefitPlan } from '@/lib/types/benefit-plan.type';
 
 class BenefitService {
@@ -131,7 +131,8 @@ class BenefitService {
    */
   async deleteBenefitPlan(planId: string): Promise<void> {
     try {
-      await this.benefitPlansCollection.doc(planId).delete();
+      const repository = await this.getBenefitPlansRepository();
+      await repository.delete(planId);
     } catch (error) {
       console.error(`Error deleting benefit plan ${planId}:`, error);
       throw new Error('Failed to delete benefit plan.');

@@ -8,7 +8,7 @@ export function securityHeaders(request: NextRequest): NextResponse {
   const response = NextResponse.next();
 
   // Content Security Policy
-  response.headers.create(
+  response.headers.set(
     'Content-Security-Policy',
     [
       "default-src 'self'",
@@ -26,26 +26,26 @@ export function securityHeaders(request: NextRequest): NextResponse {
   );
 
   // Prevent MIME type sniffing
-  response.headers.create('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
 
   // Prevent clickjacking
-  response.headers.create('X-Frame-Options', 'DENY');
+  response.headers.set('X-Frame-Options', 'DENY');
 
   // XSS Protection
-  response.headers.create('X-XSS-Protection', '1; mode=block');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
 
   // Referrer Policy
-  response.headers.create('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 
   // Permissions Policy
-  response.headers.create(
+  response.headers.set(
     'Permissions-Policy',
     'camera=(), microphone=(), geolocation=(), interest-cohort=()'
   );
 
   // Strict Transport Security (only in production with HTTPS)
   if (request.nextUrl.protocol === 'https:') {
-    response.headers.create(
+    response.headers.set(
       'Strict-Transport-Security',
       'max-age=31536000; includeSubDomains; preload'
     );

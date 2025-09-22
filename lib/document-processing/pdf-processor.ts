@@ -82,7 +82,7 @@ export class PDFProcessor {
       logger.error('PDF processing failed', {
         filename,
         tenantId,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -119,7 +119,7 @@ export class PDFProcessor {
       const mockText = this.generateMockPDFText();
       return mockText;
     } catch (error) {
-      logger.error('PDF text extraction failed', { error: error.message });
+      logger.error('PDF text extraction failed', { error: error instanceof Error ? error.message : String(error) });
       throw new Error('Failed to extract text from PDF');
     }
   }

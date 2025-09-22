@@ -2,7 +2,7 @@
  * Database query optimization utilities
  */
 
-import { adminDb } from '@/lib/azure/admin';
+// import { adminDb } from '@/lib/azure/admin';
 import { logger } from '@/lib/logging/logger';
 
 interface QueryOptions {

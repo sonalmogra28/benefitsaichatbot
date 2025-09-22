@@ -38,7 +38,7 @@ export class MemoryRateLimiter implements RateLimiter {
         windowStart: now,
         timestamps: [],
       };
-      this.counters.create(key, counter);
+      this.counters.set(key, counter);
     }
 
     // Remove timestamps outside the window

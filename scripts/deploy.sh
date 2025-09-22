@@ -2,6 +2,10 @@
 
 # Deployment script for Benefits AI Chatbot
 # This script handles the complete deployment process
+#
+# Usage: ./deploy.sh [target]
+# Supported targets: firebase, cloud-run, azure
+# Default: firebase
 
 set -e  # Exit on any error
 
@@ -159,6 +163,48 @@ deploy_cloud_run() {
     print_status "Cloud Run deployment completed"
 }
 
+# Deploy to Azure
+deploy_azure() {
+    print_status "Deploying to Azure..."
+    
+    # Check if Azure CLI is installed
+    if ! command -v az &> /dev/null; then
+        print_error "Azure CLI is not installed. Please install it first."
+        exit 1
+    fi
+    
+    # Check if logged in to Azure
+    if ! az account show &> /dev/null; then
+        print_error "Not logged in to Azure. Please run 'az login' first."
+        exit 1
+    fi
+    
+    # Set variables
+    RESOURCE_GROUP=${AZURE_RESOURCE_GROUP:-"benefits-chatbot-rg"}
+    LOCATION=${AZURE_LOCATION:-"East US"}
+    APP_NAME=${AZURE_APP_NAME:-"benefits-chatbot"}
+    
+    print_status "Creating resource group: $RESOURCE_GROUP"
+    az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+    
+    print_status "Deploying Azure infrastructure..."
+    az deployment group create \
+        --resource-group "$RESOURCE_GROUP" \
+        --template-file azure/main.bicep \
+        --parameters environment=prod location="$LOCATION"
+    
+    print_status "Building and deploying application..."
+    npm run build
+    
+    print_status "Deploying to Azure App Service..."
+    az webapp deployment source config-zip \
+        --resource-group "$RESOURCE_GROUP" \
+        --name "$APP_NAME" \
+        --src dist.zip
+    
+    print_status "Azure deployment completed"
+}
+
 # Run database migrations
 run_migrations() {
     print_status "Running database migrations..."
@@ -206,9 +252,12 @@ main() {
         "cloud-run")
             deploy_cloud_run
             ;;
+        "azure")
+            deploy_azure
+            ;;
         *)
             print_error "Unknown deployment target: $deployment_target"
-            print_error "Supported targets: firebase, cloud-run"
+            print_error "Supported targets: firebase, cloud-run, azure"
             exit 1
             ;;
     esac

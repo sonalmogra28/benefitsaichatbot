@@ -1,8 +1,8 @@
 // AI Tools for Benefits-Specific Functionality
 import { z } from 'zod';
 import { tool } from 'ai';
-import { benefitService } from '@/lib/azure/services/benefit.service';
-import { companyService } from '@/lib/azure/services/company.service';
+import { benefitService } from '@/lib/services/benefit.service';
+import { companyService } from '@/lib/services/platform.service';
 
 // Tool schemas using Zod for validation
 const comparePlansSchema = z.object({
@@ -88,7 +88,6 @@ export const comparePlans = tool({
       // For now, we'll just return the requested plan data.
       const recommendation = plansToCompare[0];
 
-
     if (plansToCompare.length < 2) {
       return {
         plans: plansToCompare.map((p: any) => ({
@@ -104,10 +103,6 @@ export const comparePlans = tool({
         reasoning: 'Based on your profile, this plan offers the best value.',
       };
     }
-
-    // In a real scenario, a more sophisticated recommendation engine would be used.
-    // For now, we'll just return the requested plan data.
-    const recommendation = plansToCompare[0];
 
     return {
       plans: plansToCompare.map((p) => ({

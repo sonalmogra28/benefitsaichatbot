@@ -269,7 +269,7 @@ export async function POST(request: NextRequest) {
       const filename = `analytics-export-${companyId}-${new Date().toISOString().split('T')[0]}.xlsx`;
       const { headers } = ExcelExporter.createDownloadableExcel(excelBuffer, filename);
       
-      return new NextResponse(excelBuffer, {
+      return new NextResponse(excelBuffer as any, {
         status: 200,
         headers
       });

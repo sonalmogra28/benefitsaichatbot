@@ -70,7 +70,7 @@ export async function processDocument(documentId: string): Promise<ProcessedDocu
 
     // Download file from Azure Blob Storage
     const storageServices = await getStorageServices();
-    const fileBuffer = await storageServices.downloadFile(document.fileUrl);
+    const fileBuffer = await storageServices.documents.downloadFile(document.fileUrl);
 
     // Extract text based on file type
     let extractedText = '';
@@ -153,7 +153,7 @@ export async function processDocument(documentId: string): Promise<ProcessedDocu
 
     // Send notification to user
     try {
-      await notificationService.sendInApp(
+      await notificationService.sendInAppNotification(
         document.userId,
         'Document Processing Complete',
         `Your document "${document.fileName}" has been processed successfully and is now searchable.`
@@ -173,7 +173,7 @@ export async function processDocument(documentId: string): Promise<ProcessedDocu
   } catch (error) {
     const processingTime = Date.now() - startTime;
     
-    logger.error('Document processing failed', error, {
+    logger.error('Document processing failed', {
       documentId,
       processingTime,
       fileName: document?.fileName
@@ -191,14 +191,14 @@ export async function processDocument(documentId: string): Promise<ProcessedDocu
           error: error instanceof Error ? error.message : 'Unknown error'
         });
       } catch (updateError) {
-        logger.error('Failed to update document status to failed', updateError, { documentId });
+        logger.error('Failed to update document status to failed', { documentId }, updateError as Error);
       }
     }
 
     // Send error notification to user
     if (document?.userId) {
       try {
-        await notificationService.sendInApp(
+        await notificationService.sendInAppNotification(
           document.userId,
           'Document Processing Failed',
           `Failed to process your document "${document.fileName}". Please try again or contact support.`
@@ -246,7 +246,7 @@ async function chunkText(
       
       if (lastBreak > chunkSize * 0.5) { // Only break if we're not losing too much content
         chunkText = chunkText.slice(0, lastBreak + 1);
-        endChar = startChar + lastBreak + 1;
+        const endChar = startChar + lastBreak + 1;
       }
     }
 
@@ -321,7 +321,7 @@ async function generateChunkEmbeddings(
       });
 
     } catch (error) {
-      logger.error('Failed to generate embeddings for batch', error, {
+      logger.error('Failed to generate embeddings for batch', {
         batchStart: i,
         batchSize: batch.length
       });
@@ -388,7 +388,7 @@ export async function searchDocuments(
     return sortedChunks;
 
   } catch (error) {
-    logger.error('Document search failed', error, { query, companyId });
+    logger.error('Document search failed', { query, companyId }, error as Error);
     throw error;
   }
 }
@@ -446,7 +446,7 @@ export async function deleteDocument(documentId: string): Promise<void> {
     });
 
   } catch (error) {
-    logger.error('Document deletion failed', error, { documentId });
+    logger.error('Document deletion failed', { documentId }, error as Error);
     throw error;
   }
 }

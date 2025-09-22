@@ -1,4 +1,5 @@
 import { PublicClientApplication, Configuration, LogLevel } from '@azure/msal-browser';
+import { logger } from '@/lib/logging/logger';
 
 const MSAL_CONFIG: Configuration = {
   auth: {

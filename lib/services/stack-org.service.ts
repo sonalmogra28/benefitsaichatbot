@@ -1,5 +1,5 @@
 import { getRepositories } from '@/lib/azure/cosmos';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 
 export interface Organization {
   id: string;
@@ -156,7 +156,7 @@ export class StackOrgService {
       const repositories = await getRepositories();
       
       const query = `SELECT * FROM c WHERE c.type = 'organization' ORDER BY c.createdAt DESC`;
-      const parameters = [];
+      const parameters: any[] = [];
       
       const { resources } = await repositories.documents.query(query, parameters);
 

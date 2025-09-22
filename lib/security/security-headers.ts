@@ -67,68 +67,68 @@ export class SecurityHeadersManager {
       // Content Security Policy
       if (this.config.contentSecurityPolicy.enabled) {
         const csp = this.buildContentSecurityPolicy(request);
-        response.headers.create('Content-Security-Policy', csp);
+        response.headers.set('Content-Security-Policy', csp);
       }
 
       // HTTP Strict Transport Security
       if (this.config.hsts.enabled && request.nextUrl.protocol === 'https:') {
         const hsts = this.buildHSTS();
-        response.headers.create('Strict-Transport-Security', hsts);
+        response.headers.set('Strict-Transport-Security', hsts);
       }
 
       // X-Frame-Options
       if (this.config.xFrameOptions.enabled) {
         const xFrameOptions = this.buildXFrameOptions();
-        response.headers.create('X-Frame-Options', xFrameOptions);
+        response.headers.set('X-Frame-Options', xFrameOptions);
       }
 
       // X-Content-Type-Options
       if (this.config.xContentTypeOptions.enabled) {
-        response.headers.create('X-Content-Type-Options', 'nosniff');
+        response.headers.set('X-Content-Type-Options', 'nosniff');
       }
 
       // X-XSS-Protection
       if (this.config.xXSSProtection.enabled) {
         const xXSSProtection = this.buildXXSSProtection();
-        response.headers.create('X-XSS-Protection', xXSSProtection);
+        response.headers.set('X-XSS-Protection', xXSSProtection);
       }
 
       // Referrer Policy
       if (this.config.referrerPolicy.enabled) {
-        response.headers.create('Referrer-Policy', this.config.referrerPolicy.value);
+        response.headers.set('Referrer-Policy', this.config.referrerPolicy.value);
       }
 
       // Permissions Policy
       if (this.config.permissionsPolicy.enabled) {
         const permissionsPolicy = this.buildPermissionsPolicy();
-        response.headers.create('Permissions-Policy', permissionsPolicy);
+        response.headers.set('Permissions-Policy', permissionsPolicy);
       }
 
       // Cross-Origin Embedder Policy
       if (this.config.crossOriginEmbedderPolicy.enabled) {
-        response.headers.create('Cross-Origin-Embedder-Policy', this.config.crossOriginEmbedderPolicy.value);
+        response.headers.set('Cross-Origin-Embedder-Policy', this.config.crossOriginEmbedderPolicy.value);
       }
 
       // Cross-Origin Opener Policy
       if (this.config.crossOriginOpenerPolicy.enabled) {
-        response.headers.create('Cross-Origin-Opener-Policy', this.config.crossOriginOpenerPolicy.value);
+        response.headers.set('Cross-Origin-Opener-Policy', this.config.crossOriginOpenerPolicy.value);
       }
 
       // Cross-Origin Resource Policy
       if (this.config.crossOriginResourcePolicy.enabled) {
-        response.headers.create('Cross-Origin-Resource-Policy', this.config.crossOriginResourcePolicy.value);
+        response.headers.set('Cross-Origin-Resource-Policy', this.config.crossOriginResourcePolicy.value);
       }
 
       // Additional security headers
-      response.headers.create('X-Permitted-Cross-Domain-Policies', 'none');
-      response.headers.create('X-Download-Options', 'noopen');
-      response.headers.create('X-DNS-Prefetch-Control', 'off');
+      response.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
+      response.headers.set('X-Download-Options', 'noopen');
+      response.headers.set('X-DNS-Prefetch-Control', 'off');
 
       // Cache control for sensitive endpoints
       if (this.isSensitiveEndpoint(request)) {
-        response.headers.create('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        response.headers.create('Pragma', 'no-cache');
-        response.headers.create('Expires', '0');
+        response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        response.headers.set('Pragma', 'no-cache');
+        response.headers.set('Expires', '0');
       }
 
       logger.debug('Security headers applied', {

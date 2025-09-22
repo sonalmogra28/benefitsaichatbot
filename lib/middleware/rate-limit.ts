@@ -12,7 +12,7 @@ export function createRateLimit(type: RateLimitType) {
       const config = rateLimitConfigs[type];
       
       // Create rate limit key based on IP and user
-      const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+      const ip = (request as any).ip || request.headers.get('x-forwarded-for') || 'unknown';
       const userId = request.headers.get('x-user-id') || 'anonymous';
       const key = `${type}:${ip}:${userId}`;
 
@@ -20,9 +20,9 @@ export function createRateLimit(type: RateLimitType) {
 
       // Add rate limit headers
       const response = NextResponse.next();
-      response.headers.create('X-RateLimit-Limit', config.maxRequests.toString());
-      response.headers.create('X-RateLimit-Remaining', result.remaining.toString());
-      response.headers.create('X-RateLimit-Reset', result.resetAt.getTime().toString());
+      response.headers.set('X-RateLimit-Limit', config.maxRequests.toString());
+      response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
+      response.headers.set('X-RateLimit-Reset', result.resetAt.getTime().toString());
 
       if (!result.allowed) {
         logger.warn('Rate limit exceeded', {
@@ -45,10 +45,10 @@ export function createRateLimit(type: RateLimitType) {
         );
 
         // Add rate limit headers to error response
-        errorResponse.headers.create('X-RateLimit-Limit', config.maxRequests.toString());
-        errorResponse.headers.create('X-RateLimit-Remaining', '0');
-        errorResponse.headers.create('X-RateLimit-Reset', result.resetAt.getTime().toString());
-        errorResponse.headers.create('Retry-After', result.retryAfter?.toString() || '60');
+        errorResponse.headers.set('X-RateLimit-Limit', config.maxRequests.toString());
+        errorResponse.headers.set('X-RateLimit-Remaining', '0');
+        errorResponse.headers.set('X-RateLimit-Reset', result.resetAt.getTime().toString());
+        errorResponse.headers.set('Retry-After', result.retryAfter?.toString() || '60');
 
         return errorResponse;
       }

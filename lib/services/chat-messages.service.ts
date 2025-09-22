@@ -1,5 +1,5 @@
 import { getRepositories } from '@/lib/azure/cosmos';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 import type { ChatMessage } from '@/lib/types';
 
 export interface ChatMessageDocument {

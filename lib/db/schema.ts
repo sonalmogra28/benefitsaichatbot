@@ -1,4 +1,5 @@
-import type { Date, Timestamp } from 'azure/firestore';
+// import type { Date, Timestamp } from 'azure/firestore';
+type Timestamp = Date;
 import type { UserRole } from '../constants/roles';
 
 // Base interfaces for Firestore documents
@@ -91,14 +92,7 @@ export interface Document extends DocumentBase {
   vectorId?: string; // ID in vector database
 }
 
-// Assuming DocumentChunk and SearchResult are defined elsewhere or need to be created
-export interface DocumentChunk {
-  id: string;
-  content: string;
-  embedding?: number[];
-  documentId: string;
-  // Add any other relevant chunk metadata
-}
+// DocumentChunk is defined below
 
 export interface SearchResult {
   documentId: string;

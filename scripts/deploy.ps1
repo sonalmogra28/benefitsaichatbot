@@ -1,5 +1,9 @@
 # Deployment script for Benefits AI Chatbot (PowerShell)
 # This script handles the complete deployment process
+#
+# Usage: .\deploy.ps1 -DeploymentTarget [target]
+# Supported targets: firebase, cloud-run, azure
+# Default: firebase
 
 param(
     [string]$DeploymentTarget = "firebase"
@@ -162,6 +166,51 @@ function Deploy-CloudRun {
     Write-Status "Cloud Run deployment completed"
 }
 
+# Deploy to Azure
+function Deploy-Azure {
+    Write-Status "Deploying to Azure..."
+    
+    # Check if Azure CLI is installed
+    if (-not (Get-Command az -ErrorAction SilentlyContinue)) {
+        Write-Error "Azure CLI is not installed. Please install it first:"
+        Write-Error "https://docs.microsoft.com/en-us/cli/azure/install-azure-cli"
+        exit 1
+    }
+    
+    # Check if logged in to Azure
+    try {
+        az account show | Out-Null
+    } catch {
+        Write-Error "Not logged in to Azure. Please run 'az login' first."
+        exit 1
+    }
+    
+    # Set variables
+    $resourceGroup = if ($env:AZURE_RESOURCE_GROUP) { $env:AZURE_RESOURCE_GROUP } else { "benefits-chatbot-rg" }
+    $location = if ($env:AZURE_LOCATION) { $env:AZURE_LOCATION } else { "East US" }
+    $appName = if ($env:AZURE_APP_NAME) { $env:AZURE_APP_NAME } else { "benefits-chatbot" }
+    
+    Write-Status "Creating resource group: $resourceGroup"
+    az group create --name $resourceGroup --location $location
+    
+    Write-Status "Deploying Azure infrastructure..."
+    az deployment group create `
+        --resource-group $resourceGroup `
+        --template-file azure/main.bicep `
+        --parameters environment=prod location=$location
+    
+    Write-Status "Building and deploying application..."
+    npm run build
+    
+    Write-Status "Deploying to Azure App Service..."
+    az webapp deployment source config-zip `
+        --resource-group $resourceGroup `
+        --name $appName `
+        --src dist.zip
+    
+    Write-Status "Azure deployment completed"
+}
+
 # Run database migrations
 function Invoke-Migrations {
     Write-Status "Running database migrations..."
@@ -214,9 +263,12 @@ function Start-Deployment {
         "cloud-run" {
             Deploy-CloudRun
         }
+        "azure" {
+            Deploy-Azure
+        }
         default {
             Write-Error "Unknown deployment target: $Target"
-            Write-Error "Supported targets: firebase, cloud-run"
+            Write-Error "Supported targets: firebase, cloud-run, azure"
             exit 1
         }
     }

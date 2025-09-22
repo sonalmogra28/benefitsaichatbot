@@ -8,6 +8,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { createDeploymentManager } from '@/lib/deployment';
 import { WorkdayIntegration } from '@/lib/deployment/workday-integration';
+import { logger } from '@/lib/logger';
 
 interface WorkdayContextType {
   tenantId: string;

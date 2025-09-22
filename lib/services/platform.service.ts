@@ -1,5 +1,5 @@
 import { getRepositories } from '@/lib/azure/cosmos';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 
 // This interface will be expanded as needed for platform-wide settings.
 export interface PlatformSettings {
@@ -28,7 +28,7 @@ class PlatformService {
       if (!settings) {
         // If no settings exist, create with default values
         const defaultSettings: PlatformSettings = {
-          id: 'platform-settings',
+          id: 'default',
           allowRegistrations: true,
           updatedAt: new Date().toISOString(),
         };

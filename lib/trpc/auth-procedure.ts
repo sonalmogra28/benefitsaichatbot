@@ -1,6 +1,7 @@
 import { t } from '@/lib/trpc';
 import { validateToken } from '@/lib/azure/token-validation';
 import { TRPCError } from '@trpc/server';
+import { adminAuth } from '@/lib/auth/admin-auth';
 
 export const authProcedure = t.procedure.use(async ({ ctx, next }) => {
   const { req } = ctx;

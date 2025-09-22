@@ -1,5 +1,5 @@
 import { getRepositories } from '@/lib/azure/cosmos';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface APICall {

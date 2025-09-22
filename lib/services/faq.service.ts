@@ -1,6 +1,6 @@
 import { getRepositories } from '@/lib/azure/cosmos';
 import { FAQ } from '@/lib/db/schema';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 import { v4 as uuidv4 } from 'uuid';
 
 export class FAQService {
@@ -99,8 +99,8 @@ export class FAQService {
       const { resources } = await this.faqRepository.query(query, parameters);
       
       // Get total count
-      const countQuery = 'SELECT VALUE COUNT(1) FROM c WHERE c.companyId = @companyId';
-      const countParameters = [{ name: '@companyId', value: companyId }];
+      let countQuery = 'SELECT VALUE COUNT(1) FROM c WHERE c.companyId = @companyId';
+      const countParameters: Array<{ name: string; value: any }> = [{ name: '@companyId', value: companyId }];
       
       if (options?.category) {
         countQuery += ' AND c.category = @category';
@@ -109,7 +109,7 @@ export class FAQService {
 
       if (options?.isPublic !== undefined) {
         countQuery += ' AND c.isPublic = @isPublic';
-        countParameters.push({ name: '@isPublic', value: options.isPublic });
+        countParameters.push({ name: '@isPublic', value: String(options.isPublic) });
       }
 
       const { resources: countResult } = await this.faqRepository.query(countQuery, countParameters);

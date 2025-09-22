@@ -41,22 +41,25 @@ export const benefitsComparisonTools = {
 
       // Filter by region if specified
       const filteredPlans = region ? getPlansByRegion(region) : plans;
-      const availablePlans = filteredPlans.filter(plan => planIds.includes(plan.id));
+      const availablePlans = filteredPlans.filter(plan => plan && planIds.includes(plan.id));
 
-      const comparison = availablePlans.map(plan => ({
-        id: plan.id,
-        name: plan.name,
-        type: plan.type,
-        provider: plan.provider,
-        monthlyCost: calculateEmployeeCost(plan.id, coverageTier as any),
-        deductibles: plan.coverage.deductibles,
-        coinsurance: plan.coverage.coinsurance,
-        copays: plan.coverage.copays,
-        outOfPocketMax: plan.coverage.outOfPocketMax,
-        features: plan.features,
-        exclusions: plan.exclusions,
-        regionalRestrictions: plan.regionalRestrictions,
-      }));
+      const comparison = availablePlans.map(plan => {
+        if (!plan) return null;
+        return {
+          id: plan.id,
+          name: plan.name,
+          type: plan.type,
+          provider: plan.provider,
+          monthlyCost: calculateEmployeeCost(plan.id, coverageTier as any),
+          deductibles: plan.coverage.deductibles,
+          coinsurance: plan.coverage.coinsurance,
+          copays: plan.coverage.copays,
+          outOfPocketMax: plan.coverage.outOfPocketMax,
+          features: plan.features,
+          exclusions: plan.exclusions,
+          regionalRestrictions: plan.regionalRestrictions,
+        };
+      }).filter(Boolean);
 
       return {
         comparison,

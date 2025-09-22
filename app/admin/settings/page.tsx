@@ -89,13 +89,13 @@ export default function AdminSettingsPage() {
         logger.warn('No settings found, using defaults');
       }
     } catch (error) {
-      logger.error('Failed to load settings:', error);
+      logger.error('Failed to load settings', { error: error instanceof Error ? error.message : 'Unknown error' });
     }
   };
 
   const handleSave = async (section: string) => {
     try {
-      logger.info(`Saving ${section} settings:`, settings);
+      logger.info(`Saving ${section} settings`, { section, settings });
       
       const response = await fetch('/api/admin/settings', {
         method: 'PUT',
@@ -112,12 +112,12 @@ export default function AdminSettingsPage() {
         // You could add a toast notification here
         alert(`${section} settings saved successfully!`);
       } else {
-        logger.error(`Failed to save ${section} settings:`, result.error);
+        logger.error(`Failed to save ${section} settings`, { section, error: result.error });
         alert(`Failed to save ${section} settings: ${result.error}`);
       }
     } catch (error) {
-      logger.error(`Error saving ${section} settings:`, error);
-      alert(`Error saving ${section} settings: ${error.message}`);
+      logger.error(`Error saving ${section} settings`, { section, error: error instanceof Error ? error.message : 'Unknown error' });
+      alert(`Error saving ${section} settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

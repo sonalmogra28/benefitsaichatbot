@@ -16,7 +16,7 @@ if (REDIS_URL) {
     redisClient.on('error', (err) => {
       logger.error('Redis Client Error', { error: err });
       // Prevent further commands on critical errors
-      if (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') {
+      if ((err as any).code === 'ECONNRESET' || (err as any).code === 'ETIMEDOUT') {
         redisClient?.disconnect();
       }
     });
@@ -60,7 +60,7 @@ class ResponseCache {
 
     try {
       const key = this.generateCacheKey(query, companyId);
-      await this.client.create(key, response, 'EX', CACHE_TTL_SECONDS);
+      await this.client.setex(key, CACHE_TTL_SECONDS, JSON.stringify(response));
     } catch (error) {
       logger.error('Redis SET error', { error });
     }

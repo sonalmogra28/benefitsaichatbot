@@ -1,4 +1,5 @@
 import { ConfidentialClientApplication, Configuration, LogLevel } from '@azure/msal-node';
+import { logger } from '@/lib/logging/logger';
 
 const MSAL_CONFIG: Configuration = {
   auth: {

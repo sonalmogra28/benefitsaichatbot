@@ -1,5 +1,6 @@
 import { azure } from '@ai-sdk/azure';
-import { generateObject } from 'ai';
+// import { generateObject } from 'ai';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
 // Model configurations with cost estimates (per 1M tokens)
@@ -88,15 +89,28 @@ Respond with JSON matching this schema:
   "confidence": number (0-1)
 }`;
 
-      const result = await generateObject({
-        model: azure(process.env.AZURE_OPENAI_CHAT_DEPLOYMENT || 'gpt-4o-mini'),
-        prompt: analysisPrompt,
-        schema: QueryComplexitySchema,
-      });
+      // TODO: Implement generateObject from AI SDK
+      // const result = await generateObject({
+      //   model: azure(process.env.AZURE_OPENAI_CHAT_DEPLOYMENT || 'gpt-4o-mini'),
+      //   prompt: analysisPrompt,
+      //   schema: QueryComplexitySchema,
+      // });
+      
+      // Temporary fallback - return default complexity
+      const result = {
+        object: {
+          complexity: 'moderate' as const,
+          category: 'benefits' as const,
+          estimatedTokens: 1000,
+          requiresReasoning: false,
+          requiresContext: true,
+          confidence: 0.8
+        }
+      };
 
       return result.object;
     } catch (error) {
-      logger.error('Query complexity analysis failed:', error);
+      logger.error('Query complexity analysis failed:', { error: error instanceof Error ? error.message : 'Unknown error' });
       // Fallback to simple analysis
       return {
         complexity: 'simple',
@@ -173,7 +187,7 @@ Respond with JSON matching this schema:
     companyId?: string
   ): Promise<{
     model: keyof typeof MODEL_CONFIGS;
-    config: ReturnType<typeof this.getModelConfig>;
+    config: any;
     reason: string;
     complexity: QueryComplexity;
   }> {

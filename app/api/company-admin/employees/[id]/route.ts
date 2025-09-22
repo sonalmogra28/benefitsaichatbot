@@ -1,122 +1,91 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { requireCompanyAdmin } from '@/lib/auth/admin-middleware';
-import { getContainer } from '@/lib/azure/cosmos-db';
-import { z } from 'zod';
+import { NextRequest, NextResponse } from 'next/server';
+import { withCompanyAdminAuth, AuthenticatedRequest } from '@/lib/auth/middleware';
+import { userService } from '@/lib/services/user-service';
+import { userMetadataSchema } from '@/lib/schemas/user';
+import { logger } from '@/lib/logger';
 
-// GET /api/company-admin/employees/[id] - Get specific employee
-export const GET = requireCompanyAdmin(
-  async (
-    request: NextRequest,
-    { params }: { params: { id: string } },
-    user,
-  ) => {
-    try {
-      const employee = await userService.getUserFromFirestore(params.id);
+export const GET = withCompanyAdminAuth(async (request: AuthenticatedRequest) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const employeeId = searchParams.get('id');
 
-      if (!employee || employee.companyId !== user.companyId) {
-        return NextResponse.json(
-          { error: 'Employee not found' },
-          { status: 404 },
-        );
-      }
-
-      return NextResponse.json({ employee });
-    } catch (error) {
-      console.error('Error fetching employee:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch employee' },
-        { status: 500 },
-      );
+    if (!employeeId) {
+      return NextResponse.json({ error: 'Employee ID required' }, { status: 400 });
     }
-  },
-);
 
-// PATCH /api/company-admin/employees/[id] - Update employee
-export const PATCH = requireCompanyAdmin(
-  async (
-    request: NextRequest,
-    { params }: { params: { id: string } },
-    user,
-  ) => {
-    try {
-      const body = await request.json();
-      const validated = userMetadataSchema.parse(body);
-
-      const employee = await userService.getUserFromFirestore(params.id);
-
-      if (!employee || employee.companyId !== user.companyId) {
-        return NextResponse.json(
-          { error: 'Employee not found' },
-          { status: 404 },
-        );
-      }
-
-      // Prevent downgrading own permissions
-      if (
-        params.id === user.uid &&
-        validated.userType &&
-        validated.userType !== user.role
-      ) {
-        return NextResponse.json(
-          { error: 'Cannot change your own role' },
-          { status: 400 },
-        );
-      }
-
-      await userService.updateUserMetadata(params.id, validated);
-
-      return NextResponse.json({ success: true });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return NextResponse.json(
-          { error: 'Invalid request data', details: error.errors },
-          { status: 400 },
-        );
-      }
-
-      console.error('Error updating employee:', error);
-      return NextResponse.json(
-        { error: 'Failed to update employee' },
-        { status: 500 },
-      );
+    const employee = await userService.getUserById(employeeId);
+    
+    if (!employee) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
-  },
-);
 
-// DELETE /api/company-admin/employees/[id] - Deactivate employee
-export const DELETE = requireCompanyAdmin(
-  async (
-    request: NextRequest,
-    { params }: { params: { id: string } },
-    user,
-  ) => {
-    try {
-      // Prevent self-deactivation
-      if (params.id === user.uid) {
-        return NextResponse.json(
-          { error: 'Cannot deactivate your own account' },
-          { status: 400 },
-        );
-      }
-
-      const employee = await userService.getUserFromFirestore(params.id);
-
-      if (!employee || employee.companyId !== user.companyId) {
-        return NextResponse.json(
-          { error: 'Employee not found' },
-          { status: 404 },
-        );
-      }
-
-      await userService.deleteUser(params.id);
-
-      return NextResponse.json({ success: true });
-    } catch (error) {
-      console.error('Error deactivating employee:', error);
-      return NextResponse.json(
-        { error: 'Failed to deactivate employee' },
-        { status: 500 },
-      );
+    // Ensure user can only access employees from their company
+    if (employee.companyId !== request.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
-  },
-);
+
+    return NextResponse.json({ employee });
+  } catch (error) {
+    logger.error('Error fetching employee', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      employeeId: new URL(request.url).searchParams.get('id')
+    });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+});
+
+export const PUT = withCompanyAdminAuth(async (request: AuthenticatedRequest) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const employeeId = searchParams.get('id');
+    const body = await request.json();
+
+    if (!employeeId) {
+      return NextResponse.json({ error: 'Employee ID required' }, { status: 400 });
+    }
+
+    // Validate request body
+    const validatedData = userMetadataSchema.parse(body);
+
+    const updatedEmployee = await userService.updateUser(employeeId, validatedData);
+
+    return NextResponse.json({ employee: updatedEmployee });
+  } catch (error) {
+    logger.error('Error updating employee', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      employeeId: new URL(request.url).searchParams.get('id')
+    });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+});
+
+export const DELETE = withCompanyAdminAuth(async (request: AuthenticatedRequest) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const employeeId = searchParams.get('id');
+
+    if (!employeeId) {
+      return NextResponse.json({ error: 'Employee ID required' }, { status: 400 });
+    }
+
+    // Check if employee exists and belongs to the same company
+    const employee = await userService.getUserById(employeeId);
+    if (!employee) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
+    if (employee.companyId !== request.user?.companyId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    await userService.deleteUser(employeeId);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    logger.error('Error deleting employee', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      employeeId: new URL(request.url).searchParams.get('id')
+    });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+});

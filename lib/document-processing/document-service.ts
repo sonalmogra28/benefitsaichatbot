@@ -62,7 +62,8 @@ export class DocumentService {
       };
 
       // Save document record
-      const result = await this.documentsContainer.items.create(document);
+      const container = await this.documentsContainer;
+      const result = await container.items.create(document);
 
       // Start processing asynchronously
       this.processDocumentAsync(document.id, file, mimeType);
@@ -74,12 +75,12 @@ export class DocumentService {
         size: file.length,
       });
 
-      return result.resource;
+      return result.resource || null;
     } catch (error) {
       logger.error('Document upload failed', {
         tenantId,
         filename,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -118,11 +119,11 @@ export class DocumentService {
     } catch (error) {
       logger.error('Document processing failed', {
         documentId,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
 
       await this.updateDocumentStatus(documentId, 'error', 0, {
-        errorMessage: error.message,
+        errorMessage: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -145,7 +146,8 @@ export class DocumentService {
         ...additionalData,
       };
 
-      await this.documentsContainer.item(documentId, document.tenantId).replace({
+      const container = await this.documentsContainer;
+      await container.item(documentId, document.tenantId).replace({
         ...document,
         ...updates,
       });
@@ -153,7 +155,7 @@ export class DocumentService {
       logger.error('Failed to update document status', {
         documentId,
         status,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -167,10 +169,11 @@ export class DocumentService {
         parameters: [{ name: '@documentId', value: documentId }],
       };
 
-      const result = await this.documentsContainer.items.query(query).fetchAll();
+      const container = await this.documentsContainer;
+      const result = await container.items.query(query).fetchAll();
       return result.resources[0] || null;
     } catch (error) {
-      logger.error('Failed to get document', { documentId, error: error.message });
+      logger.error('Failed to get document', { documentId, error: error instanceof Error ? error.message : String(error) });
       return null;
     }
   }
@@ -223,14 +226,15 @@ export class DocumentService {
         };
       }
 
-      const result = await this.documentsContainer.items.query(searchQuery).fetchAll();
+      const container = await this.documentsContainer;
+      const result = await container.items.query(searchQuery).fetchAll();
       return result.resources.slice(0, limit);
     } catch (error) {
       logger.error('Document search failed', {
         tenantId,
         query,
         category,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
       return [];
     }
@@ -247,14 +251,15 @@ export class DocumentService {
         throw new Error('Unauthorized to delete this document');
       }
 
-      await this.documentsContainer.item(documentId, tenantId).delete();
+      const container = await this.documentsContainer;
+      await container.item(documentId, tenantId).delete();
 
       logger.info('Document deleted', { documentId, tenantId });
     } catch (error) {
       logger.error('Failed to delete document', {
         documentId,
         tenantId,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -278,7 +283,7 @@ export class DocumentService {
     } catch (error) {
       logger.error('Failed to get document processing status', {
         documentId,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
       });
       return null;
     }

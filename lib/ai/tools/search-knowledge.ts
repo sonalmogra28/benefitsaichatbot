@@ -1,5 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 import { searchVectors } from '@/lib/ai/vector-search';
 // Function to build knowledge context from search results
 const buildKnowledgeContext = (results: any[]) => {

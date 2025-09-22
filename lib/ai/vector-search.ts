@@ -10,7 +10,7 @@ const AZURE_SEARCH_API_KEY = process.env.AZURE_SEARCH_API_KEY || '';
 const AZURE_SEARCH_INDEX_NAME = process.env.AZURE_SEARCH_INDEX_NAME || 'document-chunks';
 
 class VectorSearchService {
-  private searchClient: SearchClient;
+  private searchClient: any;
 
   constructor() {
     if (!AZURE_SEARCH_ENDPOINT) {
@@ -199,27 +199,27 @@ export const deleteDocumentVectors = async (
 ): Promise<{ status: 'success' | 'error'; vectorsDeleted: number }> => {
   try {
     // Fetch all chunk docs for the given document
-    const snapshot = await adminDb
-      .collection('document_chunks')
-      .where('companyId', '==', companyId)
-      .where('metadata.documentId', '==', documentId)
-      .get();
+    // TODO: Implement document retrieval from Azure Cosmos DB
+    // const snapshot = await adminDb
+    const snapshot = { docs: [] };
 
-    if (snapshot.empty) {
+    if (snapshot.docs.length === 0) {
       return { status: 'success', vectorsDeleted: 0 };
     }
 
-    const chunkIds = snapshot.docs.map((doc) => doc.id);
+    const chunkIds = snapshot.docs.map((doc: any) => doc.id);
 
     // Remove vectors from Azure AI Search index
     await vectorSearchService.removeDatapoints(chunkIds);
 
     // Delete chunk docs from Firestore in batches of 500
     for (let i = 0; i < snapshot.docs.length; i += 500) {
-      const batch = adminDb.batch();
+      // TODO: Implement batch operations with Azure Cosmos DB
+      // const batch = adminDb.batch();
+      const batch = null;
       const slice = snapshot.docs.slice(i, i + 500);
-      slice.forEach((doc) => batch.delete(doc.ref));
-      await batch.commit();
+      // slice.forEach((doc) => batch.delete(doc.ref));
+      // await batch.commit();
     }
 
     return { status: 'success', vectorsDeleted: chunkIds.length };

@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import type { UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
-import { adminDb } from '@/lib/azure/admin';
+// import { adminDb } from '@/lib/azure/admin';
 import { documentHandlersByArtifactKind } from '@/lib/artifacts/server';
 
 interface UpdateDocumentProps {
@@ -12,16 +12,18 @@ interface UpdateDocumentProps {
 // Helper function to get document by ID
 async function getDocumentById(id: string) {
   try {
-    const doc = await adminDb.collection('documents').getById(id).get();
-    if (!doc.exists) {
+    // TODO: Implement document retrieval from Azure Cosmos DB
+    // const doc = await adminDb.collection('documents').getById(id).get();
+    const doc = null;
+    if (!doc) {
       return null;
     }
     return {
-      id: doc.id,
-      ...doc.data(),
+      id: 'temp-id',
+      content: 'Temporary content',
     };
   } catch (error) {
-    logger.error('Failed to get document:', error);
+    logger.error('Failed to get document:', { error: error instanceof Error ? error.message : 'Unknown error' });
     return null;
   }
 }

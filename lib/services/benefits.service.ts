@@ -1,7 +1,7 @@
 import { amerivetBenefits2024_2025, getPlansByRegion, getPlanById, calculatePremium, isEligibleForPlan } from '@/lib/data/amerivet-benefits-2024-2025';
 import { BenefitPlan, OpenEnrollment, EligibilityRules } from '@/lib/data/amerivet-benefits-2024-2025';
 import { getRepositories } from '@/lib/azure/cosmos';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface BenefitsQuery {
@@ -56,7 +56,7 @@ export class BenefitsService {
       const plan: BenefitPlan = {
         id: uuidv4(),
         ...planData,
-        createdAt: new Date(),
+        // createdAt: new Date(), // Removed - not part of BenefitPlan interface
         updatedAt: new Date()
       };
 
@@ -182,7 +182,7 @@ export class BenefitsService {
 
       // Filter by region
       if (query.region) {
-        const regionalPlanIds = amerivetBenefits2024_2025.regionalPlans[query.region] || [];
+        const regionalPlanIds = (amerivetBenefits2024_2025.regionalPlans as any)[query.region] || [];
         plans = plans.filter(plan => 
           plan.regionalAvailability.includes('nationwide') || 
           plan.regionalAvailability.includes(query.region!) ||

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { validateToken } from '@/lib/azure/token-validation';
 import { USER_ROLES } from '@/lib/constants/roles';
+import { logger } from '@/lib/logger';
 
 export async function adminMiddleware(request: NextRequest) {
   const authHeader = request.headers.get('authorization');

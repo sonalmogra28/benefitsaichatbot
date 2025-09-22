@@ -9,7 +9,6 @@ const redis = new Redis({
   port: redisConfig.port,
   password: redisConfig.password,
   tls: redisConfig.tls,
-  retryDelayOnFailover: 100,
   maxRetriesPerRequest: 3,
   lazyConnect: true,
 });
@@ -23,10 +22,10 @@ redis.on('connect', () => {
 });
 
 redis.on('error', (error) => {
-  logger.error('Redis connection error', error, {
+  logger.error('Redis connection error', {
     host: redisConfig.host,
     port: redisConfig.port
-  });
+  }, error as Error);
 });
 
 redis.on('close', () => {
@@ -46,7 +45,7 @@ export class RedisService {
       logger.debug('Redis GET operation', { key, found: value !== null });
       return value;
     } catch (error) {
-      logger.error('Redis GET operation failed', error, { key });
+      logger.error('Redis GET operation failed', { key }, error as Error);
       throw error;
     }
   }
@@ -56,11 +55,11 @@ export class RedisService {
       if (ttlSeconds) {
         await this.client.setex(key, ttlSeconds, value);
       } else {
-        await this.client.create(key, value);
+        await this.client.set(key, value);
       }
       logger.debug('Redis SET operation', { key, ttlSeconds });
     } catch (error) {
-      logger.error('Redis SET operation failed', error, { key, ttlSeconds });
+      logger.error('Redis SET operation failed', { key, ttlSeconds }, error as Error);
       throw error;
     }
   }
@@ -71,7 +70,7 @@ export class RedisService {
       logger.debug('Redis DEL operation', { key, deletedCount: result });
       return result;
     } catch (error) {
-      logger.error('Redis DEL operation failed', error, { key });
+      logger.error('Redis DEL operation failed', { key }, error as Error);
       throw error;
     }
   }
@@ -82,7 +81,7 @@ export class RedisService {
       logger.debug('Redis EXISTS operation', { key, exists: result === 1 });
       return result === 1;
     } catch (error) {
-      logger.error('Redis EXISTS operation failed', error, { key });
+      logger.error('Redis EXISTS operation failed', { key }, error as Error);
       throw error;
     }
   }
@@ -93,7 +92,7 @@ export class RedisService {
       logger.debug('Redis EXPIRE operation', { key, ttlSeconds, success: result === 1 });
       return result === 1;
     } catch (error) {
-      logger.error('Redis EXPIRE operation failed', error, { key, ttlSeconds });
+      logger.error('Redis EXPIRE operation failed', { key, ttlSeconds }, error as Error);
       throw error;
     }
   }
@@ -104,7 +103,7 @@ export class RedisService {
       logger.debug('Redis TTL operation', { key, ttl: result });
       return result;
     } catch (error) {
-      logger.error('Redis TTL operation failed', error, { key });
+      logger.error('Redis TTL operation failed', { key }, error as Error);
       throw error;
     }
   }
@@ -115,7 +114,7 @@ export class RedisService {
       logger.debug('Redis KEYS operation', { pattern, count: result.length });
       return result;
     } catch (error) {
-      logger.error('Redis KEYS operation failed', error, { pattern });
+      logger.error('Redis KEYS operation failed', { pattern }, error as Error);
       throw error;
     }
   }
@@ -125,18 +124,18 @@ export class RedisService {
       await this.client.flushdb();
       logger.info('Redis database flushed');
     } catch (error) {
-      logger.error('Redis FLUSHDB operation failed', error);
+      logger.error('Redis FLUSHDB operation failed', {}, error as Error);
       throw error;
     }
   }
 
   async info(section?: string): Promise<string> {
     try {
-      const result = await this.client.info(section);
+      const result = await this.client.info(section || '');
       logger.debug('Redis INFO operation', { section });
       return result;
     } catch (error) {
-      logger.error('Redis INFO operation failed', error, { section });
+      logger.error('Redis INFO operation failed', { section }, error as Error);
       throw error;
     }
   }
@@ -147,7 +146,7 @@ export class RedisService {
       logger.debug('Redis PING operation', { response: result });
       return result;
     } catch (error) {
-      logger.error('Redis PING operation failed', error);
+      logger.error('Redis PING operation failed', {}, error as Error);
       throw error;
     }
   }
@@ -159,7 +158,7 @@ export class RedisService {
       logger.debug('Redis HGET operation', { key, field, found: result !== null });
       return result;
     } catch (error) {
-      logger.error('Redis HGET operation failed', error, { key, field });
+      logger.error('Redis HGET operation failed', { key, field }, error as Error);
       throw error;
     }
   }
@@ -170,7 +169,7 @@ export class RedisService {
       logger.debug('Redis HSET operation', { key, field, result });
       return result;
     } catch (error) {
-      logger.error('Redis HSET operation failed', error, { key, field });
+      logger.error('Redis HSET operation failed', { key, field }, error as Error);
       throw error;
     }
   }
@@ -181,7 +180,7 @@ export class RedisService {
       logger.debug('Redis HGETALL operation', { key, fieldCount: Object.keys(result).length });
       return result;
     } catch (error) {
-      logger.error('Redis HGETALL operation failed', error, { key });
+      logger.error('Redis HGETALL operation failed', { key }, error as Error);
       throw error;
     }
   }
@@ -192,7 +191,7 @@ export class RedisService {
       logger.debug('Redis HDEL operation', { key, field, deletedCount: result });
       return result;
     } catch (error) {
-      logger.error('Redis HDEL operation failed', error, { key, field });
+      logger.error('Redis HDEL operation failed', { key, field }, error as Error);
       throw error;
     }
   }
@@ -204,7 +203,7 @@ export class RedisService {
       logger.debug('Redis LPUSH operation', { key, valueCount: values.length, newLength: result });
       return result;
     } catch (error) {
-      logger.error('Redis LPUSH operation failed', error, { key, valueCount: values.length });
+      logger.error('Redis LPUSH operation failed', { key, valueCount: values.length }, error as Error);
       throw error;
     }
   }
@@ -215,7 +214,7 @@ export class RedisService {
       logger.debug('Redis RPUSH operation', { key, valueCount: values.length, newLength: result });
       return result;
     } catch (error) {
-      logger.error('Redis RPUSH operation failed', error, { key, valueCount: values.length });
+      logger.error('Redis RPUSH operation failed', { key, valueCount: values.length }, error as Error);
       throw error;
     }
   }
@@ -226,7 +225,7 @@ export class RedisService {
       logger.debug('Redis LPOP operation', { key, popped: result });
       return result;
     } catch (error) {
-      logger.error('Redis LPOP operation failed', error, { key });
+      logger.error('Redis LPOP operation failed', { key }, error as Error);
       throw error;
     }
   }
@@ -237,7 +236,7 @@ export class RedisService {
       logger.debug('Redis RPOP operation', { key, popped: result });
       return result;
     } catch (error) {
-      logger.error('Redis RPOP operation failed', error, { key });
+      logger.error('Redis RPOP operation failed', { key }, error as Error);
       throw error;
     }
   }
@@ -248,7 +247,7 @@ export class RedisService {
       logger.debug('Redis LRANGE operation', { key, start, stop, count: result.length });
       return result;
     } catch (error) {
-      logger.error('Redis LRANGE operation failed', error, { key, start, stop });
+      logger.error('Redis LRANGE operation failed', { key, start, stop }, error as Error);
       throw error;
     }
   }
@@ -260,7 +259,7 @@ export class RedisService {
       logger.debug('Redis SADD operation', { key, memberCount: members.length, addedCount: result });
       return result;
     } catch (error) {
-      logger.error('Redis SADD operation failed', error, { key, memberCount: members.length });
+      logger.error('Redis SADD operation failed', { key, memberCount: members.length }, error as Error);
       throw error;
     }
   }
@@ -271,7 +270,7 @@ export class RedisService {
       logger.debug('Redis SMEMBERS operation', { key, memberCount: result.length });
       return result;
     } catch (error) {
-      logger.error('Redis SMEMBERS operation failed', error, { key });
+      logger.error('Redis SMEMBERS operation failed', { key }, error as Error);
       throw error;
     }
   }
@@ -282,7 +281,7 @@ export class RedisService {
       logger.debug('Redis SREM operation', { key, memberCount: members.length, removedCount: result });
       return result;
     } catch (error) {
-      logger.error('Redis SREM operation failed', error, { key, memberCount: members.length });
+      logger.error('Redis SREM operation failed', { key, memberCount: members.length }, error as Error);
       throw error;
     }
   }
@@ -294,7 +293,7 @@ export class RedisService {
       logger.debug('Redis ZADD operation', { key, score, member, result });
       return result;
     } catch (error) {
-      logger.error('Redis ZADD operation failed', error, { key, score, member });
+      logger.error('Redis ZADD operation failed', { key, score, member }, error as Error);
       throw error;
     }
   }
@@ -307,7 +306,7 @@ export class RedisService {
       logger.debug('Redis ZRANGE operation', { key, start, stop, withScores, count: result.length });
       return result;
     } catch (error) {
-      logger.error('Redis ZRANGE operation failed', error, { key, start, stop, withScores });
+      logger.error('Redis ZRANGE operation failed', { key, start, stop, withScores }, error as Error);
       throw error;
     }
   }
@@ -318,7 +317,7 @@ export class RedisService {
       logger.debug('Redis ZREM operation', { key, memberCount: members.length, removedCount: result });
       return result;
     } catch (error) {
-      logger.error('Redis ZREM operation failed', error, { key, memberCount: members.length });
+      logger.error('Redis ZREM operation failed', { key, memberCount: members.length }, error as Error);
       throw error;
     }
   }
@@ -329,7 +328,7 @@ export class RedisService {
       await this.client.disconnect();
       logger.info('Redis connection disconnected');
     } catch (error) {
-      logger.error('Failed to disconnect Redis', error);
+      logger.error('Failed to disconnect Redis', {}, error as Error);
       throw error;
     }
   }

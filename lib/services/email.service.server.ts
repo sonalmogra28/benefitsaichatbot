@@ -1,4 +1,4 @@
-import { getContainer } from '@/lib/azure/cosmos-db';
+import { hybridDatabase } from './hybrid-database';
 
 // Interfaces remain the same as they define the public contract of the service
 export interface EmailOptions {
@@ -45,19 +45,19 @@ export class EmailService {
     options: EmailOptions,
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      await adminDb.collection('pending_emails').add({
+      await hybridDatabase.createItem('pending_emails', {
         to: Array.isArray(options.to) ? options.to : [options.to],
         message: {
           subject: options.subject,
           html: options.html,
         },
         from: options.from || this.fromEmail,
-        createdAt: FieldValue.serverTimestamp(),
+        createdAt: new Date().toISOString(),
         status: 'PENDING',
       });
       return { success: true };
     } catch (error) {
-      console.error('Failed to queue email in Firestore:', error);
+      console.error('Failed to queue email:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

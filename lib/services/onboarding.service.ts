@@ -1,5 +1,6 @@
 import { getContainer } from '@/lib/azure/cosmos-db';
 import { emailService } from './email.service';
+import { userService } from './user.service';
 
 export interface OnboardingData {
   role?: string;
@@ -112,22 +113,11 @@ export class OnboardingService {
    */
   private async sendWelcomeEmail(email: string, name: string): Promise<void> {
     try {
-      await emailService.sendNotification({
-        email,
+      await emailService.sendAdminNotification(
+        [email],
         name,
-        title: 'Welcome to Your Benefits Portal!',
-        message: `
-          <p>Congratulations on completing your onboarding! Here's what you can do next:</p>
-          <ul style="margin: 20px 0;">
-            <li><strong>Explore Your Benefits:</strong> Review all available benefit plans and their details</li>
-            <li><strong>Use the Cost Calculator:</strong> Estimate your out-of-pocket costs for different scenarios</li>
-            <li><strong>Ask Questions:</strong> Our AI assistant is here to help answer any benefits questions</li>
-            <li><strong>Access Documents:</strong> Find important benefits documents and resources</li>
-          </ul>
-          <p>If you need any assistance, don't hesitate to reach out to your HR team or use the chat feature in the portal.</p>
-        `,
-        actionUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/benefits`,
-      });
+        'Welcome to Your Benefits Portal!'
+      );
     } catch (error) {
       console.error('Failed to send welcome email:', error);
       // Don't throw - email failure shouldn't break onboarding

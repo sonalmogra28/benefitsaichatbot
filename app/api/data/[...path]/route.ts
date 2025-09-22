@@ -1,6 +1,8 @@
 
 import { getContainer } from '@/lib/azure/cosmos-db';
 import { NextResponse } from 'next/server';
+import { adminAuth } from '@/lib/auth/admin-auth';
+import { logger } from '@/lib/logger';
 
 /**
  * Protected endpoint for updating Firestore documents
@@ -75,11 +77,13 @@ export async function PUT(
       modifiedByRole: userRole
     };
 
-    // Perform the Firestore update
-    await adminDb.doc(documentPath).set(auditedData, { merge: true });
+    // Perform the Cosmos DB update
+    const container = await getContainer('documents');
+    await container.items.upsert(auditedData);
 
     // Log the operation for audit purposes
-    await adminDb.collection('audit_logs').add({
+    const auditContainer = await getContainer('audit_logs');
+    await auditContainer.items.create({
       action: 'document_update',
       path: documentPath,
       userId: decodedToken.uid,
@@ -93,7 +97,8 @@ export async function PUT(
   } catch (error) {
     // Log error securely without exposing details
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    await adminDb.collection('error_logs').add({
+    const errorContainer = await getContainer('error_logs');
+    await errorContainer.items.create({
       endpoint: '/api/data',
       error: errorMessage,
       timestamp: new Date().toISOString()

@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getContainer } from '@/lib/azure/cosmos-db';
 import { validateToken } from '@/lib/azure/token-validation';
+import { adminAuth } from '@/lib/auth/admin-auth';
+import { logger } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,8 +16,7 @@ export async function GET(req: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
 
     // Get company ID from user's custom claims
-    const userRecord = await adminAuth.getUser(decodedToken.uid);
-    const companyId = userRecord.customClaims?.companyId;
+    const companyId = decodedToken.companyId;
 
     if (!companyId) {
       return NextResponse.json(
@@ -25,22 +26,19 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch documents
-    const snapshot = await adminDb
-      .collection('companies')
-      .doc(companyId)
-      .collection('documents')
-      .get();
-
-    const documents = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const documentsContainer = await getContainer('documents');
+    const query = {
+      query: 'SELECT * FROM c WHERE c.companyId = @companyId',
+      parameters: [{ name: '@companyId', value: companyId }]
+    };
+    
+    const { resources: documents } = await documentsContainer.items.query(query).fetchAll();
 
     return NextResponse.json({ documents });
   } catch (error) {
-    console.error('Error fetching documents:', error);
+    logger.error('Error fetching documents', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: 'Failed to fetch documents' },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }
@@ -58,8 +56,7 @@ export async function POST(req: NextRequest) {
     const decodedToken = await adminAuth.verifyIdToken(token);
 
     // Get company ID from user's custom claims
-    const userRecord = await adminAuth.getUser(decodedToken.uid);
-    const companyId = userRecord.customClaims?.companyId;
+    const companyId = decodedToken.companyId;
 
     if (!companyId) {
       return NextResponse.json(
@@ -71,32 +68,25 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     // Create document
-    const documentRef = adminDb
-      .collection('companies')
-      .doc(companyId)
-      .collection('documents')
-      .doc();
-
-    const documentData = {
-      id: documentRef.id,
+    const documentsContainer = await getContainer('documents');
+    const document = {
+      id: crypto.randomUUID(),
       companyId,
       ...body,
+      createdAt: new Date().toISOString(),
       createdBy: decodedToken.uid,
-      status: 'pending_processing',
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
     };
 
-    await documentRef.set(documentData);
+    await documentsContainer.items.create(document);
 
-    return NextResponse.json({
-      id: documentRef.id,
-      message: 'Document created successfully',
+    return NextResponse.json({ 
+      success: true, 
+      document: { id: document.id, ...document } 
     });
   } catch (error) {
-    console.error('Error creating document:', error);
+    logger.error('Error creating document', { error: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json(
-      { error: 'Failed to create document' },
+      { error: 'Internal server error' },
       { status: 500 },
     );
   }

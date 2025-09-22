@@ -84,7 +84,7 @@ export function WorkdayNavigation({ tenantId, branding }: WorkdayNavigationProps
                 }}
               >
                 <span className="mr-3 flex-shrink-0">
-                  {getIcon(item.icon)}
+                  {getIcon(item.icon || 'chat')}
                 </span>
                 {item.label}
               </a>

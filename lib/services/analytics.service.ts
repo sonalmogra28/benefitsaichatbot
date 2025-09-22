@@ -1,5 +1,5 @@
 import { getRepositories } from '@/lib/azure/cosmos';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 import { apiTrackingService } from './api-tracking.service';
 
 export interface AnalyticsData {
@@ -528,22 +528,9 @@ class AnalyticsService {
     }
   }
 
-  async getSystemMetrics(): Promise<SystemMetrics> {
-    try {
-      // These would typically come from monitoring systems
-      // For now, return placeholder values
-      return {
-        cpuUsage: 0, // TODO: Implement CPU monitoring
-        memoryUsage: 0, // TODO: Implement memory monitoring
-        diskUsage: 0, // TODO: Implement disk monitoring
-        networkLatency: 0, // TODO: Implement network monitoring
-        errorRate: 0, // TODO: Implement error rate calculation
-        uptime: 0 // TODO: Implement uptime calculation
-      };
-    } catch (error) {
-      logger.error('Error fetching system metrics', error);
-      throw error;
-    }
+  // Public method that calls the private implementation
+  async getSystemMetricsPublic(): Promise<SystemMetrics> {
+    return this.getSystemMetrics();
   }
 
   private async getMonthlyChats(repositories: any, companyId: string): Promise<number> {

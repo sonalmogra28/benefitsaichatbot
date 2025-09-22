@@ -1,41 +1,61 @@
 /**
- * Central error handler
- * TODO: Add proper error tracking service (e.g., Sentry) when available
+ * Error handling utilities for hybrid architecture
+ * Provides safe error handling and logging
  */
 
-import { logger } from '@/lib/services/logger.service';
+export interface ErrorContext {
+  [key: string]: any;
+}
 
-export function handleError(error: unknown): {
-  message: string;
-  statusCode: number;
-} {
-  // Use logger service instead of console
-  logger.error(
-    'Error occurred',
-    error instanceof Error ? error : new Error(String(error)),
-  );
-
-  // Basic error handling without Sentry for now
+export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    return {
-      message: error.message || 'An unexpected error occurred',
-      statusCode: 500,
-    };
+    return error.message;
   }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as any).message);
+  }
+  return 'Unknown error occurred';
+}
 
+export function getErrorStack(error: unknown): string | undefined {
+  if (error instanceof Error) {
+    return error.stack;
+  }
+  if (error && typeof error === 'object' && 'stack' in error) {
+    return String((error as any).stack);
+  }
+  return undefined;
+}
+
+export function getErrorCode(error: unknown): string | number | undefined {
+  if (error && typeof error === 'object' && 'code' in error) {
+    return (error as any).code;
+  }
+  return undefined;
+}
+
+export function isErrorWithCode(error: unknown): error is Error & { code: string | number } {
+  return error instanceof Error && 'code' in error;
+}
+
+export function createSafeErrorContext(error: unknown, context?: ErrorContext): ErrorContext {
   return {
-    message: 'An unexpected error occurred',
-    statusCode: 500,
+    errorMessage: getErrorMessage(error),
+    errorCode: getErrorCode(error),
+    errorStack: getErrorStack(error),
+    ...context,
   };
 }
 
-export function logError(error: unknown, context?: Record<string, any>): void {
-  const errorInstance =
-    error instanceof Error ? error : new Error(String(error));
-  logger.error('Error logged', errorInstance, {
-    metadata: {
-      ...context,
-      timestamp: new Date().toISOString(),
-    },
-  });
+export function logErrorSafely(
+  logger: { error: (message: string, error?: unknown, context?: ErrorContext) => void },
+  message: string,
+  error: unknown,
+  context?: ErrorContext
+): void {
+  const safeContext = createSafeErrorContext(error, context);
+  logger.error(message, error instanceof Error ? error : undefined, safeContext);
 }

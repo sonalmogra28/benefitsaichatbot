@@ -1,0 +1,163 @@
+{
+  "deployment": {
+    "environments": {
+      "dev": {
+        "resourceGroup": "benefits-chatbot-rg-dev",
+        "location": "East US",
+        "appServiceName": "benefits-chatbot-dev",
+        "cosmosDbName": "benefits-chatbot-cosmos-dev",
+        "storageAccountName": "benefitschatbotdev",
+        "keyVaultName": "benefits-chatbot-vault-dev",
+        "appInsightsName": "benefits-chatbot-insights-dev",
+        "redisName": "benefits-chatbot-redis-dev",
+        "staticWebAppName": "benefits-chatbot-web-dev"
+      },
+      "staging": {
+        "resourceGroup": "benefits-chatbot-rg-staging",
+        "location": "East US",
+        "appServiceName": "benefits-chatbot-staging",
+        "cosmosDbName": "benefits-chatbot-cosmos-staging",
+        "storageAccountName": "benefitschatbotstaging",
+        "keyVaultName": "benefits-chatbot-vault-staging",
+        "appInsightsName": "benefits-chatbot-insights-staging",
+        "redisName": "benefits-chatbot-redis-staging",
+        "staticWebAppName": "benefits-chatbot-web-staging"
+      },
+      "prod": {
+        "resourceGroup": "benefits-chatbot-rg-prod",
+        "location": "East US",
+        "appServiceName": "benefits-chatbot-prod",
+        "cosmosDbName": "benefits-chatbot-cosmos-prod",
+        "storageAccountName": "benefitschatbotprod",
+        "keyVaultName": "benefits-chatbot-vault-prod",
+        "appInsightsName": "benefits-chatbot-insights-prod",
+        "redisName": "benefits-chatbot-redis-prod",
+        "staticWebAppName": "benefits-chatbot-web-prod"
+      }
+    }
+  },
+  "costOptimization": {
+    "monthlyCosts": {
+      "appService": {
+        "sku": "B1",
+        "cost": 55,
+        "description": "Basic tier for development and small production workloads"
+      },
+      "cosmosDb": {
+        "mode": "Serverless",
+        "cost": "50-150",
+        "description": "Pay-per-request pricing for cost efficiency"
+      },
+      "storage": {
+        "tier": "Hot",
+        "cost": "20-40",
+        "description": "Standard LRS for document and image storage"
+      },
+      "appInsights": {
+        "tier": "Standard",
+        "cost": "30-80",
+        "description": "Application performance monitoring"
+      },
+      "staticWebApp": {
+        "tier": "Standard",
+        "cost": 9,
+        "description": "Static web hosting with CDN"
+      },
+      "communicationServices": {
+        "tier": "Standard",
+        "cost": "10-20",
+        "description": "Email and SMS services"
+      },
+      "keyVault": {
+        "tier": "Standard",
+        "cost": "3-10",
+        "description": "Secrets and certificate management"
+      },
+      "redis": {
+        "tier": "Basic C0",
+        "cost": 16,
+        "description": "Caching and session storage"
+      },
+      "openai": {
+        "external": true,
+        "cost": "150-250",
+        "description": "AI model inference costs"
+      }
+    },
+    "totalMonthlyCost": "343-609",
+    "costBreakdown": {
+      "azure": "193-359",
+      "external": "150-250"
+    }
+  },
+  "monitoring": {
+    "alerts": [
+      {
+        "name": "High CPU Usage",
+        "metric": "CPU Percentage",
+        "threshold": 80,
+        "severity": "Warning"
+      },
+      {
+        "name": "High Memory Usage",
+        "metric": "Memory Percentage",
+        "threshold": 85,
+        "severity": "Warning"
+      },
+      {
+        "name": "Failed Requests",
+        "metric": "HTTP 5xx Errors",
+        "threshold": 10,
+        "severity": "Critical"
+      },
+      {
+        "name": "Response Time",
+        "metric": "Average Response Time",
+        "threshold": 5000,
+        "severity": "Warning"
+      }
+    ],
+    "dashboards": [
+      {
+        "name": "Application Performance",
+        "metrics": ["CPU", "Memory", "Response Time", "Request Count"]
+      },
+      {
+        "name": "Business Metrics",
+        "metrics": ["Active Users", "Chat Sessions", "API Calls", "Error Rate"]
+      }
+    ]
+  },
+  "security": {
+    "keyVault": {
+      "secrets": [
+        "cosmos-connection-string",
+        "storage-connection-string",
+        "openai-api-key",
+        "azure-ad-client-secret",
+        "jwt-signing-key"
+      ]
+    },
+    "networkSecurity": {
+      "firewallRules": [],
+      "ipRestrictions": [],
+      "corsOrigins": [
+        "https://benefits-chatbot-web-dev.azurestaticapps.net",
+        "https://benefits-chatbot-web-staging.azurestaticapps.net",
+        "https://benefits-chatbot-web-prod.azurestaticapps.net"
+      ]
+    }
+  },
+  "backup": {
+    "cosmosDb": {
+      "enabled": true,
+      "retentionDays": 30,
+      "frequency": "Continuous"
+    },
+    "storage": {
+      "enabled": true,
+      "retentionDays": 90,
+      "frequency": "Daily"
+    }
+  }
+}

@@ -25,7 +25,7 @@ export class DocumentCacheService {
   ): Promise<void> {
     try {
       const key = `${this.CACHE_PREFIX}${companyId}:${documentId}`;
-      await redisService.setex(key, this.TTL, JSON.stringify(chunks));
+      await redisService.set(key, JSON.stringify(chunks), this.TTL);
       
       logger.info('Document chunks cached', {
         companyId,
@@ -33,7 +33,7 @@ export class DocumentCacheService {
         chunkCount: chunks.length
       });
     } catch (error) {
-      logger.error('Failed to cache document chunks', error as Error, {
+      logger.error('Failed to cache document chunks', error, {
         companyId,
         documentId
       });
@@ -57,7 +57,7 @@ export class DocumentCacheService {
       
       return null;
     } catch (error) {
-      logger.error('Failed to get cached document chunks', error as Error, {
+      logger.error('Failed to get cached document chunks', error, {
         companyId,
         documentId
       });
@@ -76,7 +76,7 @@ export class DocumentCacheService {
     try {
       const normalizedQuery = query.toLowerCase().trim();
       const key = `${this.SEARCH_PREFIX}${companyId}:${Buffer.from(normalizedQuery).toString('base64')}`;
-      await redisService.setex(key, this.TTL, JSON.stringify(results));
+      await redisService.set(key, JSON.stringify(results), this.TTL);
       
       logger.info('Search results cached', {
         companyId,
@@ -84,7 +84,7 @@ export class DocumentCacheService {
         resultCount: results.length
       });
     } catch (error) {
-      logger.error('Failed to cache search results', error as Error, {
+      logger.error('Failed to cache search results', error, {
         companyId,
         query
       });
@@ -109,7 +109,7 @@ export class DocumentCacheService {
       
       return null;
     } catch (error) {
-      logger.error('Failed to get cached search results', error as Error, {
+      logger.error('Failed to get cached search results', error, {
         companyId,
         query
       });
@@ -133,7 +133,7 @@ export class DocumentCacheService {
         documentId
       });
     } catch (error) {
-      logger.error('Failed to invalidate document cache', error as Error, {
+      logger.error('Failed to invalidate document cache', error, {
         companyId,
         documentId
       });
@@ -153,11 +153,15 @@ export class DocumentCacheService {
       const searchKeys = await redisService.keys(searchPattern);
       
       if (cacheKeys.length > 0) {
-        await redisService.del(...cacheKeys);
+        for (const key of cacheKeys) {
+          await redisService.del(key);
+        }
       }
       
       if (searchKeys.length > 0) {
-        await redisService.del(...searchKeys);
+        for (const key of searchKeys) {
+          await redisService.del(key);
+        }
       }
       
       logger.info('Company cache cleared', {
@@ -166,7 +170,7 @@ export class DocumentCacheService {
         searchKeysDeleted: searchKeys.length
       });
     } catch (error) {
-      logger.error('Failed to clear company cache', error as Error, {
+      logger.error('Failed to clear company cache', error, {
         companyId
       });
     }
@@ -193,7 +197,7 @@ export class DocumentCacheService {
         totalKeys: cacheKeys.length + searchKeys.length
       };
     } catch (error) {
-      logger.error('Failed to get cache stats', error as Error, {
+      logger.error('Failed to get cache stats', error, {
         companyId
       });
       return {

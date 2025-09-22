@@ -1,15 +1,6 @@
 import { DocumentUploadSimple } from '@/components/admin/document-upload-simple';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth/auth-options';
-import { redirect } from 'next/navigation';
 
-export default async function DocumentUploadPage() {
-  const session = await getServerSession(authOptions);
-  
-  if (!session?.user?.id) {
-    redirect('/auth/signin');
-  }
-
+export default function DocumentUploadPage() {
   // For now, using a default company ID - in production this would come from user context
   const companyId = 'amerivet-demo'; // Replace with actual company ID logic
 

@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 import { getRepositories } from '@/lib/azure/cosmos';
-import { logger } from '@/lib/logging/logger';
+import { logger } from '../utils/logger-fix';
 import { azureOpenAIService } from '@/lib/azure/openai';
 import { azureAuthService } from '@/lib/azure/auth';
 import { getStorageServices } from '@/lib/azure/storage';
@@ -182,21 +182,18 @@ class GoogleWorkspaceService {
    */
   async getSyncedUsers(companyId: string): Promise<GoogleWorkspaceUser[]> {
     try {
-      const snapshot = await db
-        .collection('users')
-        .query('companyId', '==', companyId)
-        .query('googleWorkspaceId', '!=', null)
-        .get();
+      const repositories = await getRepositories();
+      const query = `SELECT * FROM c WHERE c.companyId = @companyId AND c.googleWorkspaceId != null`;
+      const parameters = [{ name: '@companyId', value: companyId }];
+      
+      const { resources: users } = await repositories.users.query(query, parameters);
 
-      return snapshot.docs.map(
-        (doc) =>
-          ({
-            id: doc.id,
-            ...doc.data(),
-          }) as GoogleWorkspaceUser,
-      );
+      return users.map((user: any) => ({
+        id: user.id,
+        ...user,
+      })) as GoogleWorkspaceUser[];
     } catch (error) {
-      logger.error('Failed to get synced users:', error);
+      logger.error('Failed to get synced users:', error as Error);
       return [];
     }
   }
@@ -229,22 +226,29 @@ class GoogleWorkspaceService {
     refreshToken?: string,
   ): Promise<boolean> {
     try {
-      await db
-        .collection('companies')
-        .getById(companyId)
-        .update({
-          'integrations.googleWorkspace': {
+      const repositories = await getRepositories();
+      const company = await repositories.companies.getById(companyId);
+      
+      if (!company) {
+        throw new Error('Company not found');
+      }
+
+      await repositories.companies.update(companyId, {
+        integrations: {
+          ...company.integrations,
+          googleWorkspace: {
             enabled: true,
             accessToken,
             refreshToken,
             enabledAt: new Date().toISOString(),
-          },
-          updatedAt: new Date().toISOString(),
-        });
+          }
+        },
+        updatedAt: new Date().toISOString(),
+      }, companyId);
 
       return true;
     } catch (error) {
-      logger.error('Failed to enable Google Workspace integration:', error);
+      logger.error('Failed to enable Google Workspace integration:', error as Error);
       return false;
     }
   }
@@ -254,20 +258,27 @@ class GoogleWorkspaceService {
    */
   async disableIntegration(companyId: string): Promise<boolean> {
     try {
-      await db
-        .collection('companies')
-        .getById(companyId)
-        .update({
-          'integrations.googleWorkspace': {
+      const repositories = await getRepositories();
+      const company = await repositories.companies.getById(companyId);
+      
+      if (!company) {
+        throw new Error('Company not found');
+      }
+
+      await repositories.companies.update(companyId, {
+        integrations: {
+          ...company.integrations,
+          googleWorkspace: {
             enabled: false,
             disabledAt: new Date().toISOString(),
-          },
-          updatedAt: new Date().toISOString(),
-        });
+          }
+        },
+        updatedAt: new Date().toISOString(),
+      }, companyId);
 
       return true;
     } catch (error) {
-      logger.error('Failed to disable Google Workspace integration:', error);
+      logger.error('Failed to disable Google Workspace integration:', error as Error);
       return false;
     }
   }
@@ -277,20 +288,22 @@ class GoogleWorkspaceService {
    */
   async getSyncHistory(companyId: string, limit = 10) {
     try {
-      const snapshot = await db
-        .collection('sync_logs')
-        .query('companyId', '==', companyId)
-        .query('type', '==', 'google_workspace')
-        .query('syncedAt', 'desc')
-        .query(limit)
-        .get();
+      const repositories = await getRepositories();
+      const query = `SELECT TOP @limit * FROM c WHERE c.companyId = @companyId AND c.type = @type ORDER BY c.syncedAt DESC`;
+      const parameters = [
+        { name: '@companyId', value: companyId },
+        { name: '@type', value: 'google_workspace' },
+        { name: '@limit', value: limit }
+      ];
+      
+      const { resources: syncLogs } = await repositories.documents.query(query, parameters);
 
-      return snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
+      return syncLogs.map((log: any) => ({
+        id: log.id,
+        ...log,
       }));
     } catch (error) {
-      logger.error('Failed to get sync history:', error);
+      logger.error('Failed to get sync history:', error as Error);
       return [];
     }
   }

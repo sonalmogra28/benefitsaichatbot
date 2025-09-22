@@ -30,14 +30,16 @@ export async function POST(request: NextRequest) {
     logger.info('Starting document processing cron job');
 
     // Query for documents that need processing
-    const pendingDocsQuery = adminDb
-      .collectionGroup('documents')
-      .where('status', '==', 'pending_processing')
-      .limit(10); // Process in batches
-
-    const snapshot = await pendingDocsQuery.get();
+    // TODO: Implement Cosmos DB query for pending documents
+    const documentsContainer = await getContainer('documents');
+    const query = {
+      query: "SELECT * FROM c WHERE c.status = 'pending_processing'",
+      parameters: []
+    };
     
-    if (snapshot.empty) {
+    const { resources: pendingDocs } = await documentsContainer.items.query(query).fetchAll();
+    
+    if (pendingDocs.length === 0) {
       logger.info('No documents pending processing');
       return NextResponse.json({ 
         success: true, 
@@ -55,9 +57,9 @@ export async function POST(request: NextRequest) {
     let processed = 0;
     let errors = 0;
 
-    for (const doc of snapshot.docs) {
+    for (const doc of pendingDocs) {
       try {
-        const docData = doc.data();
+        const docData = doc;
         const { companyId, fileName, storageUrl, documentType } = docData;
 
         logger.info('Processing document', {
@@ -68,7 +70,8 @@ export async function POST(request: NextRequest) {
         });
 
         // Update status to processing
-        await doc.ref.update({
+        await documentsContainer.item(doc.id).replace({
+          ...doc,
           status: 'processing',
           processingStartedAt: new Date(),
         });
@@ -132,14 +135,14 @@ export async function POST(request: NextRequest) {
     logger.info('Document processing cron job completed', {
       processed,
       errors,
-      total: snapshot.size,
+      total: pendingDocs.length,
     });
 
     return NextResponse.json({
       success: true,
       processed,
       errors,
-      total: snapshot.size,
+      total: pendingDocs.length,
       results,
     });
 
@@ -167,15 +170,18 @@ export async function GET(request: NextRequest) {
   }
 
   // Check how many documents are pending processing
-  const pendingDocsQuery = adminDb
-    .collectionGroup('documents')
-    .where('status', '==', 'pending_processing');
-
-  const snapshot = await pendingDocsQuery.get();
+  const documentsContainer = await getContainer('documents');
+  const query = {
+    query: "SELECT COUNT(1) as count FROM c WHERE c.status = 'pending_processing'",
+    parameters: []
+  };
+  
+  const { resources } = await documentsContainer.items.query(query).fetchAll();
+  const pendingCount = resources[0]?.count || 0;
 
   return NextResponse.json({
     status: 'healthy',
-    pendingDocuments: snapshot.size,
+    pendingDocuments: pendingCount,
     lastCheck: new Date().toISOString(),
   });
 }

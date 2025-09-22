@@ -34,10 +34,10 @@ export function WorkdayChat({ tenantId, branding, embedMode = false }: WorkdayCh
     root.style.setProperty('--font-family', branding.fontFamily);
 
     // Add Workday-specific classes
-    document.body.classList.create('workday-embedded');
+    document.body.classList.add('workday-embedded');
     
     if (embedMode) {
-      document.body.classList.create('workday-iframe');
+      document.body.classList.add('workday-iframe');
     }
 
     setIsReady(true);

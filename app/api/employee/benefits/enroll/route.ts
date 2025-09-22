@@ -2,19 +2,20 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/admin-middleware';
 import { USER_ROLES } from '@/lib/constants/roles';
 import { getContainer } from '@/lib/azure/cosmos-db';
-import { benefitsService } from '@/lib/services/benefits.service';
+import { benefitService } from '@/lib/services/benefit-service';
+import { benefitEnrollmentSchema } from '@/lib/schemas/benefits';
 import { z } from 'zod';
 
 // POST /api/employee/benefits/enroll - Enroll in a benefit plan
 export const POST = withAuth(
   USER_ROLES.EMPLOYEE,
-  async (request: NextRequest, context, user) => {
+  async (request: NextRequest, context: any, user: any) => {
     try {
       const body = await request.json();
       const validated = benefitEnrollmentSchema.parse(body);
 
       // Verify the plan exists and belongs to user's company
-      const companyPlans = await benefitsService.getCompanyBenefitPlans(user.companyId);
+      const companyPlans = await benefitService.getBenefitPlans(user.companyId);
       const plan = companyPlans.find(p => p.id === validated.planId);
       
       if (!plan) {
@@ -25,29 +26,27 @@ export const POST = withAuth(
       }
 
       // Verify plan is active
-      if (plan.status !== 'active') {
+      if (!plan.isActive) {
         return NextResponse.json(
           { error: 'Benefit plan is not currently active' },
           { status: 400 }
         );
       }
 
-      const enrollmentId = await benefitService.enrollInBenefitPlan(
-        user.uid,
-        user.companyId,
-        validated,
-      );
+      const enrollmentId = await benefitService.enrollInBenefit({
+        ...validated,
+        employeeId: user.uid,
+      });
 
       return NextResponse.json(
         {
           success: true,
           enrollment: {
             id: enrollmentId,
-            // TODO: Get plan name
-            planName: 'Unknown',
+            planName: plan.name,
             coverageType: validated.coverageType,
-            effectiveDate: validated.electedOn,
-            monthlyCost: validated.monthlyCost,
+            effectiveDate: validated.startDate,
+            monthlyCost: plan.monthlyCost,
           },
         },
         { status: 201 },
