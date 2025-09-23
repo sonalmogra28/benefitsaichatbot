@@ -128,7 +128,20 @@ export function BenefitsManagement({
 
   const handleCreatePlan = async () => {
     try {
-      // TODO: API call to create plan
+      const response = await fetch('/api/admin/benefit-plans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create benefit plan');
+      }
+
       toast({
         title: 'Plan Created',
         description: `${formData.name} has been created successfully`,
@@ -140,7 +153,7 @@ export function BenefitsManagement({
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to create benefit plan',
+        description: error instanceof Error ? error.message : 'Failed to create benefit plan',
         variant: 'destructive',
       });
     }
@@ -148,16 +161,31 @@ export function BenefitsManagement({
 
   const handleUpdatePlan = async (planId: string) => {
     try {
-      // TODO: API call to update plan
+      const response = await fetch(`/api/admin/benefit-plans/${planId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update benefit plan');
+      }
+
       toast({
         title: 'Plan Updated',
         description: 'The benefit plan has been updated successfully',
       });
       setEditingPlan(null);
+      // Refresh plans
+      window.location.reload();
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to update benefit plan',
+        description: error instanceof Error ? error.message : 'Failed to update benefit plan',
         variant: 'destructive',
       });
     }

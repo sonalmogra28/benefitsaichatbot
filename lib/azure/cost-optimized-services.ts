@@ -5,10 +5,13 @@
 
 import { CosmosClient } from '@azure/cosmos';
 import { BlobServiceClient } from '@azure/storage-blob';
-// import { CommunicationServiceClient } from '@azure/communication-common';
+import { CommunicationServiceClient, CommunicationUserIdentifier } from '@azure/communication-common';
+import { EmailClient } from '@azure/communication-email';
+import { SmsClient } from '@azure/communication-sms';
 import { DefaultAzureCredential } from '@azure/identity';
 import { SecretClient } from '@azure/keyvault-secrets';
 import { AppConfigurationClient } from '@azure/app-configuration';
+import { logger } from '@/lib/logger';
 
 // Azure App Service (Basic B1) - $55/month
 export class AzureAppService {
@@ -144,49 +147,233 @@ export class CostOptimizedBlobService {
 
 // Azure Communication Services - $10-20/month
 export class CostOptimizedCommunicationService {
-  private client: any;
+  private emailClient: EmailClient;
+  private smsClient: SmsClient;
+  private communicationClient: CommunicationServiceClient;
+  private connectionString: string;
 
   constructor() {
-    // TODO: Implement Communication Service Client
-    // this.client = new CommunicationServiceClient(
-    //   process.env.AZURE_COMMUNICATION_CONNECTION_STRING!
-    // );
-    this.client = null;
+    this.connectionString = process.env.AZURE_COMMUNICATION_CONNECTION_STRING || '';
+    
+    if (!this.connectionString) {
+      logger.warn('Azure Communication Services connection string not configured');
+      this.emailClient = null as any;
+      this.smsClient = null as any;
+      this.communicationClient = null as any;
+      return;
+    }
+
+    try {
+      this.emailClient = new EmailClient(this.connectionString);
+      this.smsClient = new SmsClient(this.connectionString);
+      this.communicationClient = new CommunicationServiceClient(this.connectionString);
+      
+      logger.info('Azure Communication Services initialized successfully');
+    } catch (error) {
+      logger.error('Failed to initialize Azure Communication Services', { error });
+      this.emailClient = null as any;
+      this.smsClient = null as any;
+      this.communicationClient = null as any;
+    }
   }
 
-  async sendEmail(to: string, subject: string, htmlContent: string): Promise<boolean> {
+  async sendEmail(to: string, subject: string, htmlContent: string, from?: string): Promise<boolean> {
     try {
-      // Use Azure Communication Services for email
+      if (!this.emailClient) {
+        logger.warn('Email client not initialized, skipping email send');
+        return false;
+      }
+
       const emailMessage = {
-        sender: 'noreply@benefits-chatbot.com',
-        recipients: [to],
-        subject,
-        htmlContent
+        senderAddress: from || process.env.AZURE_COMMUNICATION_EMAIL_FROM || 'noreply@benefits-chatbot.com',
+        recipients: {
+          to: [{ address: to }]
+        },
+        content: {
+          subject,
+          html: htmlContent
+        }
       };
 
-      // Implementation would use Azure Communication Services SDK
-      console.log('Sending email via Azure Communication Services:', emailMessage);
-      return true;
+      logger.info('Sending email via Azure Communication Services', {
+        to,
+        subject,
+        from: emailMessage.senderAddress
+      });
+
+      const poller = await this.emailClient.beginSend(emailMessage);
+      const result = await poller.pollUntilDone();
+
+      if (result.status === 'Succeeded') {
+        logger.info('Email sent successfully', { to, subject });
+        return true;
+      } else {
+        logger.error('Email sending failed', { to, subject, status: result.status });
+        return false;
+      }
     } catch (error) {
-      console.error('Failed to send email:', error);
+      logger.error('Failed to send email via Azure Communication Services', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        to,
+        subject
+      });
       return false;
     }
   }
 
-  async sendSMS(to: string, message: string): Promise<boolean> {
+  async sendSMS(to: string, message: string, from?: string): Promise<boolean> {
     try {
-      // Use Azure Communication Services for SMS
+      if (!this.smsClient) {
+        logger.warn('SMS client not initialized, skipping SMS send');
+        return false;
+      }
+
       const smsMessage = {
-        to: to,
-        message: message
+        from: from || process.env.AZURE_COMMUNICATION_PHONE_NUMBER || '',
+        to: [to],
+        message
       };
 
-      console.log('Sending SMS via Azure Communication Services:', smsMessage);
-      return true;
+      logger.info('Sending SMS via Azure Communication Services', {
+        to,
+        from: smsMessage.from,
+        messageLength: message.length
+      });
+
+      const result = await this.smsClient.send(smsMessage);
+
+      if (result.successful) {
+        logger.info('SMS sent successfully', { to, messageId: result.messageId });
+        return true;
+      } else {
+        logger.error('SMS sending failed', { to, error: result.errorMessage });
+        return false;
+      }
     } catch (error) {
-      console.error('Failed to send SMS:', error);
+      logger.error('Failed to send SMS via Azure Communication Services', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        to
+      });
       return false;
     }
+  }
+
+  async createCommunicationUser(): Promise<CommunicationUserIdentifier | null> {
+    try {
+      if (!this.communicationClient) {
+        logger.warn('Communication client not initialized, cannot create user');
+        return null;
+      }
+
+      const user = await this.communicationClient.createUser();
+      
+      logger.info('Communication user created successfully', {
+        userId: user.communicationUserId
+      });
+
+      return user;
+    } catch (error) {
+      logger.error('Failed to create communication user', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      return null;
+    }
+  }
+
+  async deleteCommunicationUser(userId: string): Promise<boolean> {
+    try {
+      if (!this.communicationClient) {
+        logger.warn('Communication client not initialized, cannot delete user');
+        return false;
+      }
+
+      await this.communicationClient.deleteUser({ communicationUserId: userId });
+      
+      logger.info('Communication user deleted successfully', { userId });
+      return true;
+    } catch (error) {
+      logger.error('Failed to delete communication user', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        userId
+      });
+      return false;
+    }
+  }
+
+  async sendBulkEmail(recipients: string[], subject: string, htmlContent: string, from?: string): Promise<{
+    successful: number;
+    failed: number;
+    results: Array<{ email: string; success: boolean; error?: string }>;
+  }> {
+    const results: Array<{ email: string; success: boolean; error?: string }> = [];
+    let successful = 0;
+    let failed = 0;
+
+    for (const email of recipients) {
+      try {
+        const success = await this.sendEmail(email, subject, htmlContent, from);
+        results.push({ email, success });
+        
+        if (success) {
+          successful++;
+        } else {
+          failed++;
+        }
+      } catch (error) {
+        results.push({
+          email,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        failed++;
+      }
+    }
+
+    logger.info('Bulk email sending completed', {
+      total: recipients.length,
+      successful,
+      failed
+    });
+
+    return { successful, failed, results };
+  }
+
+  async sendBulkSMS(recipients: string[], message: string, from?: string): Promise<{
+    successful: number;
+    failed: number;
+    results: Array<{ phone: string; success: boolean; error?: string }>;
+  }> {
+    const results: Array<{ phone: string; success: boolean; error?: string }> = [];
+    let successful = 0;
+    let failed = 0;
+
+    for (const phone of recipients) {
+      try {
+        const success = await this.sendSMS(phone, message, from);
+        results.push({ phone, success });
+        
+        if (success) {
+          successful++;
+        } else {
+          failed++;
+        }
+      } catch (error) {
+        results.push({
+          phone,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        failed++;
+      }
+    }
+
+    logger.info('Bulk SMS sending completed', {
+      total: recipients.length,
+      successful,
+      failed
+    });
+
+    return { successful, failed, results };
   }
 }
 

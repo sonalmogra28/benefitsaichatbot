@@ -89,7 +89,8 @@ export async function POST(request: NextRequest) {
         );
 
         // Update status to processed
-        await doc.ref.update({
+        await documentsContainer.item(doc.id).replace({
+          ...doc,
           status: 'processed',
           processedAt: new Date(),
           error: null,
@@ -117,7 +118,8 @@ export async function POST(request: NextRequest) {
         });
 
         // Update document with error status
-        await doc.ref.update({
+        await documentsContainer.item(doc.id).replace({
+          ...doc,
           status: 'error',
           error: errorMessage,
           errorAt: new Date(),
@@ -125,7 +127,7 @@ export async function POST(request: NextRequest) {
 
         results.push({
           documentId: doc.id,
-          fileName: doc.data().fileName,
+          fileName: doc.fileName,
           status: 'error',
           error: errorMessage,
         });

@@ -4,6 +4,7 @@
 
 import { Redis } from 'ioredis';
 import { logger } from '@/lib/logging/logger';
+import { getRedisConfig } from '@/lib/azure/config';
 
 interface RateLimitConfig {
   windowMs: number;
@@ -28,25 +29,61 @@ class RedisRateLimiter {
 
   private async initializeRedis(): Promise<void> {
     try {
-      // In production, use Redis
-      if (process.env.NODE_ENV === 'production' && process.env.REDIS_URL) {
-        this.redis = new Redis(process.env.REDIS_URL);
+      // Use Azure Redis Cache configuration
+      const redisConfig = getRedisConfig();
+      
+      if (redisConfig.host && redisConfig.password) {
+        this.redis = new Redis({
+          host: redisConfig.host,
+          port: redisConfig.port,
+          password: redisConfig.password,
+          tls: redisConfig.tls,
+          maxRetriesPerRequest: 3,
+          lazyConnect: true,
+          enableReadyCheck: false,
+        });
         
         this.redis.on('connect', () => {
           this.isConnected = true;
-          logger.info('Redis connected for rate limiting');
+          logger.info('Azure Redis Cache connected for rate limiting', {
+            host: redisConfig.host,
+            port: redisConfig.port
+          });
+        });
+
+        this.redis.on('ready', () => {
+          this.isConnected = true;
+          logger.info('Azure Redis Cache ready for rate limiting');
         });
 
         this.redis.on('error', (error) => {
           this.isConnected = false;
-          logger.error('Redis connection error', { error: error.message });
+          logger.error('Azure Redis Cache connection error', { 
+            error: error.message,
+            host: redisConfig.host,
+            port: redisConfig.port
+          });
         });
+
+        this.redis.on('close', () => {
+          this.isConnected = false;
+          logger.warn('Azure Redis Cache connection closed');
+        });
+
+        // Connect to Redis
+        await this.redis.connect();
       } else {
-        // In development, use in-memory fallback
-        logger.warn('Using in-memory rate limiting (Redis not configured)');
+        // Fallback to in-memory rate limiting if Redis is not configured
+        logger.warn('Azure Redis Cache not configured, using in-memory rate limiting', {
+          hasHost: !!redisConfig.host,
+          hasPassword: !!redisConfig.password
+        });
       }
     } catch (error) {
-      logger.error('Failed to initialize Redis', { error });
+      logger.error('Failed to initialize Azure Redis Cache', { 
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      // Continue with in-memory fallback
     }
   }
 

@@ -113,30 +113,121 @@ export const documentHandlersByArtifactKind: Array<DocumentHandler> = [
 
 export const artifactKinds = ['text', 'code', 'image', 'sheet'] as const;
 
-// Helper function to save document to Firestore
+// Helper function to retrieve document from Azure Cosmos DB
+export async function getDocument(documentId: string, userId: string): Promise<Document | null> {
+  try {
+    const repositories = await getRepositories();
+    const documentsRepository = repositories.documents;
+    
+    const document = await documentsRepository.getById(documentId);
+    
+    if (!document) {
+      logger.warn('Document not found', { documentId, userId });
+      return null;
+    }
+    
+    // Verify user has access to the document
+    if (document.userId !== userId) {
+      logger.warn('User does not have access to document', { documentId, userId, documentUserId: document.userId });
+      return null;
+    }
+    
+    logger.info('Document retrieved from Cosmos DB', { documentId, title: document.title });
+    return document as Document;
+  } catch (error) {
+    logger.error('Failed to retrieve document:', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      documentId,
+      userId
+    });
+    return null;
+  }
+}
+
+// Helper function to list documents for a user
+export async function listDocuments(userId: string, limit: number = 50, offset: number = 0): Promise<Document[]> {
+  try {
+    const repositories = await getRepositories();
+    const documentsRepository = repositories.documents;
+    
+    const query = `
+      SELECT * FROM c 
+      WHERE c.userId = @userId 
+      ORDER BY c.updatedAt DESC
+      OFFSET @offset LIMIT @limit
+    `;
+    
+    const parameters = [
+      { name: '@userId', value: userId },
+      { name: '@offset', value: offset },
+      { name: '@limit', value: limit }
+    ];
+    
+    const result = await documentsRepository.query<Document>(query, parameters);
+    
+    logger.info('Documents listed successfully', {
+      userId,
+      limit,
+      offset,
+      resultCount: result.resources.length
+    });
+    
+    return result.resources;
+  } catch (error) {
+    logger.error('Failed to list documents:', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId,
+      limit,
+      offset
+    });
+    return [];
+  }
+}
+
+// Helper function to save document to Azure Cosmos DB
 async function saveDocument(props: SaveDocumentProps) {
   try {
-    // TODO: Implement document retrieval from Azure Cosmos DB
-    // const documentRef = adminDb.collection('documents').getById(props.id);
-    const documentRef = null;
+    const repositories = await getRepositories();
+    const documentsRepository = repositories.documents;
+    
+    // Check if document already exists
+    const existingDocument = await documentsRepository.getById(props.id);
+    
+    const documentData = {
+      id: props.id,
+      title: props.title,
+      kind: props.kind,
+      content: props.content,
+      userId: props.userId,
+      createdAt: existingDocument?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-    // TODO: Implement document creation in Azure Cosmos DB
-    // await documentRef.create(
-    //   {
-    //     id: props.id,
-    //     title: props.title,
-    //     kind: props.kind,
-    //     content: props.content,
-    //     userId: props.userId,
-    //     createdAt: new Date().toISOString(),
-    //     updatedAt: new Date().toISOString(),
-    //   },
-    //   { merge: true },
-    // );
+    if (existingDocument) {
+      // Update existing document
+      await documentsRepository.update(props.id, documentData, props.userId);
+      logger.info('Document updated in Cosmos DB', { 
+        documentId: props.id, 
+        title: props.title,
+        kind: props.kind 
+      });
+    } else {
+      // Create new document
+      await documentsRepository.create(documentData);
+      logger.info('Document created in Cosmos DB', { 
+        documentId: props.id, 
+        title: props.title,
+        kind: props.kind 
+      });
+    }
 
     return true;
   } catch (error) {
-    logger.error('Failed to save document:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    logger.error('Failed to save document:', { 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      documentId: props.id,
+      title: props.title
+    });
     return false;
   }
 }

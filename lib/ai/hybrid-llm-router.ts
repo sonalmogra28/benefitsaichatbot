@@ -1,5 +1,5 @@
 import { azure } from '@ai-sdk/azure';
-// import { generateObject } from 'ai';
+import { generateObject } from 'ai';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
@@ -89,24 +89,19 @@ Respond with JSON matching this schema:
   "confidence": number (0-1)
 }`;
 
-      // TODO: Implement generateObject from AI SDK
-      // const result = await generateObject({
-      //   model: azure(process.env.AZURE_OPENAI_CHAT_DEPLOYMENT || 'gpt-4o-mini'),
-      //   prompt: analysisPrompt,
-      //   schema: QueryComplexitySchema,
-      // });
-      
-      // Temporary fallback - return default complexity
-      const result = {
-        object: {
-          complexity: 'moderate' as const,
-          category: 'benefits' as const,
-          estimatedTokens: 1000,
-          requiresReasoning: false,
-          requiresContext: true,
-          confidence: 0.8
-        }
-      };
+      // Use generateObject from AI SDK for structured analysis
+      const result = await generateObject({
+        model: azure(process.env.AZURE_OPENAI_CHAT_DEPLOYMENT || 'gpt-4o-mini'),
+        prompt: analysisPrompt,
+        schema: QueryComplexitySchema,
+      });
+
+      logger.info('Query complexity analysis completed', {
+        complexity: result.object.complexity,
+        category: result.object.category,
+        estimatedTokens: result.object.estimatedTokens,
+        confidence: result.object.confidence
+      });
 
       return result.object;
     } catch (error) {

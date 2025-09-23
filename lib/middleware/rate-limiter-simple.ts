@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { redisRateLimiter } from '@/lib/rate-limit/redis-limiter';
 
 export interface RateLimitConfig {
   maxRequests: number;
@@ -53,23 +54,24 @@ async function checkRateLimit(
   endpoint: string,
   config: RateLimitConfig,
 ): Promise<RateLimitResult> {
-  const now = Date.now();
   const key = `${endpoint}:${clientId}`;
   
   try {
-    // Simplified rate limiting - allow all requests for now
-    // TODO: Implement proper rate limiting with Azure Redis
+    // Use Azure Redis Cache for rate limiting
+    const result = await redisRateLimiter.check(key, config);
+    
     return {
-      limited: false,
-      remaining: config.maxRequests - 1,
-      resetAt: new Date(now + config.windowMs),
+      limited: !result.allowed,
+      remaining: result.remaining,
+      resetAt: result.resetAt,
     };
   } catch (error) {
     console.error('Rate limiter error:', error);
+    // On error, allow the request but log it
     return {
       limited: false,
       remaining: config.maxRequests,
-      resetAt: new Date(now + config.windowMs),
+      resetAt: new Date(Date.now() + config.windowMs),
     };
   }
 }

@@ -1,12 +1,14 @@
 import { getRepositories } from '@/lib/azure/cosmos';
 import { logger } from '../utils/logger-fix';
 import { apiTrackingService } from './api-tracking.service';
+import { benefitService } from './benefit-service';
 
 export interface AnalyticsData {
   totalUsers: number;
   totalCompanies: number;
   totalConversations: number;
   totalDocuments: number;
+  totalBenefitPlans: number;
   activeUsers: number;
   chatMessages: number;
   apiCalls: number;
@@ -251,11 +253,12 @@ class AnalyticsService {
       const repositories = await getRepositories();
       
       // Get basic counts
-      const [users, companies, conversations, documents] = await Promise.all([
+      const [users, companies, conversations, documents, totalBenefitPlans] = await Promise.all([
         repositories.users.list(),
         repositories.companies.list(),
         repositories.chats.list(),
-        repositories.documents.list()
+        repositories.documents.list(),
+        benefitService.getTotalBenefitPlansCount()
       ]);
 
       const totalUsers = users.length;
@@ -290,6 +293,7 @@ class AnalyticsService {
         totalCompanies,
         totalConversations,
         totalDocuments,
+        totalBenefitPlans,
         activeUsers,
         chatMessages
       });
@@ -299,6 +303,7 @@ class AnalyticsService {
         totalCompanies,
         totalConversations,
         totalDocuments,
+        totalBenefitPlans,
         activeUsers,
         chatMessages,
         apiCalls,

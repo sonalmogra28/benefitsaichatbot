@@ -1,5 +1,6 @@
 import { getRepositories } from '@/lib/azure/cosmos';
 import { logger } from '../utils/logger-fix';
+import { azureAuditLoggingService } from './azure-audit-logging.service';
 
 export interface AuditLog {
   id: string;
@@ -70,6 +71,24 @@ export class AuditLoggingService {
       await this.documentsRepository.create({
         ...auditLog,
         type: 'audit_log'
+      });
+
+      // Also send to Azure audit logging service
+      await azureAuditLoggingService.logAuditEvent({
+        action,
+        resourceType,
+        resourceId,
+        userId,
+        userEmail,
+        userRole,
+        companyId,
+        details,
+        ipAddress,
+        userAgent,
+        success,
+        errorMessage,
+        severity: success ? 'low' : 'high',
+        category: 'data_access'
       });
 
       logger.info('Audit event logged', {

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const stats = {
       totalUsers: analytics.totalUsers,
       totalDocuments: analytics.totalDocuments,
-      totalBenefitPlans: 0, // TODO: Implement benefit plans count
+      totalBenefitPlans: analytics.totalBenefitPlans,
       activeEnrollments: analytics.activeUsers,
       activeChats: analytics.totalConversations,
       monthlyGrowth,

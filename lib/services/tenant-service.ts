@@ -6,6 +6,7 @@
 import { Tenant, User, Conversation, Message, Document, Analytics, TenantUsage } from '@/lib/db/tenant-schema';
 import { getContainer } from '@/lib/azure/cosmos-db';
 import { logger } from '@/lib/logging/logger';
+import { DataRetentionService } from './data-retention.service';
 
 export class TenantService {
   private tenantsContainer;
@@ -15,6 +16,7 @@ export class TenantService {
   private documentsContainer;
   private analyticsContainer;
   private usageContainer;
+  private dataRetentionService: DataRetentionService;
 
   constructor() {
     this.tenantsContainer = getContainer('tenants');
@@ -24,6 +26,7 @@ export class TenantService {
     this.documentsContainer = getContainer('documents');
     this.analyticsContainer = getContainer('analytics');
     this.usageContainer = getContainer('usage');
+    this.dataRetentionService = new DataRetentionService();
   }
 
   // Tenant Management
@@ -38,6 +41,19 @@ export class TenantService {
     try {
       const container = await this.tenantsContainer;
       const result = await container.items.create(newTenant);
+      
+      // Create default data retention policies for the new tenant
+      try {
+        await this.createDefaultRetentionPolicies(tenant.id);
+        logger.info('Default data retention policies created for tenant', { tenantId: tenant.id });
+      } catch (retentionError) {
+        logger.error('Failed to create default retention policies for tenant', { 
+          tenantId: tenant.id, 
+          error: retentionError instanceof Error ? retentionError.message : 'Unknown error'
+        });
+        // Don't throw - retention policy creation failure shouldn't prevent tenant creation
+      }
+      
       logger.info('Tenant created', { tenantId: tenant.id, name: tenant.name });
       return result.resource!;
     } catch (error) {
@@ -88,8 +104,26 @@ export class TenantService {
       // Soft delete - mark as inactive
       await this.updateTenant(tenantId, { status: 'inactive' });
       
-      // TODO: Implement data retention policies
-      // For now, we'll keep the data but mark the tenant as inactive
+      // Execute data retention policies for the tenant
+      try {
+        const retentionJobs = await this.dataRetentionService.executeDataRetention(tenantId);
+        logger.info('Data retention policies executed for tenant', { 
+          tenantId, 
+          jobsExecuted: retentionJobs.length,
+          jobs: retentionJobs.map(job => ({
+            id: job.id,
+            dataType: job.dataType,
+            status: job.status,
+            recordsDeleted: job.recordsDeleted
+          }))
+        });
+      } catch (retentionError) {
+        logger.error('Failed to execute data retention policies for tenant', { 
+          tenantId, 
+          error: retentionError instanceof Error ? retentionError.message : 'Unknown error'
+        });
+        // Don't throw - data retention failure shouldn't prevent tenant deletion
+      }
       
       logger.info('Tenant deleted', { tenantId });
     } catch (error) {
@@ -297,7 +331,7 @@ export class TenantService {
           updatedAt: now,
         };
         const container = await this.usageContainer;
-        const result = await container.item(existing.id || '', tenantId).replace(updated as any);
+        const result = await container.item(existing.tenantId, tenantId).replace(updated as any);
         return result.resource!;
       } else {
         const newUsage: TenantUsage = {
@@ -341,6 +375,72 @@ export class TenantService {
     } catch (error) {
       logger.error('Failed to validate tenant status', { tenantId, error });
       return false;
+    }
+  }
+
+  /**
+   * Create default data retention policies for a new tenant
+   */
+  private async createDefaultRetentionPolicies(tenantId: string): Promise<void> {
+    const defaultPolicies = [
+      {
+        dataType: 'chat_messages' as const,
+        retentionDays: 90,
+        archiveAfterDays: 30,
+        deleteAfterDays: 365,
+        isActive: true,
+        createdBy: 'system'
+      },
+      {
+        dataType: 'documents' as const,
+        retentionDays: 180,
+        archiveAfterDays: 60,
+        deleteAfterDays: 730,
+        isActive: true,
+        createdBy: 'system'
+      },
+      {
+        dataType: 'user_data' as const,
+        retentionDays: 365,
+        archiveAfterDays: 180,
+        deleteAfterDays: 1095, // 3 years
+        isActive: true,
+        createdBy: 'system'
+      },
+      {
+        dataType: 'analytics' as const,
+        retentionDays: 90,
+        archiveAfterDays: 30,
+        deleteAfterDays: 365,
+        isActive: true,
+        createdBy: 'system'
+      },
+      {
+        dataType: 'api_calls' as const,
+        retentionDays: 30,
+        archiveAfterDays: 7,
+        deleteAfterDays: 90,
+        isActive: true,
+        createdBy: 'system'
+      }
+    ];
+
+    for (const policy of defaultPolicies) {
+      try {
+        await this.dataRetentionService.createRetentionPolicy(tenantId, policy, 'system');
+        logger.info('Default retention policy created', { 
+          tenantId, 
+          dataType: policy.dataType,
+          retentionDays: policy.retentionDays
+        });
+      } catch (error) {
+        logger.error('Failed to create default retention policy', { 
+          tenantId, 
+          dataType: policy.dataType,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        // Continue with other policies even if one fails
+      }
     }
   }
 }

@@ -5,6 +5,7 @@ import { EmailService } from '@/lib/services/email.service.server';
 import { createUserSchema } from '@/lib/validation/schemas';
 import { userService } from '@/lib/services/user.service';
 import { adminAuth } from '@/lib/auth/admin-auth';
+import { companyService } from '@/lib/services/company-service';
 import type { UserRole } from '@/lib/constants/roles';
 import { z } from 'zod';
 
@@ -25,26 +26,53 @@ export const GET = requireCompanyAdmin(
       const employees = await userService.listUsers({
         companyId: user.companyId,
         limit,
+        offset,
       });
 
-      const transformedEmployees = employees.map((emp: any) => ({
-        id: emp.uid,
-        name: `${emp.displayName || ''}`.trim() || emp.email,
-        email: emp.email,
-        role: emp.role || 'employee',
-        status: 'active', // TODO: Add isActive to user model
-        department: emp.department,
-        enrollmentStatus: 'not_enrolled', // TODO: Implement enrollment status
-        lastActive: emp.updatedAt,
-        createdAt: emp.createdAt,
-      }));
+      // Get total count for pagination
+      const totalEmployees = await userService.listUsers({
+        companyId: user.companyId,
+        limit: 1000, // Get all to count total
+        offset: 0,
+      });
+
+      // Get benefit enrollments to determine enrollment status
+      const { benefitService } = await import('@/lib/services/benefit-service');
+      const enrollmentPromises = employees.map(async (emp: any) => {
+        const enrollments = await benefitService.getEmployeeEnrollments(emp.id);
+        return {
+          employeeId: emp.id,
+          enrollmentStatus: enrollments.length > 0 ? 'enrolled' : 'not_enrolled',
+          enrollmentCount: enrollments.length,
+        };
+      });
+
+      const enrollmentData = await Promise.all(enrollmentPromises);
+      const enrollmentMap = new Map(enrollmentData.map(data => [data.employeeId, data]));
+
+      const transformedEmployees = employees.map((emp: any) => {
+        const enrollmentInfo = enrollmentMap.get(emp.id);
+        return {
+          id: emp.id,
+          name: `${emp.displayName || emp.name || ''}`.trim() || emp.email,
+          email: emp.email,
+          role: emp.role || 'employee',
+          status: emp.isActive !== false ? 'active' : 'inactive',
+          department: emp.department,
+          enrollmentStatus: enrollmentInfo?.enrollmentStatus || 'not_enrolled',
+          lastActive: emp.updatedAt,
+          createdAt: emp.createdAt,
+        };
+      });
+
+      const hasMore = (page * limit) < totalEmployees.length;
 
       return NextResponse.json({
         employees: transformedEmployees,
-        total: transformedEmployees.length, // TODO: Implement total count
+        total: totalEmployees.length,
         page,
         limit,
-        hasMore: false, // TODO: Implement hasMore
+        hasMore,
       });
     } catch (error) {
       console.error('Error fetching employees:', error);
@@ -71,8 +99,9 @@ export const POST = requireCompanyAdmin(
       await userService.assignUserToCompany(newUser.uid, user.companyId);
       await userService.updateUserRole(newUser.uid, validated.role as UserRole);
 
-      // TODO: Get company name from Firestore
-      const companyName = 'Your Company';
+      // Get company name from Cosmos DB
+      const company = await companyService.getCompanyById(user.companyId);
+      const companyName = company?.name || 'Your Company';
 
       try {
         await emailService.sendEmployeeInvitation({

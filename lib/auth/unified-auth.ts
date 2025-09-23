@@ -111,8 +111,7 @@ export class UnifiedAuth {
 
       const token = authHeader.split('Bearer ')[1];
       
-      // TODO: Implement actual token validation with Azure AD B2C
-      // For now, we'll use a mock validation
+      // Validate token with Azure AD B2C
       const user = await this.validateToken(token);
       
       if (!user) {
@@ -158,31 +157,34 @@ export class UnifiedAuth {
   }
 
   /**
-   * Validate JWT token (mock implementation)
-   * TODO: Replace with actual Azure AD B2C validation
+   * Validate JWT token using Azure AD B2C
    */
   private static async validateToken(token: string): Promise<AuthenticatedUser | null> {
     try {
-      // Mock token validation - replace with actual JWT validation
-      if (token === 'mock-token') {
-        return {
-          id: 'mock-user-id',
-          email: 'user@example.com',
-          name: 'Mock User',
-          roles: [USER_ROLES.EMPLOYEE],
-          companyId: 'mock-company-id',
-          permissions: ROLE_PERMISSIONS[USER_ROLES.EMPLOYEE],
-          metadata: {},
-        };
+      // Import the token validation service
+      const { validateToken: validateAzureToken } = await import('@/lib/azure/token-validation');
+      
+      // Validate the token with Azure AD B2C
+      const validationResult = await validateAzureToken(token);
+      
+      if (!validationResult?.valid || !validationResult.user) {
+        logger.warn('Token validation failed', {
+          error: validationResult?.error || 'Invalid token'
+        });
+        return null;
       }
 
-      // TODO: Implement actual JWT validation
-      // 1. Verify JWT signature
-      // 2. Check expiration
-      // 3. Validate claims
-      // 4. Extract user information from claims
+      const { user } = validationResult;
       
-      return null;
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        roles: user.roles,
+        companyId: user.companyId,
+        permissions: user.permissions,
+        metadata: {},
+      };
     } catch (error) {
       logger.error('Token validation failed', {
         error: error instanceof Error ? error.message : 'Unknown error',

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth/admin-middleware';
 import { SuperAdminService } from '@/lib/services/super-admin.service';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { updateCompanySchema } from '@/lib/validation/schemas';
 
@@ -12,10 +13,10 @@ export const PUT = requireSuperAdmin(
     try {
       const body = await request.json();
       const validated = updateCompanySchema.parse(body);
-      // TODO: Implement updateCompany method in SuperAdminService
-      // const company = await superAdminService.updateCompany(params.id, validated);
+      const company = await superAdminService.updateCompany(params.id, validated);
       return NextResponse.json({
-        message: 'Update company not implemented yet',
+        message: 'Company updated successfully',
+        company
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -37,10 +38,9 @@ export const PUT = requireSuperAdmin(
 export const DELETE = requireSuperAdmin(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     try {
-      // TODO: Implement deleteCompany method in SuperAdminService
-      // await superAdminService.deleteCompany(params.id);
+      await superAdminService.deleteCompany(params.id);
       return NextResponse.json({
-        message: 'Delete company not implemented yet',
+        message: 'Company and all associated data deleted successfully',
       });
     } catch (error) {
       logger.error('Error deleting company:', error);

@@ -193,35 +193,169 @@ export async function searchVectors(
   );
 }
 
+export const getDocumentChunks = async (
+  companyId: string,
+  documentId: string,
+  limit: number = 100,
+  offset: number = 0
+): Promise<{
+  chunks: Array<{
+    id: string;
+    content: string;
+    metadata: Record<string, unknown>;
+    embedding: number[];
+    createdAt: string;
+  }>;
+  total: number;
+}> => {
+  try {
+    const documentsContainer = await getContainer('Documents');
+    
+    // Get total count
+    const countQuery = {
+      query: "SELECT VALUE COUNT(1) FROM c WHERE c.companyId = @companyId AND c.metadata.documentId = @documentId",
+      parameters: [
+        { name: '@companyId', value: companyId },
+        { name: '@documentId', value: documentId }
+      ]
+    };
+    
+    const { resources: countResult } = await documentsContainer.items.query(countQuery).fetchAll();
+    const total = countResult[0] || 0;
+
+    // Get chunks with pagination
+    const query = {
+      query: "SELECT * FROM c WHERE c.companyId = @companyId AND c.metadata.documentId = @documentId ORDER BY c.createdAt OFFSET @offset LIMIT @limit",
+      parameters: [
+        { name: '@companyId', value: companyId },
+        { name: '@documentId', value: documentId },
+        { name: '@offset', value: offset },
+        { name: '@limit', value: limit }
+      ]
+    };
+
+    const { resources: chunks } = await documentsContainer.items.query(query).fetchAll();
+
+    return {
+      chunks: chunks.map((chunk: any) => ({
+        id: chunk.id,
+        content: chunk.content,
+        metadata: chunk.metadata || {},
+        embedding: chunk.embedding || [],
+        createdAt: chunk.createdAt
+      })),
+      total
+    };
+  } catch (error) {
+    console.error('Error retrieving document chunks:', error);
+    return { chunks: [], total: 0 };
+  }
+};
+
+export const batchUpsertChunks = async (
+  companyId: string,
+  chunks: Array<{
+    id: string;
+    content: string;
+    metadata: Record<string, unknown>;
+    embedding: number[];
+  }>
+): Promise<{ status: 'success' | 'error'; chunksUpserted: number }> => {
+  try {
+    if (chunks.length === 0) {
+      return { status: 'success', chunksUpserted: 0 };
+    }
+
+    const documentsContainer = await getContainer('Documents');
+    let upserted = 0;
+
+    // Process chunks in batches of 100
+    for (let i = 0; i < chunks.length; i += 100) {
+      const batch = chunks.slice(i, i + 100);
+      
+      // Upsert each chunk individually (Cosmos DB doesn't have batch upsert)
+      for (const chunk of batch) {
+        try {
+          const chunkData = {
+            id: chunk.id,
+            companyId,
+            content: chunk.content,
+            metadata: chunk.metadata,
+            embedding: chunk.embedding,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+
+          // Try to update first, if it fails, create new
+          try {
+            await documentsContainer.item(chunk.id, companyId).replace(chunkData);
+          } catch (error: any) {
+            if (error.code === 404) {
+              // Document doesn't exist, create it
+              await documentsContainer.items.create(chunkData);
+            } else {
+              throw error;
+            }
+          }
+          
+          upserted++;
+        } catch (error) {
+          console.error(`Failed to upsert chunk ${chunk.id}:`, error);
+          // Continue with other chunks even if one fails
+        }
+      }
+    }
+
+    console.log(`Upserted ${upserted} chunks for company ${companyId}`);
+    return { status: 'success', chunksUpserted: upserted };
+  } catch (error) {
+    console.error('Error batch upserting chunks:', error);
+    return { status: 'error', chunksUpserted: 0 };
+  }
+};
+
 export const deleteDocumentVectors = async (
   companyId: string,
   documentId: string,
 ): Promise<{ status: 'success' | 'error'; vectorsDeleted: number }> => {
   try {
-    // Fetch all chunk docs for the given document
-    // TODO: Implement document retrieval from Azure Cosmos DB
-    // const snapshot = await adminDb
-    const snapshot = { docs: [] };
+    // Fetch all chunk docs for the given document from Azure Cosmos DB
+    const documentsContainer = await getContainer('Documents');
+    const query = {
+      query: "SELECT * FROM c WHERE c.companyId = @companyId AND c.metadata.documentId = @documentId",
+      parameters: [
+        { name: '@companyId', value: companyId },
+        { name: '@documentId', value: documentId }
+      ]
+    };
 
-    if (snapshot.docs.length === 0) {
+    const { resources: chunks } = await documentsContainer.items.query(query).fetchAll();
+
+    if (chunks.length === 0) {
       return { status: 'success', vectorsDeleted: 0 };
     }
 
-    const chunkIds = snapshot.docs.map((doc: any) => doc.id);
+    const chunkIds = chunks.map((chunk: any) => chunk.id);
 
     // Remove vectors from Azure AI Search index
     await vectorSearchService.removeDatapoints(chunkIds);
 
-    // Delete chunk docs from Firestore in batches of 500
-    for (let i = 0; i < snapshot.docs.length; i += 500) {
-      // TODO: Implement batch operations with Azure Cosmos DB
-      // const batch = adminDb.batch();
-      const batch = null;
-      const slice = snapshot.docs.slice(i, i + 500);
-      // slice.forEach((doc) => batch.delete(doc.ref));
-      // await batch.commit();
+    // Delete chunk docs from Cosmos DB in batches of 100
+    for (let i = 0; i < chunks.length; i += 100) {
+      const slice = chunks.slice(i, i + 100);
+      
+      // Delete each chunk individually (Cosmos DB doesn't have batch delete)
+      for (const chunk of slice) {
+        try {
+          await documentsContainer.item(chunk.id, companyId).delete();
+        } catch (error) {
+          console.error(`Failed to delete chunk ${chunk.id}:`, error);
+          // Continue with other chunks even if one fails
+        }
+      }
     }
 
+    console.log(`Deleted ${chunkIds.length} document vectors for document ${documentId}`);
     return { status: 'success', vectorsDeleted: chunkIds.length };
   } catch (error) {
     console.error('Error deleting document vectors:', error);

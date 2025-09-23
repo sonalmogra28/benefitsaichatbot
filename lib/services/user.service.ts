@@ -50,41 +50,116 @@ export class UserService {
 
   async listUsers(options: { companyId: string; limit?: number; offset?: number }): Promise<any[]> {
     try {
-      // TODO: Implement actual user listing from Cosmos DB
-      // For now, return mock data
-      return [];
+      await this.initializeRepository();
+      
+      // Query users by company ID with pagination
+      const query = `
+        SELECT * FROM c 
+        WHERE c.companyId = @companyId 
+        ORDER BY c.createdAt DESC
+        OFFSET @offset LIMIT @limit
+      `;
+      
+      const parameters = [
+        { name: '@companyId', value: options.companyId },
+        { name: '@offset', value: options.offset || 0 },
+        { name: '@limit', value: options.limit || 50 }
+      ];
+      
+      const result = await this.userRepository.query(query, parameters);
+      
+      logger.info('Users listed successfully', {
+        companyId: options.companyId,
+        limit: options.limit,
+        offset: options.offset,
+        resultCount: result.resources.length
+      });
+      
+      return result.resources;
     } catch (error) {
-      logger.error('Failed to list users', { error: error instanceof Error ? error.message : 'Unknown error', options });
+      logger.error('Failed to list users', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        options 
+      });
       return [];
     }
   }
 
   async assignUserToCompany(userId: string, companyId: string): Promise<void> {
     try {
-      // TODO: Implement actual user assignment to company
+      await this.initializeRepository();
+      
+      // Get the user first
+      const user = await this.userRepository.getById(userId);
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+      
+      // Update user with company ID
+      await this.userRepository.update(userId, {
+        ...user,
+        companyId,
+        updatedAt: new Date().toISOString()
+      }, userId);
+      
       logger.info('User assigned to company', { userId, companyId });
     } catch (error) {
-      logger.error('Failed to assign user to company', { error: error instanceof Error ? error.message : 'Unknown error', userId, companyId });
+      logger.error('Failed to assign user to company', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        userId, 
+        companyId 
+      });
       throw error;
     }
   }
 
   async updateUserRole(userId: string, role: string): Promise<void> {
     try {
-      // TODO: Implement actual role update
+      await this.initializeRepository();
+      
+      // Get the user first
+      const user = await this.userRepository.getById(userId);
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+      
+      // Update user with new role
+      await this.userRepository.update(userId, {
+        ...user,
+        role,
+        updatedAt: new Date().toISOString()
+      }, userId);
+      
       logger.info('User role updated', { userId, role });
     } catch (error) {
-      logger.error('Failed to update user role', { error: error instanceof Error ? error.message : 'Unknown error', userId, role });
+      logger.error('Failed to update user role', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        userId, 
+        role 
+      });
       throw error;
     }
   }
 
   async deleteUser(userId: string): Promise<void> {
     try {
-      // TODO: Implement actual user deletion from Cosmos DB
+      await this.initializeRepository();
+      
+      // Check if user exists
+      const user = await this.userRepository.getById(userId);
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+      
+      // Delete user from Cosmos DB
+      await this.userRepository.delete(userId, userId);
+      
       logger.info('User deleted', { userId });
     } catch (error) {
-      logger.error('Failed to delete user', { error: error instanceof Error ? error.message : 'Unknown error', userId });
+      logger.error('Failed to delete user', { 
+        error: error instanceof Error ? error.message : 'Unknown error', 
+        userId 
+      });
       throw error;
     }
   }
