@@ -4,11 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
-import { useUploadFile } from 'react-azure-hooks/storage';
-import { storage, db } from '@/lib/azure';
-import { ref } from 'azure/storage';
-import { doc, updateDoc } from 'azure/firestore';
 import { useState } from 'react';
+import { storage, db, ref } from '../../../lib/azure/storage';
+import { doc, updateDoc } from '../../../lib/azure/firestore';
 import { Progress } from '@/components/ui/progress';
 
 export function CompanyBrandingForm({ companyId }: { companyId: string }) {

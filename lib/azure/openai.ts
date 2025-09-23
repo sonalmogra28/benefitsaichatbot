@@ -328,4 +328,4 @@ export class AzureOpenAIService {
 export const azureOpenAIService = new AzureOpenAIService(client);
 
 // Export the client for advanced operations
-export { client as openaiClient };
+export { client as openaiClient, OpenAI };

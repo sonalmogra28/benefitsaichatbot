@@ -38,7 +38,20 @@ const MSAL_CONFIG: Configuration = {
   },
 };
 
-export const msalInstance = new PublicClientApplication(MSAL_CONFIG);
+// Lazy initialization to avoid server-side rendering issues
+let msalInstance: PublicClientApplication | null = null;
+
+export const getMsalInstance = (): PublicClientApplication => {
+  if (typeof window === 'undefined') {
+    throw new Error('MSAL can only be used in the browser');
+  }
+  
+  if (!msalInstance) {
+    msalInstance = new PublicClientApplication(MSAL_CONFIG);
+  }
+  
+  return msalInstance;
+};
 
 export const loginRequest = {
   scopes: ['openid', 'offline_access'],

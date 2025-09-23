@@ -1,10 +1,6 @@
 import { Toaster } from 'sonner';
-import { MsalProvider } from '@azure/msal-react';
-import { msalInstance } from '@/lib/azure/msal-client';
-import { ThemeProvider } from '@/components/theme-provider';
-import { AuthProvider } from '@/context/auth-context';
-import { TRPCProvider } from '@/components/trpc-provider';
 import { getConfig } from '@/config/environments';
+import { ClientProviders } from '@/components/client-providers';
 
 import './globals.css';
 
@@ -55,21 +51,10 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <TRPCProvider>
-          <MsalProvider instance={msalInstance}>
-            <AuthProvider>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
-              >
-                <Toaster position="top-center" />
-                {children}
-              </ThemeProvider>
-            </AuthProvider>
-          </MsalProvider>
-        </TRPCProvider>
+        <ClientProviders>
+          <Toaster position="top-center" />
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );

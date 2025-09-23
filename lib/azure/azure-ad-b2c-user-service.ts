@@ -1,5 +1,4 @@
-import { Client } from '@microsoft/microsoft-graph-client';
-import { AuthenticationProvider } from '@microsoft/microsoft-graph-client';
+import { Client, AuthenticationProvider } from '@microsoft/microsoft-graph-client';
 import { getAdB2CConfig } from './config';
 import { logger } from '@/lib/logger';
 

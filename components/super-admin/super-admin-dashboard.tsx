@@ -66,7 +66,7 @@ export function SuperAdminDashboard() {
   const fetchDashboardStats = async () => {
     try {
       // Get the user's auth token
-      const auth = (await import('azure/auth')).getAuth();
+      const auth = (await import('@/lib/azure/auth')).getAuth();
       const user = auth.currentUser;
 
       if (!user) {

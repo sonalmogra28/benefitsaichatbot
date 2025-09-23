@@ -1,7 +1,7 @@
 // lib/services/analytics.ts - Real-time Analytics Implementation
 import { logger } from '@/lib/logger';
 import { cosmosClient } from '@/lib/azure/cosmos';
-import { ApplicationInsights } from '@azure/applicationinsights-web';
+import { ApplicationInsights } from '@microsoft/applicationinsights-web';
 
 export interface LLMUsageEvent {
   userId: string;

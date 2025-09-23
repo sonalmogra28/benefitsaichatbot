@@ -3,7 +3,7 @@
 
 import { createContext, useEffect, useState, type ReactNode, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { msalInstance, loginRequest } from '@/lib/azure/msal-client';
+import { getMsalInstance, loginRequest } from '@/lib/azure/msal-client';
 import { useMsal } from '@azure/msal-react';
 import { InteractionStatus } from '@azure/msal-browser';
 

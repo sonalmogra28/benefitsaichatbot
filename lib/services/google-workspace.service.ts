@@ -310,3 +310,4 @@ class GoogleWorkspaceService {
 }
 
 export const googleWorkspaceService = new GoogleWorkspaceService();
+export { GoogleWorkspaceService };

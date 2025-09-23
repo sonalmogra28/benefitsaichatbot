@@ -1,8 +1,7 @@
 'use client';
 
-import { useCollection } from 'react-azure-hooks/firestore';
-import { collection } from 'azure/firestore';
-import { db } from '@/lib/firestore';
+import { useState, useEffect } from 'react';
+import { collection, getDocs, query, orderBy, limit, startAfter, where } from '../../../lib/azure/firestore';
 import {
   Table,
   TableBody,

@@ -302,7 +302,7 @@ export function BenefitsDemo() {
                 Eligibility Checker
               </CardTitle>
               <CardDescription>
-                Check if you're eligible for specific benefit plans
+                Check if you&apos;re eligible for specific benefit plans
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -563,7 +563,7 @@ export function BenefitsDemo() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Select plans from the "Browse Plans" tab to compare them here.
+                Select plans from the &quot;Browse Plans&quot; tab to compare them here.
               </p>
             </CardContent>
           </Card>
