@@ -11,9 +11,13 @@ export default function AuthLayout({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    // Ensure we're on the client side and fully hydrated
+    if (typeof window !== 'undefined') {
+      setMounted(true);
+    }
   }, []);
 
+  // Static fallback for SSR
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
